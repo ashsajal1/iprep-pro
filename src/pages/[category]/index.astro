@@ -1,0 +1,131 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Icon from '../../components/Icon.astro';
+import ProgressBar from '../../components/ProgressBar.astro';
+import QuestionCard from '../../components/QuestionCard.astro';
+import Roadmap from '../../components/Roadmap.astro';
+import TopicCard from '../../components/TopicCard.astro';
+import { countByTopic, getCategoriesWithStats, getCategory, getQuestionsByCategory } from '../../lib/content';
+
+export function getStaticPaths() {
+	return getCategoriesWithStats()
+		.filter((c) => !c.soon)
+		.map((c) => ({ params: { category: c.id } }));
+}
+
+const { category } = Astro.params;
+const cat = getCategory(category!);
+if (!cat || cat.soon) return Astro.redirect('/404');
+
+const questions = getQuestionsByCategory(cat.id);
+const counts = countByTopic(cat.id);
+const allCats = getCategoriesWithStats();
+const totals = Object.fromEntries(allCats.map((c) => [c.id, c.count]));
+---
+
+<BaseLayout
+	title={`${cat.name} Interview Questions — Practice & Learn`}
+	description={`${cat.description} ${questions.length} curated ${cat.name} interview questions with answers, explanations and practice modes.`}
+>
+	<section class="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+		<!-- Hero -->
+		<header class="card p-6 sm:p-8" data-category-total={cat.id}>
+			<div class="flex flex-col gap-6 md:flex-row md:items-start">
+				<div class="flex items-center gap-4 md:contents">
+					<span class="grid h-14 w-14 shrink-0 place-items-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm">
+						<Icon name={cat.icon} class="h-7 w-7" />
+					</span>
+					<div class="min-w-0 flex-1">
+						<h1 class="text-2xl font-semibold tracking-tight">{cat.name} Interview Track</h1>
+						<p class="mt-1 max-w-2xl text-sm leading-relaxed text-ink-secondary">{cat.description}</p>
+					</div>
+				</div>
+
+				<div class="flex shrink-0 gap-2">
+					<a href={`/practice/${cat.id}?mode=learn`} class="btn btn-primary">
+						<Icon name="book-open" class="h-4 w-4" /> Learn
+					</a>
+					<a href={`/practice/${cat.id}?mode=practice`} class="btn btn-secondary">
+						<Icon name="target" class="h-4 w-4" /> Practice
+					</a>
+					<a href={`/practice/${cat.id}?mode=quick`} class="btn btn-secondary hidden sm:inline-flex">
+						<Icon name="zap" class="h-4 w-4" /> Quick 10
+					</a>
+				</div>
+			</div>
+
+			<div class="mt-6 grid gap-5 border-t border-line pt-6 sm:grid-cols-[1fr_auto] sm:items-center">
+				<ProgressBar
+					progressFor={`category:${cat.id}`}
+					label={`Your progress · ${questions.length} questions`}
+				/>
+				<div class="flex gap-6 text-sm">
+					<div>
+						<p class="text-lg font-semibold tabular-nums" data-cat-stat data-stat="total">{questions.length}</p>
+						<p class="text-xs text-ink-muted">Questions</p>
+					</div>
+					<div>
+						<p class="text-lg font-semibold tabular-nums text-emerald-600 dark:text-emerald-400" data-cat-stat data-stat="done">0</p>
+						<p class="text-xs text-ink-muted">Completed</p>
+					</div>
+					<div>
+						<p class="text-lg font-semibold tabular-nums text-amber-600 dark:text-amber-400" data-cat-stat data-stat="review">0</p>
+						<p class="text-xs text-ink-muted">To review</p>
+					</div>
+					<a href="/favorites" class="group">
+						<p class="text-lg font-semibold tabular-nums group-hover:text-indigo-600" data-cat-stat data-stat="fav">0</p>
+						<p class="text-xs text-ink-muted">Favorites</p>
+					</a>
+				</div>
+			</div>
+		</header>
+
+		<!-- Topics overview -->
+		<section class="mt-10" aria-labelledby="topics-heading">
+			<h2 id="topics-heading" class="section-title mb-4">Topics in recommended order</h2>
+			<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+				{cat.topics.map((topic, i) => (
+					<TopicCard topic={topic} categoryId={cat.id} count={counts[topic.id] ?? 0} index={i} />
+				))}
+			</div>
+		</section>
+
+		<!-- Roadmap -->
+		<section class="mt-12 grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)] lg:items-start" aria-labelledby="roadmap-heading">
+			<div>
+				<h2 id="roadmap-heading" class="section-title mb-2">Learning path</h2>
+				<p class="mb-5 text-sm leading-relaxed text-ink-secondary">
+					Follow the stages top to bottom. Nothing is locked — the order is simply what works.
+				</p>
+				<Roadmap category={cat} counts={counts} />
+			</div>
+
+			<!-- Questions grouped by topic -->
+			<div class="space-y-10 min-w-0">
+				{
+					cat.topics.filter((t) => (counts[t.id] ?? 0) > 0).map((topic) => (
+						<section id={topic.id} class="scroll-mt-24" aria-labelledby={`topic-${topic.id}-heading`}>
+							<div class="mb-4 flex items-baseline justify-between gap-3">
+								<h3 id={`topic-${topic.id}-heading`} class="text-lg font-semibold tracking-tight">
+									{topic.name}
+								</h3>
+								<span class="text-xs font-medium tabular-nums text-ink-muted">
+									{counts[topic.id]} questions
+								</span>
+							</div>
+							<div class="grid gap-4 sm:grid-cols-2">
+								{questions.filter((q) => q.topic === topic.id).map((q) => (
+									<QuestionCard question={q} />
+								))}
+							</div>
+						</section>
+					))
+				}
+			</div>
+		</section>
+	</section>
+
+	<script type="application/json" data-category-totals set:html={JSON.stringify(totals)} />
+</BaseLayout>
+
+<script src="../../scripts/page-category.ts"></script>

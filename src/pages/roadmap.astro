@@ -1,0 +1,67 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/Icon.astro';
+import Roadmap from '../components/Roadmap.astro';
+import { categories, countByTopic } from '../lib/content';
+
+const tracks = categories.map((cat) => ({
+	cat,
+	counts: countByTopic(cat.id),
+}));
+const totalQuestions = tracks.reduce((sum, t) => sum + Object.values(t.counts).reduce((a, b) => a + b, 0), 0);
+---
+
+<BaseLayout
+	title="Interview Learning Roadmaps — Guided Paths"
+	description="Visual learning roadmaps for JavaScript, React, TypeScript, Next.js, Node.js, HTML/CSS, Git and behavioral interviews. See what's completed, in progress, and up next."
+>
+	<section class="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+		<header class="mb-10 max-w-2xl">
+			<h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">Learning roadmaps</h1>
+			<p class="mt-2 text-sm leading-relaxed text-ink-secondary">
+				Each category is a guided path through its topics — ordered the way real learning
+				builds on itself. Your progress is tracked locally as you practice.
+				{totalQuestions} questions across {tracks.length} tracks.
+			</p>
+		</header>
+
+		<div class="space-y-8">
+			{
+				tracks.map(({ cat, counts }) => (
+					<article class="card overflow-hidden" data-track={cat.id}>
+						<div class="flex flex-col gap-4 border-b border-line bg-surface-raised/50 p-5 sm:flex-row sm:items-center sm:justify-between">
+							<div class="flex items-center gap-4">
+								<span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm">
+									<Icon name={cat.icon} class="h-5 w-5" />
+								</span>
+								<div>
+									<h2 class="font-semibold">{cat.name} Roadmap</h2>
+									<p class="text-xs text-ink-muted">{cat.topics.length} stages · recommended order</p>
+								</div>
+							</div>
+							<a
+								href={`/practice/${cat.id}?mode=learn`}
+								class="btn btn-primary shrink-0 self-start sm:self-auto"
+							>
+								Start track
+								<Icon name="arrow-right" class="h-4 w-4" />
+							</a>
+						</div>
+
+						<div class="p-5 sm:p-6 lg:px-10">
+							<Roadmap category={cat} counts={counts} />
+						</div>
+					</article>
+				))
+			}
+		</div>
+	</section>
+</BaseLayout>
+
+<script>
+	import { paintRoadmaps } from '../scripts/roadmap-status';
+	import { onProgressChange } from '../lib/progress';
+
+	paintRoadmaps();
+	onProgressChange(paintRoadmaps);
+</script>
