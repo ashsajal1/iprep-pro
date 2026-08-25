@@ -1,0 +1,69 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import DifficultyBadge from '../../components/DifficultyBadge.astro';
+import EmptyState from '../../components/EmptyState.astro';
+import { allChallenges } from '../../lib/content';
+
+const challenges = allChallenges;
+---
+
+<BaseLayout
+	title="JavaScript Coding Challenges — Practice by Writing Code"
+	description="Solve essential JavaScript coding challenges in the browser: write code in the editor, run it against tests in a sandboxed worker, and track what you've solved."
+>
+	<section class="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+		<header class="mb-8 max-w-2xl">
+			<h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">Coding challenges</h1>
+			<p class="mt-2 text-sm leading-relaxed text-ink-secondary">
+				The essentials every interviewer expects you to write from scratch. Write code in
+				the editor, hit <kbd class="kbd">Ctrl</kbd>+<kbd class="kbd">↵</kbd> and your solution
+				runs against tests inside a sandboxed web worker.
+			</p>
+		</header>
+
+		{
+			challenges.length === 0 ? (
+				<EmptyState
+					icon="code"
+					title="No challenges yet"
+					message="Coding challenges will appear here as soon as they're added to the content library."
+				/>
+			) : (
+				<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+					{challenges.map((c, i) => (
+						<a
+							href={`/coding/${c.slug}`}
+							class="card group relative flex flex-col p-5 transition-all duration-150 hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md dark:hover:border-indigo-800"
+							data-challenge-card={c.id}
+						>
+							<div class="mb-3 flex items-center justify-between gap-2">
+								<DifficultyBadge difficulty={c.difficulty} />
+								<span
+									class="chip hidden bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400"
+									data-solved-badge
+								>
+									Solved ✓
+								</span>
+							</div>
+
+							<h2 class="flex items-baseline gap-2 font-semibold group-hover:text-indigo-700 dark:group-hover:text-indigo-300">
+								<span class="text-sm tabular-nums text-zinc-300 dark:text-zinc-600">{String(i + 1).padStart(2, '0')}</span>
+								{c.title}
+							</h2>
+
+							<p class="mt-1.5 line-clamp-2 text-sm leading-relaxed text-[color:var(--ink-secondary)]">
+								{c.description.split('\n')[0]?.replaceAll('`', '')}
+							</p>
+
+							<span class="mt-auto pt-3 text-xs tabular-nums text-[color:var(--ink-muted)]">
+								{c.topic} · {c.tests.length} tests
+							</span>
+						</a>
+					))}
+				</div>
+			)
+		}
+	</section>
+</BaseLayout>
+
+<script src="../../scripts/page-coding-index.ts"></script>
