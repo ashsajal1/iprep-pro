@@ -39,6 +39,35 @@ pnpm test       # run unit tests (vitest)
   4s infinite-loop timeout.
 - The editor is Monaco from CDN with an automatic textarea fallback.
 
+## Commit message rules
+
+This repo enforces [Conventional Commits](https://www.conventionalcommits.org) via a
+git hook (`.githooks/commit-msg`). It installs automatically on `pnpm install`
+(sets `core.hooksPath`); to do it manually:
+
+```sh
+git config core.hooksPath .githooks
+```
+
+Format:
+
+```
+<type>(<optional scope>)<!?: <lowercase imperative summary>
+```
+
+| Rule | Detail |
+| --- | --- |
+| **Type** | one of `feat fix docs style refactor perf test build ci chore revert` |
+| **Scope** | optional, e.g. `fix(api): …` |
+| **Breaking** | append `!` before the colon |
+| **Summary** | starts lowercase, no trailing period, ≤ 100 chars total header |
+| **No junk** | `wip`, placeholder or TODO-only messages are rejected |
+
+Good: `feat(coding): add timer to challenge runner` · Bad: `fixed some stuff.`
+
+> Hooks only run locally — CI and code review remain the real gatekeepers.
+> `--no-verify` bypasses the check; please don't, except in emergencies.
+
 ## Testing
 
 `pnpm test` runs the full stack: 50+ Vitest unit tests (content integrity,

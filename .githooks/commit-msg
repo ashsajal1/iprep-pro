@@ -1,0 +1,60 @@
+#!/bin/sh
+#
+# commit-msg hook — enforces Conventional Commits on every commit message.
+# Installed automatically via `pnpm install` (see "prepare" script), which sets
+# core.hooksPath to this directory.
+#
+# Bypassing with --no-verify is reserved for rare emergencies; CI and code
+# review are the real gatekeepers.
+
+set -u
+
+MSG_FILE="$1"
+
+first_line=$(head -n 1 "$MSG_FILE")
+
+fail() {
+	printf '\n\033[31m✖ Commit rejected:\033[0m %s\n\n' "$1"
+	printf '  \033[1mRequired format:\033[0m\n'
+	printf '    <type>(<optional scope>)<!?: <lowercase imperative summary>\n\n'
+	printf '  \033[1mAllowed types:\033[0m\n'
+	printf '    feat fix docs style refactor perf test build ci chore revert\n\n'
+	printf '  \033[1mExamples:\033[0m\n'
+	printf '    feat(coding): add timer to challenge runner\n'
+	printf '    fix: prevent duplicate favorites on rapid clicks\n\n'
+	printf '  Your message was:\n    %s\n' "$first_line"
+	exit 1
+}
+
+# Let Git's automatic merge/revert messages through untouched.
+case "$first_line" in
+	"Merge "*) exit 0 ;;
+	"Revert \""*) exit 0 ;;
+esac
+
+# 1. Conventional Commits structure: type(scope)!: subject
+TYPES='feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert'
+PATTERN="^(${TYPES})(\(([a-zA-Z0-9._/-]+)\))?(!)?: (.{1,})$"
+
+printf '%s\n' "$first_line" | grep -Eq "$PATTERN" || fail \
+	"does not follow Conventional Commits — start with a type like 'feat:' or 'fix(scope):'."
+
+# 2. Summary must begin lowercase (letter or digit), no leading whitespace.
+SUBJECT=$(printf '%s\n' "$first_line" | sed -E 's/^([^:]+): //')
+printf '%s' "$SUBJECT" | grep -Eq '^[a-z0-9]' || fail \
+	"summary must start with a lowercase letter or digit ('feat: Add X' → 'feat: add X')."
+
+# 3. No trailing period on the summary line.
+printf '%s' "$SUBJECT" | grep -Eq '[.]$' && fail \
+	"summary must not end with a period."
+
+# 4. Header length budget (subject + type prefix ≤ 100 chars).
+LEN=$(printf '%s' "$first_line" | wc -c)
+[ "$LEN" -le 100 ] || fail \
+	"header is $LEN chars — keep it at or under 100; move detail into the body."
+
+# 5. Block obvious placeholders and work-in-progress markers.
+printf '%s' "$first_line" | grep -Eiq '\b(wip|asdf|todo|xxx|placeholder)\b' && fail \
+	"looks like a placeholder — finish the thought before committing."
+
+exit 0

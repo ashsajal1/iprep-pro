@@ -13,7 +13,8 @@
     "test": "vitest run && playwright test",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "release": "pnpm build && pnpm test"
+    "release": "pnpm build && pnpm test",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
