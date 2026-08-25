@@ -1,0 +1,120 @@
+[
+	{
+		"id": "javascript",
+		"name": "JavaScript",
+		"icon": "braces",
+		"accent": "amber",
+		"description": "Closures, the event loop, prototypes, and every core concept interviewers love to probe.",
+		"topics": [
+			{ "id": "fundamentals", "name": "Fundamentals", "file": "fundamentals", "blurb": "Variables, types, coercion and scoping basics." },
+			{ "id": "functions", "name": "Functions & Scope", "file": "functions", "blurb": "Closures, `this`, arrows and higher-order functions." },
+			{ "id": "objects-arrays", "name": "Objects & Arrays", "file": "objects-arrays", "blurb": "Destructuring, spreads and transformation methods." },
+			{ "id": "async", "name": "Async JavaScript", "file": "async", "blurb": "The event loop, promises and async/await." },
+			{ "id": "dom-browser", "name": "DOM & Browser", "file": "dom-browser", "blurb": "Events, delegation and how scripts load." },
+			{ "id": "advanced", "name": "Advanced JavaScript", "file": "advanced", "blurb": "Prototypes, debounce/throttle and performance." }
+		]
+	},
+	{
+		"id": "react",
+		"name": "React",
+		"icon": "atom",
+		"accent": "sky",
+		"description": "Component thinking, hooks in depth, and rendering behavior questions from real interviews.",
+		"topics": [
+			{ "id": "fundamentals", "name": "Fundamentals", "file": "fundamentals", "blurb": "Components, props, state and reconciliation." },
+			{ "id": "hooks", "name": "Hooks", "file": "hooks", "blurb": "useState, useEffect, memoization and custom hooks." }
+		]
+	},
+	{
+		"id": "typescript",
+		"name": "TypeScript",
+		"icon": "shapes",
+		"accent": "blue",
+		"description": "Type-level thinking: generics, narrowing, utility types and writing types that scale.",
+		"topics": [
+			{ "id": "fundamentals", "name": "Fundamentals", "file": "fundamentals", "blurb": "Types vs interfaces, unions, narrowing." },
+			{ "id": "generics-utilities", "name": "Generics & Utilities", "file": "generics-utilities", "blurb": "Generic constraints, utility and mapped types." }
+		]
+	},
+	{
+		"id": "nextjs",
+		"name": "Next.js",
+		"icon": "triangle",
+		"accent": "zinc",
+		"description": "Rendering strategies, App Router conventions, routing and data fetching patterns.",
+		"topics": [
+			{ "id": "fundamentals", "name": "Fundamentals", "file": "fundamentals", "blurb": "Rendering modes, server/client components." },
+			{ "id": "routing", "name": "Routing & Data", "file": "routing", "blurb": "File-based routing, layouts and route handlers." }
+		]
+	},
+	{
+		"id": "nodejs",
+		"name": "Node.js",
+		"icon": "hexagon",
+		"accent": "emerald",
+		"description": "The event loop, streams, error handling and backend patterns for server-side roles.",
+		"topics": [
+			{ "id": "fundamentals", "name": "Fundamentals", "file": "fundamentals", "blurb": "Runtime internals, modules and streams." },
+			{ "id": "patterns", "name": "Server Patterns", "file": "patterns", "blurb": "Middleware, errors and graceful shutdown." }
+		]
+	},
+	{
+		"id": "html-css",
+		"name": "HTML & CSS",
+		"icon": "layout",
+		"accent": "rose",
+		"description": "Semantic markup, the cascade, layout systems and accessibility fundamentals.",
+		"topics": [
+			{ "id": "fundamentals", "name": "HTML Fundamentals", "file": "fundamentals", "blurb": "Semantics, box model and accessibility." },
+			{ "id": "layout-styling", "name": "Layout & Styling", "file": "layout-styling", "blurb": "Flexbox, grid, positioning and responsive design." }
+		]
+	},
+	{
+		"id": "git-github",
+		"name": "Git & GitHub",
+		"icon": "git-branch",
+		"accent": "orange",
+		"description": "Branching, rebasing, undoing mistakes and collaborating through pull requests.",
+		"topics": [
+			{ "id": "basics", "name": "Git Basics", "file": "basics", "blurb": "Everyday commands and fixing mistakes." },
+			{ "id": "collaboration", "name": "Collaboration", "file": "collaboration", "blurb": "Pull requests, conflicts and team workflows." }
+		]
+	},
+	{
+		"id": "behavioral",
+		"name": "Behavioral",
+		"icon": "users",
+		"accent": "violet",
+		"description": "STAR-format answers for culture, conflict and career questions that decide offers.",
+		"topics": [
+			{ "id": "common", "name": "Common Questions", "file": "common", "blurb": "The classics — told with structure, not rambling." }
+		]
+	},
+	{
+		"id": "system-design",
+		"name": "System Design",
+		"icon": "server",
+		"accent": "cyan",
+		"description": "Scaling, caching, queues and trade-off discussions for senior loops.",
+		"soon": true,
+		"topics": []
+	},
+	{
+		"id": "database",
+		"name": "Database",
+		"icon": "database",
+		"accent": "teal",
+		"description": "SQL vs NoSQL, indexing, transactions and query optimization.",
+		"soon": true,
+		"topics": []
+	},
+	{
+		"id": "web-dev",
+		"name": "General Web Dev",
+		"icon": "globe",
+		"accent": "fuchsia",
+		"description": "HTTP, browsers, security and performance across the whole stack.",
+		"soon": true,
+		"topics": []
+	}
+]
