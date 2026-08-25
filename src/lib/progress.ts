@@ -24,6 +24,8 @@ export interface ProgressState {
 	completed: Record<string, number>;
 	review: Record<string, number>;
 	favorites: Record<string, number>;
+	/** Solved coding challenges: { [challengeId]: timestamp } */
+	challenges?: Record<string, number>;
 	history: HistoryItem[];
 	lastCategory?: string;
 	streak: { count: number; day: string };
@@ -37,6 +39,7 @@ function emptyState(): ProgressState {
 		completed: {},
 		review: {},
 		favorites: {},
+		challenges: {},
 		history: [],
 		streak: { count: 0, day: '' },
 	};
@@ -116,6 +119,26 @@ export function toggleFavorite(id: string): boolean {
 
 export function isFavorite(id: string): boolean {
 	return Boolean(loadProgress().favorites[id]);
+}
+
+/* ---- coding challenges -------------------------------------------------- */
+
+export function markChallengeSolved(id: string): boolean {
+	let firstSolve = false;
+	mutateProgress((s) => {
+		s.challenges ??= {};
+		if (!s.challenges[id]) {
+			s.challenges[id] = Date.now();
+			firstSolve = true;
+			touchStreak(s);
+		}
+	});
+	return firstSolve;
+}
+
+export function isChallengeSolved(id: string): boolean {
+	const s = loadProgress();
+	return Boolean(s.challenges?.[id]);
 }
 
 /* ---- misc ------------------------------------------------------------- */

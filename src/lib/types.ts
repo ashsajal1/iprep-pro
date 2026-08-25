@@ -64,3 +64,25 @@ export const DIFFICULTY_ORDER: Record<Difficulty, number> = {
 	intermediate: 1,
 	advanced: 2,
 };
+
+/* ---- coding challenges ------------------------------------------------- */
+
+/** A single verification case: call `fn` with `args`, deep-compare to `expected`. */
+export interface CodingTest {
+	fn: string;
+	args: unknown[];
+	expected: unknown;
+}
+
+export interface CodingChallenge {
+	id: string;
+	slug: string;
+	title: string;
+	topic: string;
+	difficulty: Difficulty;
+	description: string;
+	hints: string[];
+	starterCode: string;
+	solution: string;
+	tests: CodingTest[];
+}

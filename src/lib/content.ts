@@ -1,6 +1,7 @@
 import type {
 	CategoryMeta,
 	CategoryWithStats,
+	CodingChallenge,
 	Difficulty,
 	Question,
 	QuestionIndexEntry,
@@ -168,4 +169,28 @@ export function buildSearchIndex(): QuestionIndexEntry[] {
 
 export function topicsFor(categoryId: string): TopicMeta[] {
 	return getCategory(categoryId)?.topics ?? [];
+}
+
+/* ---- coding challenges -------------------------------------------------- */
+
+const codingModules = import.meta.glob('../data/coding/*.json', {
+	eager: true,
+}) as Record<string, { default: CodingChallenge[] }>;
+
+function buildChallenges(): CodingChallenge[] {
+	const list: CodingChallenge[] = [];
+	for (const [path, mod] of Object.entries(codingModules)) {
+		for (const c of mod.default) list.push(c);
+		void path;
+	}
+	return list.sort((a, b) => a.id.localeCompare(b.id));
+}
+
+/** All coding challenges across every file under src/data/coding/. */
+export const allChallenges: CodingChallenge[] = buildChallenges();
+
+const challengeBySlug = new Map(allChallenges.map((c) => [c.slug, c]));
+
+export function getChallengeBySlug(slug: string): CodingChallenge | undefined {
+	return challengeBySlug.get(slug);
 }

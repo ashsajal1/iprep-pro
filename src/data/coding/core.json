@@ -1,0 +1,315 @@
+[
+	{
+		"id": "code-001",
+		"slug": "reverse-string",
+		"title": "Reverse a String",
+		"topic": "Strings",
+		"difficulty": "beginner",
+		"description": "Implement `reverseString(str)` that returns the characters of `str` in reverse order.\n\nThe classic approach: split into characters, reverse the array, join back. For extra credit try the two-pointer swap with a loop — but any correct implementation passes.",
+		"hints": [
+			"'abc'.split('') gives ['a','b','c'] — and arrays have a .reverse() method.",
+			"You can also loop from str.length - 1 down to 0, appending each character to a result string.",
+			"The spread operator works too: [...str].reverse().join('')"
+		],
+		"starterCode": "function reverseString(str) {\n  // your code here\n}",
+		"solution": "function reverseString(str) {\n  return [...str].reverse().join('');\n}",
+		"tests": [
+			{ "fn": "reverseString", "args": ["hello"], "expected": "olleh" },
+			{ "fn": "reverseString", "args": ["JavaScript"], "expected": "tpircSavaJ" },
+			{ "fn": "reverseString", "args": ["a"], "expected": "a" },
+			{ "fn": "reverseString", "args": [""], "expected": "" }
+		]
+	},
+	{
+		"id": "code-002",
+		"slug": "palindrome",
+		"title": "Palindrome Check",
+		"topic": "Strings",
+		"difficulty": "beginner",
+		"description": "Implement `isPalindrome(str)` that returns `true` when `str` reads the same forwards and backwards.\n\nComparison should be **case-insensitive** ('Noon' is a palindrome). You don't need to strip punctuation or spaces for these tests.",
+		"hints": [
+			"A string reversed equals itself for palindromes — combine toLowerCase() with your reverse logic.",
+			"Two pointers work nicely: compare str[0] vs str[len-1], move inward until they cross."
+		],
+		"starterCode": "function isPalindrome(str) {\n  // your code here\n}",
+		"solution": "function isPalindrome(str) {\n  const s = str.toLowerCase();\n  let left = 0;\n  let right = s.length - 1;\n  while (left < right) {\n    if (s[left] !== s[right]) return false;\n    left++;\n    right--;\n  }\n  return true;\n}",
+		"tests": [
+			{ "fn": "isPalindrome", "args": ["racecar"], "expected": true },
+			{ "fn": "isPalindrome", "args": ["Noon"], "expected": true },
+			{ "fn": "isPalindrome", "args": ["hello"], "expected": false },
+			{ "fn": "isPalindrome", "args": ["a"], "expected": true },
+			{ "fn": "isPalindrome", "args": ["ab"], "expected": false }
+		]
+	},
+	{
+		"id": "code-003",
+		"slug": "fizzbuzz",
+		"title": "FizzBuzz",
+		"topic": "Logic",
+		"difficulty": "beginner",
+		"description": "Implement `fizzBuzz(n)` that returns an **array** of numbers 1 through n, where multiples of 3 are replaced with the string `'Fizz'`, multiples of 5 with `'Buzz'`, and multiples of both with `'FizzBuzz'`.\n\nOrder of your checks matters: test divisibility by 15 (or 3 AND 5) first.",
+		"hints": [
+			"Loop i from 1 to n inclusive, building an array with push().",
+			"i % 15 === 0 catches 'FizzBuzz', then check % 3, then % 5.",
+			"n = 0 should produce an empty array."
+		],
+		"starterCode": "function fizzBuzz(n) {\n  // your code here\n}",
+		"solution": "function fizzBuzz(n) {\n  const out = [];\n  for (let i = 1; i <= n; i++) {\n    if (i % 15 === 0) out.push('FizzBuzz');\n    else if (i % 3 === 0) out.push('Fizz');\n    else if (i % 5 === 0) out.push('Buzz');\n    else out.push(i);\n  }\n  return out;\n}",
+		"tests": [
+			{
+				"fn": "fizzBuzz",
+				"args": [5],
+				"expected": [1, 2, "Fizz", 4, "Buzz"]
+			},
+			{
+				"fn": "fizzBuzz",
+				"args": [15],
+				"expected": [1, 2, "Fizz", 4, "Buzz", "Fizz", 7, 8, "Fizz", "Buzz", 11, "Fizz", 13, 14, "FizzBuzz"]
+			},
+			{ "fn": "fizzBuzz", "args": [0], "expected": [] },
+			{ "fn": "fizzBuzz", "args": [1], "expected": [1] }
+		]
+	},
+	{
+		"id": "code-004",
+		"slug": "find-max",
+		"title": "Find the Maximum",
+		"topic": "Arrays",
+		"difficulty": "beginner",
+		"description": "Implement `findMax(nums)` that returns the largest number in the array. Return `null` for an empty array.\n\nTry solving it with a plain loop first — then notice `Math.max(...nums)` does the same job.",
+		"hints": [
+			"Track a candidate starting at nums[0], update it whenever you see something bigger.",
+			"Don't initialize with 0 — the array may contain only negative numbers.",
+			"Math.max(...[-5, -1]) spreads the array into arguments."
+		],
+		"starterCode": "function findMax(nums) {\n  // your code here\n}",
+		"solution": "function findMax(nums) {\n  if (nums.length === 0) return null;\n  let max = nums[0];\n  for (const n of nums) {\n    if (n > max) max = n;\n  }\n  return max;\n}",
+		"tests": [
+			{ "fn": "findMax", "args": [[3, 7, 2, 9, 4]], "expected": 9 },
+			{ "fn": "findMax", "args": [[-8, -3, -15]], "expected": -3 },
+			{ "fn": "findMax", "args": [[42]], "expected": 42 },
+			{ "fn": "findMax", "args": [[]], "expected": null }
+		]
+	},
+	{
+		"id": "code-005",
+		"slug": "sum-array",
+		"title": "Sum of Numbers",
+		"topic": "Arrays",
+		"difficulty": "beginner",
+		"description": "Implement `sum(nums)` that returns the total of all numbers in the array. An empty array sums to `0`.\n\nThis is the textbook `.reduce()` exercise — compare the loop version against it once you're done.",
+		"hints": [
+			"reduce needs an initial value: nums.reduce((acc, n) => acc + n, 0).",
+			"Without the initial 0, reduce on an empty array throws."
+		],
+		"starterCode": "function sum(nums) {\n  // your code here\n}",
+		"solution": "function sum(nums) {\n  return nums.reduce((total, n) => total + n, 0);\n}",
+		"tests": [
+			{ "fn": "sum", "args": [[1, 2, 3, 4]], "expected": 10 },
+			{ "fn": "sum", "args": [[-1, 1]], "expected": 0 },
+			{ "fn": "sum", "args": [[100]], "expected": 100 },
+			{ "fn": "sum", "args": [[]], "expected": 0 }
+		]
+	},
+	{
+		"id": "code-006",
+		"slug": "factorial",
+		"title": "Factorial",
+		"topic": "Numbers",
+		"difficulty": "beginner",
+		"description": "Implement `factorial(n)` returning n! — the product of all integers from 1 to n. By definition, `factorial(0)` is `1`.\n\nBoth an iterative loop and recursion pass; interviewers often ask you to write one and explain the other.",
+		"hints": [
+			"Iterative: start result at 1, multiply by every i from 2 to n.",
+			"Recursive: factorial(n) = n * factorial(n - 1), stopping at n <= 1."
+		],
+		"starterCode": "function factorial(n) {\n  // your code here\n}",
+		"solution": "function factorial(n) {\n  let result = 1;\n  for (let i = 2; i <= n; i++) {\n    result *= i;\n  }\n  return result;\n}",
+		"tests": [
+			{ "fn": "factorial", "args": [0], "expected": 1 },
+			{ "fn": "factorial", "args": [1], "expected": 1 },
+			{ "fn": "factorial", "args": [5], "expected": 120 },
+			{ "fn": "factorial", "args": [7], "expected": 5040 }
+		]
+	},
+	{
+		"id": "code-007",
+		"slug": "fibonacci",
+		"title": "Fibonacci Number",
+		"topic": "Numbers",
+		"difficulty": "beginner",
+		"description": "Implement `fib(n)` returning the nth Fibonacci number using **0-based indexing**: fib(0)=0, fib(1)=1, fib(2)=1, fib(3)=2…\n\nAn iterative two-variable solution avoids the exponential blow-up of naive recursion.",
+		"hints": [
+			"Keep two variables a=0, b=1; after n steps, a holds the answer.",
+			"Inside the loop: [a, b] = [b, a + b]."
+		],
+		"starterCode": "function fib(n) {\n  // your code here\n}",
+		"solution": "function fib(n) {\n  let a = 0;\n  let b = 1;\n  for (let i = 0; i < n; i++) {\n    [a, b] = [b, a + b];\n  }\n  return a;\n}",
+		"tests": [
+			{ "fn": "fib", "args": [0], "expected": 0 },
+			{ "fn": "fib", "args": [1], "expected": 1 },
+			{ "fn": "fib", "args": [6], "expected": 8 },
+			{ "fn": "fib", "args": [10], "expected": 55 }
+		]
+	},
+	{
+		"id": "code-008",
+		"slug": "count-vowels",
+		"title": "Count Vowels",
+		"topic": "Strings",
+		"difficulty": "beginner",
+		"description": "Implement `countVowels(str)` counting occurrences of a, e, i, o, u — **case-insensitive**. 'y' doesn't count.",
+		"hints": [
+			"Lowercase the string once, then test each character's membership in 'aeiou'.",
+			"'aeiou'.includes(ch) reads better than five comparisons."
+		],
+		"starterCode": "function countVowels(str) {\n  // your code here\n}",
+		"solution": "function countVowels(str) {\n  let count = 0;\n  for (const ch of str.toLowerCase()) {\n    if ('aeiou'.includes(ch)) count++;\n  }\n  return count;\n}",
+		"tests": [
+			{ "fn": "countVowels", "args": ["Hello World"], "expected": 3 },
+			{ "fn": "countVowels", "args": ["AEIOU"], "expected": 5 },
+			{ "fn": "countVowels", "args": ["xyz"], "expected": 0 },
+			{ "fn": "countVowels", "args": [""], "expected": 0 }
+		]
+	},
+	{
+		"id": "code-009",
+		"slug": "capitalize-words",
+		"title": "Capitalize Words",
+		"topic": "Strings",
+		"difficulty": "beginner",
+		"description": "Implement `capitalizeWords(sentence)` that upper-cases the **first letter of every word** and lower-cases the rest: `'javaScript IS fun'` → `'Javascript Is Fun'`.\n\nTreat runs of whitespace as a single separator.",
+		"hints": [
+			"sentence.split(/\\s+/) splits on one-or-more spaces.",
+			"word[0].toUpperCase() + word.slice(1).toLowerCase() transforms one word.",
+			"Remember to join(' ') back together."
+		],
+		"starterCode": "function capitalizeWords(sentence) {\n  // your code here\n}",
+		"solution": "function capitalizeWords(sentence) {\n  return sentence\n    .trim()\n    .split(/\\s+/)\n    .map((w) => w[0].toUpperCase() + w.slice(1).toLowerCase())\n    .join(' ');\n}",
+		"tests": [
+			{ "fn": "capitalizeWords", "args": ["hello world"], "expected": "Hello World" },
+			{ "fn": "capitalizeWords", "args": ["javaScript IS fun"], "expected": "Javascript Is Fun" },
+			{ "fn": "capitalizeWords", "args": ["single"], "expected": "Single" },
+			{ "fn": "capitalizeWords", "args": ["  spaced   out  "], "expected": "Spaced Out" }
+		]
+	},
+	{
+		"id": "code-010",
+		"slug": "remove-duplicates",
+		"title": "Remove Duplicates",
+		"topic": "Arrays",
+		"difficulty": "beginner",
+		"description": "Implement `removeDuplicates(items)` that returns a new array keeping only the **first occurrence** of each value, preserving order.\n\nThe one-liner uses a Set: `[...new Set(items)]`. Also worth writing the manual filter/indexOf version to understand what Set buys you.",
+		"hints": [
+			"A Set automatically ignores repeated values.",
+			"To preserve first-seen order manually: items.filter((x, i) => items.indexOf(x) === i)."
+		],
+		"starterCode": "function removeDuplicates(items) {\n  // your code here\n}",
+		"solution": "function removeDuplicates(items) {\n  return [...new Set(items)];\n}",
+		"tests": [
+			{ "fn": "removeDuplicates", "args": [[1, 2, 2, 3, 1]], "expected": [1, 2, 3] },
+			{
+				"fn": "removeDuplicates",
+				"args": [["a", "b", "a", "c"]],
+				"expected": ["a", "b", "c"]
+			},
+			{ "fn": "removeDuplicates", "args": [[]], "expected": [] },
+			{ "fn": "removeDuplicates", "args": [[5, 5, 5]], "expected": [5] }
+		]
+	},
+	{
+		"id": "code-011",
+		"slug": "anagram",
+		"title": "Valid Anagram",
+		"topic": "Strings",
+		"difficulty": "intermediate",
+		"description": "Implement `isAnagram(a, b)` returning `true` when `b` is a rearrangement of `a` — case-insensitive, spaces ignored ('Dormitory' / 'dirty room' are anagrams).\n\nThe efficient route: normalize both strings, sort their characters, compare. Counting letters in an object is O(n) instead of O(n log n) if you want to go further.",
+		"hints": [
+			"Normalize: s.toLowerCase().replaceAll(' ', '').split('').sort().join('').",
+			"If the normalized lengths differ you can return false immediately."
+		],
+		"starterCode": "function isAnagram(a, b) {\n  // your code here\n}",
+		"solution": "function isAnagram(a, b) {\n  const norm = (s) => s.toLowerCase().replaceAll(' ', '').split('').sort().join('');\n  return norm(a) === norm(b);\n}",
+		"tests": [
+			{ "fn": "isAnagram", "args": ["listen", "silent"], "expected": true },
+			{ "fn": "isAnagram", "args": ["hello", "world"], "expected": false },
+			{ "fn": "isAnagram", "args": ["Dormitory", "dirty room"], "expected": true },
+			{ "fn": "isAnagram", "args": ["ab", "abc"], "expected": false }
+		]
+	},
+	{
+		"id": "code-012",
+		"slug": "two-sum",
+		"title": "Two Sum",
+		"topic": "Arrays",
+		"difficulty": "intermediate",
+		"description": "Implement `twoSum(nums, target)` returning the **indices** `[i, j]` (i < j) of the two numbers adding up to `target`. Return `null` when no pair exists. Exactly one pair exists in every passing test.\n\nThe nested-loop version is O(n²); the classic upgrade uses a Map of seen values → index for O(n).",
+		"hints": [
+			"Brute force: for each i, scan j > i looking for nums[i] + nums[j] === target.",
+			"With a Map: while iterating, check if target - nums[i] was already seen and at which index."
+		],
+		"starterCode": "function twoSum(nums, target) {\n  // your code here\n}",
+		"solution": "function twoSum(nums, target) {\n  const seen = new Map();\n  for (let i = 0; i < nums.length; i++) {\n    const need = target - nums[i];\n    if (seen.has(need)) return [seen.get(need), i];\n    seen.set(nums[i], i);\n  }\n  return null;\n}",
+		"tests": [
+			{ "fn": "twoSum", "args": [[2, 7, 11, 15], 9], "expected": [0, 1] },
+			{ "fn": "twoSum", "args": [[3, 2, 4], 6], "expected": [1, 2] },
+			{ "fn": "twoSum", "args": [[5, 5], 10], "expected": [0, 1] },
+			{ "fn": "twoSum", "args": [[1, 2, 3], 99], "expected": null }
+		]
+	},
+	{
+		"id": "code-013",
+		"slug": "chunk-array",
+		"title": "Chunk an Array",
+		"topic": "Arrays",
+		"difficulty": "intermediate",
+		"description": "Implement `chunk(items, size)` splitting the array into subarrays of length `size`; the last chunk keeps whatever remains.\n\n`chunk([1,2,3,4,5], 2)` → `[[1,2],[3,4],[5]]`. Assume size ≥ 1.",
+		"hints": [
+			"Loop with i += size and slice(i, i + size) — slice safely clips past the end.",
+			"items.slice(i, i + size) never throws, even when fewer elements remain."
+		],
+		"starterCode": "function chunk(items, size) {\n  // your code here\n}",
+		"solution": "function chunk(items, size) {\n  const out = [];\n  for (let i = 0; i < items.length; i += size) {\n    out.push(items.slice(i, i + size));\n  }\n  return out;\n}",
+		"tests": [
+			{
+				"fn": "chunk",
+				"args": [[1, 2, 3, 4, 5], 2],
+				"expected": [[1, 2], [3, 4], [5]]
+			},
+			{
+				"fn": "chunk",
+				"args": [[1, 2, 3, 4], 2],
+				"expected": [[1, 2], [3, 4]]
+			},
+			{ "fn": "chunk", "args": [[7], 3], "expected": [[7]] },
+			{ "fn": "chunk", "args": [[], 2], "expected": [] }
+		]
+	},
+	{
+		"id": "code-014",
+		"slug": "flatten-array",
+		"title": "Flatten One Level",
+		"topic": "Arrays",
+		"difficulty": "intermediate",
+		"description": "Implement `flatten(arr)` that merges nested arrays **one level deep** into a single array: `[[1,2],[3,[4]]]` → `[1,2,3,[4]]` (inner-nested values stay as arrays).\n\nNote the built-in arr.flat() solves exactly this — implement it yourself first, then compare.",
+		"hints": [
+			"concat can merge everything: [].concat(...arr) or arr.reduce((acc, x) => acc.concat(x), []).",
+			"The built-in arr.flat() with no arguments flattens exactly one level — same behavior you're implementing."
+		],
+		"starterCode": "function flatten(arr) {\n  // your code here\n}",
+		"solution": "function flatten(arr) {\n  return arr.reduce((acc, item) => acc.concat(item), []);\n}",
+		"tests": [
+			{
+				"fn": "flatten",
+				"args": [[[1, 2], [3], [4, 5]]],
+				"expected": [1, 2, 3, 4, 5]
+			},
+			{ "fn": "flatten", "args": [[["a"], ["b"]]], "expected": ["a", "b"] },
+			{
+				"fn": "flatten",
+				"args": [[[1], [2, [3]]]],
+				"expected": [1, 2, [3]]
+			},
+			{ "fn": "flatten", "args": [[]], "expected": [] }
+		]
+	}
+]
