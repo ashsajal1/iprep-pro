@@ -11,7 +11,21 @@ pnpm install
 pnpm dev        # start dev server (background mode: astro dev --background)
 pnpm build      # static production build to ./dist
 pnpm preview    # preview the production build
+pnpm test       # run unit tests (vitest)
 ```
+
+## Testing
+
+`pnpm test` runs 50 unit tests over the parts most likely to break as content grows:
+
+- `src/lib/content.test.ts` — guards the JSON bank itself: unique ids,
+  prefix/category consistency, valid topics & difficulties, non-empty fields,
+  resolvable `relatedQuestions`, plus search/sort/count behavior.
+- `src/lib/progress.test.ts` — localStorage store: assessments, favorites,
+  history capping, streak day-boundary logic, change events, stats.
+- `src/lib/highlight.test.ts` — code language normalization.
+
+If you add questions in bulk or touch the loader/store, run the tests first.
 
 ## Architecture
 
