@@ -1,4 +1,4 @@
-import type { APIRoute, GetStaticPaths } from 'astro';
+import type { APIRoute } from 'astro';
 import { allQuestions, categories, getQuestionsByCategory } from '../../../lib/content';
 
 export const getStaticPaths = () => [

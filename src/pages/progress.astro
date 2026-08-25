@@ -132,7 +132,7 @@ const categories = getCategoriesWithStats();
 		</div>
 	</section>
 
-	<script type="application/json" data-category-totals set:html={JSON.stringify(Object.fromEntries(categories.map((c) => [c.id, c.count])))} />
+	<script is:inline type="application/json" data-category-totals set:html={JSON.stringify(Object.fromEntries(categories.map((c) => [c.id, c.count])))} />
 </BaseLayout>
 
 <script src="../scripts/page-progress.ts"></script>

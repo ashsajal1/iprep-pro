@@ -125,7 +125,7 @@ const totals = Object.fromEntries(allCats.map((c) => [c.id, c.count]));
 		</section>
 	</section>
 
-	<script type="application/json" data-category-totals set:html={JSON.stringify(totals)} />
+	<script is:inline type="application/json" data-category-totals set:html={JSON.stringify(totals)} />
 </BaseLayout>
 
 <script src="../../scripts/page-category.ts"></script>
