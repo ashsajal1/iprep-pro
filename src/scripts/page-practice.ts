@@ -237,17 +237,27 @@ if (mountNode) {
 		next();
 	}
 
+	/** Bring the current question card to the top of the viewport, below the sticky navbar. */
+	function scrollToCurrentQuestion(): void {
+		requestAnimationFrame(() => {
+			const card = mount.querySelector<HTMLElement>('article[data-qid]');
+			if (!card) return;
+			const top = card.getBoundingClientRect().top + window.scrollY - 84;
+			window.scrollTo({ top: Math.max(top, 0), behavior: 'auto' });
+		});
+	}
+
 	function next(): void {
 		if (!started || queue.length === 0) return;
 		if (index >= queue.length - 1) {
 			finished = true;
 			render();
-			window.scrollTo({ top: 0, behavior: 'smooth' });
+			window.scrollTo({ top: 0, behavior: 'auto' });
 			return;
 		}
 		index++;
 		render();
-		mount.querySelector('h1')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+		scrollToCurrentQuestion();
 	}
 
 	function restart(): void {
@@ -255,6 +265,7 @@ if (mountNode) {
 		finished = false;
 		index = 0;
 		render();
+		scrollToCurrentQuestion();
 	}
 
 	function buildQueue(difficulty?: string): void {
@@ -300,6 +311,7 @@ if (mountNode) {
 				started = true;
 				index = 0;
 				render();
+				scrollToCurrentQuestion();
 			});
 		});
 	}
