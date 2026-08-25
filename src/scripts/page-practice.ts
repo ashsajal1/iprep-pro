@@ -108,6 +108,7 @@ if (mountNode) {
 
 	function questionCard(item: QueueItem): string {
 		const { q } = item;
+		const showAnswer = item.revealed || mode === 'learn'; // learn mode reveals immediately
 		return `
 			<article class="card p-6 sm:p-8" data-qid="${q.id}">
 				<div class="flex flex-wrap items-center gap-2">
@@ -121,11 +122,9 @@ if (mountNode) {
 
 				<h1 class="mt-4 text-xl leading-snug font-semibold tracking-tight text-balance sm:text-2xl">${esc(q.question)}</h1>
 
-				${item.revealed
+				${showAnswer
 					? answerHtml(q)
-					: mode === 'learn'
-						? ''
-						: `<div class="mt-6 rounded-2xl border-2 border-dashed border-line p-8 text-center">
+					: `<div class="mt-6 rounded-2xl border-2 border-dashed border-line p-8 text-center">
 							<p class="text-sm font-medium text-[color:var(--ink-secondary)]">Take a moment.</p>
 							<p class="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-[color:var(--ink-muted)]">
 								Say your answer out loud before revealing — retrieval is what makes it stick.
@@ -237,14 +236,14 @@ if (mountNode) {
 		next();
 	}
 
-	/** Bring the current question card to the top of the viewport, below the sticky navbar. */
+	/** Bring the current question card to the top of the viewport, below the sticky navbar.
+	 * Uses `instant` deliberately: `auto` would inherit `scroll-behavior: smooth` from CSS
+	 * and animate, leaving the user staring at the tail of the previous answer. */
 	function scrollToCurrentQuestion(): void {
-		requestAnimationFrame(() => {
-			const card = mount.querySelector<HTMLElement>('article[data-qid]');
-			if (!card) return;
-			const top = card.getBoundingClientRect().top + window.scrollY - 84;
-			window.scrollTo({ top: Math.max(top, 0), behavior: 'auto' });
-		});
+		const card = mount.querySelector<HTMLElement>('article[data-qid]');
+		if (!card) return;
+		const top = card.getBoundingClientRect().top + window.scrollY - 84;
+		window.scrollTo({ top: Math.max(top, 0), behavior: 'instant' as ScrollBehavior });
 	}
 
 	function next(): void {
