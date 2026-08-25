@@ -94,6 +94,24 @@ test.describe('coding challenges', () => {
 		});
 	});
 
+	test('results scroll into the visible area after submitting', async ({ page }) => {
+		// Short viewport: the output panel starts below the fold
+		await page.setViewportSize({ width: 1280, height: 500 });
+		await page.goto('/coding/two-sum');
+
+		const solution =
+			'function twoSum(nums, target) {\n  const seen = new Map();\n  for (let i = 0; i < nums.length; i++) {\n    const need = target - nums[i];\n    if (seen.has(need)) return [seen.get(need), i];\n    seen.set(nums[i], i);\n  }\n  return null;\n}';
+		await solveWith(page, solution);
+
+		await expect(page.locator('#run-banner')).toContainText('tests passing');
+		const top = await page.evaluate(() =>
+			Math.round(document.getElementById('output-panel')!.getBoundingClientRect().top),
+		);
+		// Panel must sit fully in view, just under the sticky header
+		expect(top).toBeGreaterThanOrEqual(-1);
+		expect(top).toBeLessThan(300);
+	});
+
 	test('console.log output is captured from inside the worker', async ({ page }) => {
 		await page.goto('/coding/reverse-string');
 		await solveWith(

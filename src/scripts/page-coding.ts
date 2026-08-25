@@ -166,7 +166,19 @@ if (workspace) {
 		consoleWrap.classList.add('hidden');
 		consoleOutput.textContent = '';
 		scoreLine.textContent = '';
+		scoreLine.classList.remove('text-emerald-600', 'dark:text-emerald-400', 'text-rose-600', 'dark:text-rose-400');
 		banner.classList.add('hidden');
+	}
+
+	/** After a run finishes, make sure the results are on screen — the panel
+	 * sits below the editor and can be out of view on short screens or when
+	 * the user submitted from the keyboard mid-page. */
+	function revealOutput(): void {
+		const panel = document.getElementById('output-panel');
+		if (!panel) return;
+		panel.dataset.revealed = '1';
+		const top = panel.getBoundingClientRect().top + window.scrollY - 84;
+		window.scrollTo({ top: Math.max(top, 0), behavior: 'instant' as ScrollBehavior });
 	}
 
 	function appendTestRow(index: number, t: CodingTest, passed?: boolean, received?: string, expectedText?: string): void {
@@ -245,6 +257,7 @@ if (workspace) {
 				'error',
 				`⏱️ Timed out after ${RUN_TIMEOUT_MS / 1000}s — your code probably has an infinite loop. Check loop conditions and try again.`,
 			);
+			revealOutput();
 		}, RUN_TIMEOUT_MS);
 
 		worker.onmessage = (e: MessageEvent) => {
@@ -252,6 +265,10 @@ if (workspace) {
 			if (msg.id !== currentRun) return;
 
 			switch (msg.type) {
+				case 'started':
+					// Panel may be below the fold when submitting via keyboard.
+					revealOutput();
+					break;
 				case 'log':
 					appendConsoleLine(msg.text);
 					break;
@@ -265,6 +282,7 @@ if (workspace) {
 
 					if (passCount === tests.length && tests.length > 0) {
 						const first = markChallengeSolved(challengeId);
+						scoreLine.classList.add('text-emerald-600', 'dark:text-emerald-400');
 						showBanner(
 							'success',
 							first
@@ -272,8 +290,10 @@ if (workspace) {
 								: `All ${tests.length} tests still passing ✓`,
 						);
 					} else {
+						scoreLine.classList.add('text-rose-600', 'dark:text-rose-400');
 						showBanner('error', `${tests.length - passCount} of ${tests.length} tests failing. Read the ✗ rows below and iterate.`);
 					}
+					revealOutput();
 					break;
 				}
 				case 'error': {
@@ -291,6 +311,7 @@ if (workspace) {
 							msg.stage === 'compile' ? '<span class="block mt-1 font-normal">Check for missing brackets, quotes or semicolons.</span>' : ''
 						}`,
 					);
+					revealOutput();
 					break;
 				}
 			}
