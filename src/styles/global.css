@@ -1,0 +1,174 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+	--font-sans:
+		ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial,
+		sans-serif;
+	--font-mono:
+		ui-monospace, 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
+
+	--color-surface: var(--surface);
+	--color-surface-raised: var(--surface-raised);
+	--color-line: var(--line);
+	--color-ink: var(--ink);
+	--color-ink-secondary: var(--ink-secondary);
+	--color-ink-muted: var(--ink-muted);
+
+	--animate-fade-in: fade-in 0.15s ease-out both;
+
+	@keyframes fade-in {
+		from {
+			opacity: 0;
+			transform: translateY(2px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+}
+
+:root {
+	--surface: #ffffff;
+	--surface-raised: #fafafa;
+	--line: #e4e4e7;
+	--ink: #18181b;
+	--ink-secondary: #52525b;
+	--ink-muted: #a1a1aa;
+	color-scheme: light;
+}
+
+.dark {
+	--surface: #101012;
+	--surface-raised: #18181b;
+	--line: #27272a;
+	--ink: #f4f4f5;
+	--ink-secondary: #a1a1aa;
+	--ink-muted: #71717a;
+	color-scheme: dark;
+}
+
+html {
+	scroll-behavior: smooth;
+}
+
+body {
+	background-color: var(--color-surface);
+	color: var(--color-ink);
+	font-family: var(--font-sans);
+	-webkit-font-smoothing: antialiased;
+	text-rendering: optimizeLegibility;
+}
+
+::selection {
+	background-color: oklch(0.51 0.23 277 / 0.25);
+}
+
+/* ---- shared primitives ---------------------------------------------- */
+
+@layer components {
+	.card {
+		@apply rounded-2xl border border-line bg-surface shadow-xs;
+	}
+
+	.btn {
+		@apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-colors duration-150 select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-500 disabled:pointer-events-none disabled:opacity-50;
+	}
+	.btn-primary {
+		@apply bg-indigo-600 text-white hover:bg-indigo-500 active:bg-indigo-700;
+	}
+	.btn-secondary {
+		@apply border border-line bg-surface text-ink hover:border-zinc-300 hover:bg-surface-raised dark:hover:border-zinc-600 dark:hover:bg-zinc-800;
+	}
+	.btn-soft {
+		@apply bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-950/60 dark:text-indigo-300 dark:hover:bg-indigo-900/50;
+	}
+	.btn-success {
+		@apply bg-emerald-600 text-white hover:bg-emerald-500;
+	}
+	.btn-danger-soft {
+		@apply bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-950/50 dark:text-rose-300 dark:hover:bg-rose-900/40;
+	}
+	.btn-ghost {
+		@apply text-ink-secondary hover:bg-surface-raised hover:text-ink;
+	}
+
+	.chip {
+		@apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium;
+	}
+
+	.kbd {
+		@apply inline-flex h-5 min-w-5 items-center justify-center rounded-md border border-line bg-surface-raised px-1.5 font-mono text-[11px] font-medium text-ink-secondary;
+	}
+
+	.input {
+		@apply w-full rounded-xl border border-line bg-surface px-3.5 py-2 text-sm text-ink placeholder:text-ink-muted focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/20 focus:outline-none dark:focus:border-indigo-500;
+	}
+
+	.section-title {
+		@apply text-xl font-semibold tracking-tight sm:text-2xl;
+	}
+}
+
+/* ---- code blocks (shiki dual theme) ---------------------------------- */
+
+.codeblock pre {
+	background: transparent !important;
+	margin: 0 !important;
+	padding: 1rem 1.25rem !important;
+	overflow-x: auto;
+	font-size: 0.8125rem;
+	line-height: 1.7;
+}
+
+.shiki span {
+	color: var(--shiki-light);
+}
+.dark .shiki span {
+	color: var(--shiki-dark);
+}
+
+/* ---- roadmap stepper -------------------------------------------------- */
+
+.roadmap-line::before {
+	content: '';
+	position: absolute;
+	left: 1.125rem;
+	top: 2.25rem;
+	bottom: -0.5rem;
+	width: 2px;
+	border-radius: 999px;
+	background: var(--color-line);
+}
+li.roadmap-line:last-child::before {
+	display: none;
+}
+.roadmap-line.done::before {
+	background:
+		linear-gradient(
+			to bottom,
+			oklch(0.627 0.194 149) 0%,
+			oklch(0.627 0.194 149) 100%
+		)
+		no-repeat;
+}
+
+/* thin scrollbars for scroll panes */
+.scroll-thin {
+	scrollbar-width: thin;
+	scrollbar-color: var(--ink-muted) transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	html {
+		scroll-behavior: auto;
+	}
+	*,
+	*::before,
+	*::after {
+		animation-duration: 0.01ms !important;
+		transition-duration: 0.01ms !important;
+	}
+}
