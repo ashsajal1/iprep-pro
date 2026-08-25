@@ -1,0 +1,29 @@
+---
+import type { Question } from '../lib/types';
+import QuestionCard from './QuestionCard.astro';
+import EmptyState from './EmptyState.astro';
+
+interface Props {
+	questions: Question[];
+	/** When true, hides the empty state (parent renders its own). */
+	hideEmpty?: boolean;
+}
+
+const { questions, hideEmpty = false } = Astro.props;
+---
+
+{
+	questions.length === 0 && !hideEmpty ? (
+		<EmptyState
+			icon="search"
+			title="No questions found"
+			message="Nothing matches your current filters. Try clearing them or searching for a different keyword."
+		/>
+	) : (
+		<div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3" data-question-list>
+			{questions.map((q) => (
+				<QuestionCard question={q} />
+			))}
+		</div>
+	)
+}

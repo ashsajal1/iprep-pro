@@ -1,0 +1,40 @@
+---
+import type { CategoryMeta } from '../lib/types';
+import Icon from './Icon.astro';
+
+interface Props {
+	category: CategoryMeta;
+	/** question count per topic id */
+	counts: Record<string, number>;
+}
+
+const { category: cat, counts } = Astro.props;
+---
+
+<ol class="space-y-2" data-roadmap={cat.id}>
+	{
+		cat.topics.map((topic, i) => (
+			<li class="roadmap-line relative flex gap-4 pb-4" data-topic={topic.id} data-total={counts[topic.id] ?? 0} data-done="0">
+				<span class="relative z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 border-line bg-surface text-[color:var(--ink-muted)]" data-node>
+					<Icon name="lock" class="hidden h-4 w-4" data-icon-lock />
+					<Icon name="play" class="hidden h-3.5 w-3.5 fill-current" data-icon-play />
+					<Icon name="check" class="hidden h-4 w-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2.5} data-icon-check />
+					<span class="text-xs font-semibold tabular-nums" data-icon-number>{i + 1}</span>
+				</span>
+
+				<a href={`/${cat.id}#${topic.id}`} class="group flex min-w-0 flex-1 items-center justify-between rounded-xl border border-transparent px-3 py-2 transition-colors hover:border-line hover:bg-surface-raised">
+					<span class="min-w-0">
+						<span class="block truncate text-sm font-medium" data-topic-name>{topic.name}</span>
+						<span class="block truncate text-xs text-[color:var(--ink-muted)]">{topic.blurb}</span>
+					</span>
+					<span class="ml-4 hidden shrink-0 items-center gap-2 sm:flex">
+						<span class="chip bg-surface-raised tabular-nums text-[color:var(--ink-secondary)]" data-count-label>
+							0 / {counts[topic.id] ?? 0}
+						</span>
+						<span class="chip hidden font-medium" data-status-chip>Status</span>
+					</span>
+				</a>
+			</li>
+		))
+	}
+</ol>

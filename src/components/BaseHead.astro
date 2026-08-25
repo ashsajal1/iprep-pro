@@ -1,0 +1,52 @@
+---
+import '../styles/global.css';
+
+interface Props {
+	title: string;
+	description: string;
+	ogType?: string;
+	noindex?: boolean;
+}
+
+const {
+	title,
+	description,
+	ogType = 'website',
+	noindex = false,
+} = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://ipreppro.app');
+const fullTitle = title.includes('iPrep') ? title : `${title} · iPrep Pro`;
+---
+
+<!-- Prevent theme flash: runs before paint -->
+<script is:inline>
+	(() => {
+		try {
+			const stored = localStorage.getItem('iprep.theme');
+			const dark = stored ? stored === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+			document.documentElement.classList.toggle('dark', dark);
+		} catch {}
+	})();
+</script>
+
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="generator" content={Astro.generator} />
+
+<title>{fullTitle}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonical} />
+{noindex && <meta name="robots" content="noindex" />}
+
+<meta property="og:type" content={ogType} />
+<meta property="og:site_name" content="iPrep Pro" />
+<meta property="og:title" content={fullTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content={fullTitle} />
+<meta name="twitter:description" content={description} />
+
+<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+<link rel="sitemap" href="/sitemap-index.xml" />

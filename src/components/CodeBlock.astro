@@ -1,0 +1,24 @@
+---
+import { highlight, normalizeLang } from '../lib/highlight';
+
+interface Props {
+	code: string;
+	lang?: string;
+	filename?: string;
+	class?: string;
+}
+
+const { code, lang = 'ts', filename, class: className = '' } = Astro.props;
+const html = await highlight(code, normalizeLang(lang));
+---
+
+<figure class={`codeblock overflow-hidden rounded-xl border border-line bg-zinc-50 dark:bg-zinc-900 ${className}`}>
+	{
+		filename && (
+			<figcaption class="border-b border-line px-4 py-2 font-mono text-[11px] text-[color:var(--ink-muted)]">
+				{filename}
+			</figcaption>
+		)
+	}
+	<div set:html={html} />
+</figure>

@@ -1,0 +1,64 @@
+---
+import Icon from './Icon.astro';
+import { categories } from '../lib/content';
+
+const year = new Date().getFullYear();
+---
+
+<footer class="border-t border-line bg-surface-raised/50">
+	<div class="mx-auto max-w-6xl px-4 py-12 sm:px-6">
+		<div class="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
+			<div class="space-y-3">
+				<a href="/" class="flex items-center gap-2.5">
+					<span class="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white">
+						<Icon name="zap" class="h-4 w-4" strokeWidth={2.2} />
+					</span>
+					<span class="text-[17px] font-semibold tracking-tight">iPrep <span class="text-indigo-600 dark:text-indigo-400">Pro</span></span>
+				</a>
+				<p class="max-w-xs text-sm leading-relaxed text-ink-secondary">
+					Learn and practice real interview questions step-by-step. No signup, no tracking — your progress stays in your browser.
+				</p>
+			</div>
+
+			<nav aria-label="Product" class="space-y-3 text-sm">
+				<h3 class="font-semibold text-ink">Product</h3>
+				<ul class="space-y-2 text-ink-secondary">
+					<li><a href="/questions" class="hover:text-indigo-600 dark:hover:text-indigo-400">All questions</a></li>
+					<li><a href="/roadmap" class="hover:text-indigo-600 dark:hover:text-indigo-400">Learning roadmaps</a></li>
+					<li><a href="/practice" class="hover:text-indigo-600 dark:hover:text-indigo-400">Practice modes</a></li>
+					<li><a href="/progress" class="hover:text-indigo-600 dark:hover:text-indigo-400">Progress dashboard</a></li>
+				</ul>
+			</nav>
+
+			<nav aria-label="Categories" class="space-y-3 text-sm">
+				<h3 class="font-semibold text-ink">Categories</h3>
+				<ul class="space-y-2 text-ink-secondary">
+					{
+						categories.slice(0, 5).map((cat) => (
+							<li>
+								<a href={`/${cat.id}`} class="hover:text-indigo-600 dark:hover:text-indigo-400">
+									{cat.name}
+								</a>
+							</li>
+						))
+					}
+				</ul>
+			</nav>
+
+			<div class="space-y-3 text-sm">
+				<h3 class="font-semibold text-ink">Saved</h3>
+				<ul class="space-y-2 text-ink-secondary">
+					<li><a href="/favorites" class="hover:text-indigo-600 dark:hover:text-indigo-400">Your favorites</a></li>
+				</ul>
+				<p class="pt-2 text-xs leading-relaxed text-ink-muted">
+					Data is stored locally with localStorage. Clearing browser data resets your progress.
+				</p>
+			</div>
+		</div>
+
+		<div class="mt-10 flex flex-col items-center justify-between gap-3 border-t border-line pt-6 text-xs text-ink-muted sm:flex-row">
+			<p>© {year} iPrep Pro. Built for interview success.</p>
+			<p>Built with Astro — static, fast, private.</p>
+		</div>
+	</div>
+</footer>

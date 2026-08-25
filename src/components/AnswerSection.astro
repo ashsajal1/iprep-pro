@@ -1,0 +1,78 @@
+---
+import type { Question } from '../lib/types';
+import CodeBlock from './CodeBlock.astro';
+import Icon from './Icon.astro';
+
+interface Props {
+	question: Question;
+	/** Pre-highlighted example HTML (optional — falls back to a plain block). */
+	exampleHtml?: string;
+}
+
+const { question: q, exampleHtml } = Astro.props;
+---
+
+<div class="space-y-6" data-answer-section>
+	<!-- Short answer -->
+	<section class="card p-5 sm:p-6" aria-labelledby="short-answer-heading">
+		<h2 id="short-answer-heading" class="flex items-center gap-2 text-sm font-semibold tracking-wide text-indigo-600 uppercase dark:text-indigo-400">
+			<Icon name="check" class="h-4 w-4" strokeWidth={2.4} />
+			Short answer
+		</h2>
+		<p class="mt-3 text-[15px] leading-relaxed font-medium">{q.shortAnswer}</p>
+	</section>
+
+	<!-- Explanation -->
+	<section class="card p-5 sm:p-6" aria-labelledby="explanation-heading">
+		<h2 id="explanation-heading" class="flex items-center gap-2 text-sm font-semibold tracking-wide text-indigo-600 uppercase dark:text-indigo-400">
+			<Icon name="book-open" class="h-4 w-4" />
+			Detailed explanation
+		</h2>
+		<p class="mt-3 text-[15px] leading-relaxed text-[color:var(--ink-secondary)]">{q.explanation}</p>
+	</section>
+
+	{
+		q.example && (
+			<section aria-labelledby="example-heading">
+				<h2 id="example-heading" class="mb-3 flex items-center gap-2 text-sm font-semibold tracking-wide text-indigo-600 uppercase dark:text-indigo-400">
+					<Icon name="code" class="h-4 w-4" />
+					Example
+				</h2>
+				{exampleHtml ? <div set:html={exampleHtml} /> : (
+					<pre class="codeblock overflow-x-auto rounded-xl border border-line bg-zinc-50 p-4 font-mono text-[13px] leading-relaxed dark:bg-zinc-900">{q.example}</pre>
+				)}
+			</section>
+		)
+	}
+
+	{
+		q.interviewTip && (
+			<section class="rounded-2xl border border-indigo-200 bg-indigo-50/70 p-5 sm:p-6 dark:border-indigo-900/60 dark:bg-indigo-950/30" aria-labelledby="tip-heading">
+				<h2 id="tip-heading" class="flex items-center gap-2 text-sm font-semibold tracking-wide text-indigo-700 uppercase dark:text-indigo-300">
+					<Icon name="lightbulb" class="h-4 w-4" />
+					Interview tip
+				</h2>
+				<p class="mt-3 text-[15px] leading-relaxed text-[color:var(--ink-secondary)] dark:text-zinc-300">{q.interviewTip}</p>
+			</section>
+		)
+	}
+
+	{
+		q.commonMistakes && q.commonMistakes.length > 0 && (
+			<section class="card p-5 sm:p-6" aria-labelledby="mistakes-heading">
+				<h2 id="mistakes-heading" class="flex items-center gap-2 text-sm font-semibold tracking-wide text-rose-600 uppercase dark:text-rose-400">
+					<Icon name="alert-triangle" class="h-4 w-4" />
+					Common mistakes
+				</h2>
+				<ul class="mt-3 space-y-2.5">
+					{q.commonMistakes.map((m) => (
+						<li class="flex items-start gap-2.5 text-[15px] leading-relaxed text-[color:var(--ink-secondary)]">
+							<Icon name="x" class="mt-1 h-3.5 w-3.5 shrink-0 text-rose-500" strokeWidth={2.5} />
+							<span>{m}</span>
+						</li>
+					))}
+				</ul>
+			</section>
+		)
+	}
+</div>

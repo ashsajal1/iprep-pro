@@ -1,0 +1,43 @@
+---
+import Icon from './Icon.astro';
+---
+
+<!-- Global search modal (opened via navbar, "/" or Ctrl/Cmd+K) -->
+<div
+	id="search-modal"
+	class="fixed inset-0 z-50 hidden p-4 pt-[10vh] sm:pt-[14vh]"
+	role="dialog"
+	aria-modal="true"
+	aria-label="Search questions"
+>
+	<button
+		type="button"
+		class="absolute inset-0 bg-zinc-950/40 backdrop-blur-xs"
+		data-search-close
+		aria-label="Close search"
+		tabindex="-1">
+	</button>
+
+	<div class="relative mx-auto w-full max-w-xl animate-fade-in overflow-hidden rounded-2xl border border-line bg-surface shadow-xl">
+		<div class="flex items-center gap-3 border-b border-line px-4">
+			<Icon name="search" class="h-4 w-4 shrink-0 text-ink-muted" />
+			<input
+				id="search-input"
+				type="search"
+				placeholder="Search questions — try “closure” or “useEffect”…"
+				autocomplete="off"
+				spellcheck="false"
+				class="h-13 w-full bg-transparent py-4 text-[15px] text-ink placeholder:text-ink-muted focus:outline-none"
+			/>
+			<kbd class="kbd shrink-0" aria-hidden="true">esc</kbd>
+		</div>
+
+		<ul id="search-results" class="scroll-thin max-h-[46vh] overflow-y-auto p-2" role="listbox"></ul>
+
+		<div class="flex items-center gap-4 border-t border-line px-4 py-2.5 text-[11px] text-ink-muted">
+			<span class="flex items-center gap-1"><span class="kbd">↑</span><span class="kbd">↓</span> navigate</span>
+			<span class="flex items-center gap-1"><span class="kbd">↵</span> open</span>
+			<span class="ml-auto hidden sm:inline">Powered by your local question bank</span>
+		</div>
+	</div>
+</div>

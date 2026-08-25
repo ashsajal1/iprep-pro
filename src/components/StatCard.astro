@@ -1,0 +1,25 @@
+---
+import Icon from './Icon.astro';
+
+interface Props {
+	label: string;
+	value: string | number;
+	sub?: string;
+	icon?: string;
+}
+
+const { label, value, sub, icon = 'trending' } = Astro.props;
+---
+
+<div class="card p-5" data-stat-card>
+	<p class="text-xs font-medium tracking-wide text-[color:var(--ink-muted)] uppercase">{label}</p>
+	<div class="mt-2 flex items-center gap-3">
+		<span class="grid h-10 w-10 place-items-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400">
+			<Icon name={icon} class="h-5 w-5" />
+		</span>
+		<div>
+			<p class="text-2xl font-semibold tracking-tight tabular-nums" data-value>{value}</p>
+			{sub && <p class="text-xs text-[color:var(--ink-secondary)]">{sub}</p>}
+		</div>
+	</div>
+</div>

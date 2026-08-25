@@ -1,0 +1,114 @@
+---
+import Icon from './Icon.astro';
+
+interface Props {
+	variant?: 'default' | 'transparent';
+}
+
+const { variant = 'default' } = Astro.props;
+const path = Astro.url.pathname;
+
+const links = [
+	{ href: '/questions', label: 'Questions', match: '/questions' },
+	{ href: '/roadmap', label: 'Roadmap', match: '/roadmap' },
+	{ href: '/practice', label: 'Practice', match: '/practice' },
+	{ href: '/progress', label: 'Progress', match: '/progress' },
+];
+
+const isActive = (match: string) =>
+	path === match || (match !== '/' && path.startsWith(match + '/'));
+---
+
+<header
+	class:list={[
+		'sticky top-0 z-40 border-b border-line backdrop-blur-md',
+		variant === 'default' ? 'bg-surface/85' : '',
+	]}
+>
+	<nav class="mx-auto flex h-16 max-w-6xl items-center gap-2 px-4 sm:px-6" aria-label="Main">
+		<a href="/" class="flex items-center gap-2.5 rounded-lg focus-visible:outline-2 focus-visible:outline-indigo-500" aria-label="iPrep Pro home">
+			<span class="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm">
+				<Icon name="zap" class="h-4 w-4" strokeWidth={2.2} />
+			</span>
+			<span class="text-[17px] font-semibold tracking-tight">iPrep <span class="text-indigo-600 dark:text-indigo-400">Pro</span></span>
+		</a>
+
+		<div class="ml-6 hidden items-center gap-1 md:flex">
+			{
+				links.map((link) => (
+					<a
+						href={link.href}
+						aria-current={isActive(link.match) ? 'page' : undefined}
+						class:list={[
+							'rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+							isActive(link.match)
+								? 'bg-surface-raised text-ink'
+								: 'text-ink-secondary hover:text-ink',
+						]}
+					>
+						{link.label}
+					</a>
+				))
+			}
+		</div>
+
+		<div class="ml-auto flex items-center gap-1.5">
+			<button
+				type="button"
+				data-search-open
+				class="group flex items-center gap-2 rounded-xl border border-line bg-surface px-2.5 py-2 text-sm text-ink-muted transition-colors hover:border-zinc-300 hover:text-ink-secondary dark:hover:border-zinc-600"
+				aria-label="Search questions"
+			>
+				<Icon name="search" class="h-4 w-4" />
+				<span class="hidden sm:inline">Search…</span>
+				<kbd class="kbd hidden sm:inline-flex" aria-hidden="true">/</kbd>
+			</button>
+
+			<button
+				type="button"
+				data-theme-toggle
+				class="btn btn-ghost h-9 w-9 !p-0"
+				aria-label="Toggle theme"
+			>
+				<Icon name="sun" class="h-[18px] w-[18px] hidden dark:block" />
+				<Icon name="moon" class="h-[18px] w-[18px] dark:hidden" />
+			</button>
+
+			<button
+				type="button"
+				class="btn btn-ghost h-9 w-9 !p-0 md:hidden"
+				aria-label="Open menu"
+				aria-expanded="false"
+				data-mobile-toggle
+			>
+				<Icon name="menu" class="h-5 w-5" data-icon-open />
+				<Icon name="x" class="hidden h-5 w-5" data-icon-close />
+			</button>
+		</div>
+	</nav>
+
+	<!-- Mobile menu -->
+	<div id="mobile-menu" class="hidden border-t border-line bg-surface md:hidden">
+		<div class="mx-auto max-w-6xl space-y-1 px-4 py-3">
+			{
+				links.map((link) => (
+					<a
+						href={link.href}
+						aria-current={isActive(link.match) ? 'page' : undefined}
+						class:list={[
+							'block rounded-lg px-3 py-2.5 text-sm font-medium',
+							isActive(link.match)
+								? 'bg-surface-raised text-ink'
+								: 'text-ink-secondary hover:bg-surface-raised hover:text-ink',
+						]}
+					>
+						{link.label}
+					</a>
+				))
+			}
+			<a href="/favorites" class="block rounded-lg px-3 py-2.5 text-sm font-medium text-ink-secondary hover:bg-surface-raised hover:text-ink">
+				Favorites
+			</a>
+		</div>
+	</div>
+</header>
