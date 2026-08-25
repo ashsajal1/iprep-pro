@@ -1,7 +1,7 @@
 {
   "name": "iprep_pro",
   "type": "module",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "engines": {
     "node": ">=22.12.0"
   },
@@ -12,7 +12,8 @@
     "astro": "astro",
     "test": "vitest run && playwright test",
     "test:watch": "vitest",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "release": "pnpm build && pnpm test"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
