@@ -1,43 +1,71 @@
-# Astro Starter Kit: Minimal
+# iPrep Pro
+
+A fast, private interview-prep platform built with Astro. Browse real interview
+questions, follow guided learning roadmaps, practice in three modes, and track
+progress — all without an account. Everything is stored locally in the browser.
+
+## Getting started
 
 ```sh
-pnpm create astro@latest -- --template minimal
+pnpm install
+pnpm dev        # start dev server (background mode: astro dev --background)
+pnpm build      # static production build to ./dist
+pnpm preview    # preview the production build
 ```
 
-> 🧑‍🚀 **Seasoned astronaut?** Delete this file. Have fun!
+## Architecture
 
-## 🚀 Project Structure
-
-Inside of your Astro project, you'll see the following folders and files:
-
-```text
-/
-├── public/
-├── src/
-│   └── pages/
-│       └── index.astro
-└── package.json
+```
+src/
+  data/                     # ALL question content lives here (JSON)
+    categories.json         #   category + topic metadata (order = roadmap order)
+    javascript/*.json       #   one file per topic, array of questions
+    react/… behavioral/…
+  lib/
+    content.ts              # loads/filters/searches questions at build time
+    progress.ts             # localStorage store used by client scripts
+    highlight.ts            # shiki dual-theme code highlighting
+    types.ts                # shared TypeScript types
+  components/               # reusable Astro components (cards, badges, …)
+  layouts/BaseLayout.astro
+  pages/
+    index.astro             # homepage
+    questions/[id].astro    # per-question page (static, SEO-indexable)
+    [category]/index.astro  # category overview + grouped questions
+    practice/[category].astro  # practice runner (learn/practice/quick modes)
+    roadmap.astro  progress.astro  favorites.astro  404.astro
+    api/questions/[category].json.ts   # full content for the runner
+    search-index.json.ts               # lightweight index for client search
+  scripts/                  # client-side TS (bundled by Astro)
 ```
 
-Astro looks for `.astro` or `.md` files in the `src/pages/` directory. Each page is exposed as a route based on its file name.
+## Adding questions (or thousands of them)
 
-There's nothing special about `src/components/`, but that's where we like to put any Astro/React/Vue/Svelte/Preact components.
+1. Open `src/data/<category>/<topic>.json` (create a file if needed).
+2. Append a question object:
 
-Any static assets, like images, can be placed in the `public/` directory.
+```json
+{
+  "id": "js-021",
+  "category": "javascript",
+  "topic": "fundamentals",
+  "question": "Your question?",
+  "difficulty": "beginner",
+  "shortAnswer": "One-sentence interview-ready answer.",
+  "explanation": "Deeper explanation.",
+  "example": "const x = 1;",
+  "interviewTip": "How to deliver this answer well.",
+  "commonMistakes": ["Mistake one"],
+  "relatedQuestions": ["js-001", "js-002"]
+}
+```
 
-## 🧞 Commands
+3. Done. Routes, search index, API payloads and counts all regenerate on build.
+   New topic? Add it to that category's `topics` array in `categories.json`.
+   New category? Add a full entry to `categories.json`.
 
-All commands are run from the root of the project, from a terminal:
+## Conventions
 
-| Command                   | Action                                           |
-| :------------------------ | :----------------------------------------------- |
-| `pnpm install`             | Installs dependencies                            |
-| `pnpm dev`             | Starts local dev server at `localhost:4321`      |
-| `pnpm build`           | Build your production site to `./dist/`          |
-| `pnpm preview`         | Preview your build locally, before deploying     |
-| `pnpm astro ...`       | Run CLI commands like `astro add`, `astro check` |
-| `pnpm astro -- --help` | Get help using the Astro CLI                     |
-
-## 👀 Want to learn more?
-
-Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
+- Question ids: `<prefix>-<number>` — `js`, `rct`, `ts`, `nxt`, `nde`, `hcs`,
+  `git`, `beh`. The prefix maps questions to categories for progress math.
+- Progress keys in localStorage: `iprep.progress.v1`, theme: `iprep.theme`.

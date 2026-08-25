@@ -1,0 +1,31 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/Icon.astro';
+---
+
+<BaseLayout
+	title="Page Not Found"
+	description="Looks like this question took a wrong turn."
+	noindex
+>
+	<section class="mx-auto grid min-h-[60vh] max-w-2xl place-items-center px-4 text-center sm:px-6">
+		<div>
+			<p class="text-[7rem] leading-none font-bold tracking-tighter text-transparent bg-gradient-to-br from-indigo-500 to-violet-600 bg-clip-text select-none sm:text-[9rem]" aria-hidden="true">
+				404
+			</p>
+			<h1 class="mt-4 text-xl font-semibold tracking-tight sm:text-2xl">
+				Looks like this question took a wrong turn.
+			</h1>
+			<p class="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-ink-secondary">
+				The page you're looking for doesn't exist — but hundreds of interview questions do.
+			</p>
+			<div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+				<a href="/questions" class="btn btn-primary px-6 py-3">
+					<Icon name="arrow-right" class="h-4 w-4" />
+					Back to Questions
+				</a>
+				<a href="/" class="btn btn-secondary px-6 py-3">Go home</a>
+			</div>
+		</div>
+	</section>
+</BaseLayout>
