@@ -12,6 +12,7 @@ import {
 	setAssessment,
 	toggleFavorite,
 } from './progress';
+import type { ProgressState } from './progress';
 
 function daysAgoKey(n: number): string {
 	const d = new Date();
