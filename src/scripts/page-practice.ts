@@ -14,6 +14,8 @@ interface RunnerQuestion {
 	explanation: string;
 	example?: string;
 	exampleLanguage?: string;
+	/** Pre-highlighted example HTML (Shiki, built into the JSON endpoint). */
+	exampleHtml?: string;
 	interviewTip?: string;
 	commonMistakes?: string[];
 	categoryName: string;
@@ -84,7 +86,13 @@ if (mountNode) {
 					<h3 class="text-xs font-semibold tracking-wide text-indigo-600 uppercase dark:text-indigo-400">Explanation</h3>
 					<p class="mt-2 text-[15px] leading-relaxed text-[color:var(--ink-secondary)]">${esc(q.explanation)}</p>
 				</section>
-				${q.example ? codeBlock(q.example) : ''}
+				${
+					q.example
+						? q.exampleHtml
+							? `<figure class="codeblock mt-0 overflow-hidden rounded-xl border border-line bg-zinc-50 dark:bg-zinc-900">${q.exampleHtml}</figure>`
+							: codeBlock(q.example)
+						: ''
+				}
 				${q.interviewTip ? `
 				<section class="rounded-2xl border border-indigo-200 bg-indigo-50/70 p-5 dark:border-indigo-900/60 dark:bg-indigo-950/30">
 					<h3 class="text-xs font-semibold tracking-wide text-indigo-700 uppercase dark:text-indigo-300">Interview tip</h3>

@@ -5,6 +5,7 @@ test.describe('practice runner', () => {
 		await page.goto('/practice/javascript?mode=learn');
 		await expect(page.locator('#runner-meta')).toContainText('Question 1 of 20');
 		await expect(page.locator('[data-answer]')).toBeVisible(); // learn shows the answer immediately
+		await expect(page.locator('#practice-runner .shiki').first()).toBeVisible(); // syntax-highlighted example
 
 		await page.getByRole('button', { name: 'Mark as Learned' }).click();
 		await expect(page.locator('#runner-meta')).toContainText('Question 2 of 20');
