@@ -1,0 +1,146 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Icon from '../../components/Icon.astro';
+import ProgressBar from '../../components/ProgressBar.astro';
+import { getCategoriesWithStats } from '../../lib/content';
+
+const categories = getCategoriesWithStats();
+
+const modes = [
+	{
+		id: 'learn',
+		icon: 'book-open',
+		title: 'Learn Mode',
+		text: 'Question → answer → explanation → example, all visible. Build understanding first.',
+	},
+	{
+		id: 'practice',
+		icon: 'target',
+		title: 'Practice Mode',
+		text: 'Question only until you reveal. Self-assess honestly to test real recall.',
+	},
+	{
+		id: 'quick',
+		icon: 'zap',
+		title: 'Quick Practice',
+		text: '10 random questions from your track, then a score summary at the end.',
+	},
+];
+---
+
+<BaseLayout
+	title="Practice Interview Questions — Three Modes"
+	description="Practice interview questions your way: guided Learn mode, recall-testing Practice mode, or a quick 10-question round across every track."
+>
+	<section class="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+		<header class="mb-8">
+			<h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">Practice</h1>
+			<p class="mt-2 max-w-xl text-sm text-ink-secondary">
+				Pick a mode, pick a track. Everything runs instantly in your browser and your
+				progress saves automatically.
+			</p>
+		</header>
+
+		<!-- Modes -->
+		<div class="mb-12 grid gap-4 md:grid-cols-3">
+			{
+				modes.map((m) => (
+					<div class="card p-5">
+						<span class="mb-3 grid h-10 w-10 place-items-center rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/60 dark:text-indigo-400">
+							<Icon name={m.icon} class="h-5 w-5" />
+						</span>
+						<h2 class="font-medium">{m.title}</h2>
+						<p class="mt-1 text-sm leading-relaxed text-ink-secondary">{m.text}</p>
+					</div>
+				))
+			}
+		</div>
+
+		<!-- Tracks -->
+		<h2 class="section-title mb-4">Choose a track</h2>
+		<div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+			{
+				categories.map((cat) => (
+					<article
+						class="card flex flex-col p-5 transition-colors hover:border-indigo-300 dark:hover:border-indigo-800"
+						data-category-card={cat.id}
+					>
+						<div class="flex items-center gap-3">
+							<span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white">
+								<Icon name={cat.icon} class="h-5 w-5" />
+							</span>
+							<div class="min-w-0">
+								<h3 class="truncate font-semibold">{cat.name}</h3>
+								<p class="text-xs text-ink-muted tabular-nums" data-count-label>{cat.id}</p>
+							</div>
+						</div>
+
+						<ProgressBar progressFor={`category:${cat.id}`} value={0} class="mt-4 mb-4" />
+
+						<div class="mt-auto grid grid-cols-3 gap-2">
+							<a href={`/practice/${cat.id}?mode=learn`} class="btn btn-secondary !px-0 text-xs">
+								Learn
+							</a>
+							<a href={`/practice/${cat.id}?mode=practice`} class="btn btn-primary !px-0 text-xs">
+								Practice
+							</a>
+							<a href={`/practice/${cat.id}?mode=quick`} class="btn btn-secondary !px-0 text-xs">
+								Quick 10
+							</a>
+						</div>
+					</article>
+				))
+			}
+
+			<!-- Mixed quick round -->
+			<article class="card flex flex-col border-dashed p-5">
+				<div class="flex items-center gap-3">
+					<span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-surface-raised text-ink-secondary">
+						<Icon name="shuffle" class="h-5 w-5" />
+					</span>
+					<div>
+						<h3 class="font-semibold">Mixed Round</h3>
+						<p class="text-xs text-ink-muted">All categories shuffled</p>
+					</div>
+				</div>
+				<p class="mt-4 mb-4 text-sm leading-relaxed text-ink-secondary">
+					Can't decide? A random warm-up drawn from every track.
+				</p>
+				<a href="/practice/all?mode=quick" class="btn btn-soft mt-auto w-full">
+					Quick 10 · Mixed
+				</a>
+			</article>
+		</div>
+	</section>
+
+	<script type="application/json" data-category-totals set:html={JSON.stringify(Object.fromEntries(categories.map((c) => [c.id, c.count])))} />
+
+	<script>
+		import { loadProgress, CATEGORY_PREFIXES } from '../../lib/progress';
+
+		const totalsEl = document.querySelector('script[data-category-totals]');
+		const totals: Record<string, number> = totalsEl
+			? JSON.parse(totalsEl.textContent ?? '{}')
+			: {};
+
+		function paint() {
+			const p = loadProgress();
+			const counts: Record<string, number> = {};
+			for (const id of Object.keys(p.completed)) {
+				const cat = CATEGORY_PREFIXES[id.split('-')[0]];
+				if (cat) counts[cat] = (counts[cat] ?? 0) + 1;
+			}
+			document.querySelectorAll<HTMLElement>('[data-category-card]').forEach((cardEl) => {
+				const catId = cardEl.dataset.categoryCard!;
+				const total = totals[catId] ?? 0;
+				const done = counts[catId] ?? 0;
+				const label = cardEl.querySelector<HTMLElement>('[data-count-label]');
+				if (label) label.textContent = done > 0 ? `${done} completed` : 'Not started';
+				const bar = cardEl.querySelector<HTMLElement>('[data-progress-bar]');
+				if (bar && total) bar.style.width = `${Math.round((done / total) * 100)}%`;
+			});
+		}
+		paint();
+		document.addEventListener('iprep:progress-changed', paint);
+	</script>
+</BaseLayout>
