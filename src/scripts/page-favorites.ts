@@ -62,7 +62,7 @@ async function main(): Promise<void> {
 							<span class="hidden chip bg-surface-raised text-[color:var(--ink-muted)] sm:inline-flex">${esc(e.topicName)}</span>
 						</div>
 						<button type="button" data-unfav="${e.id}" aria-label="Remove from favorites"
-							class="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40">
+							class="relative z-10 inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40">
 							<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-[18px] w-[18px]"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
 						</button>
 					</div>
