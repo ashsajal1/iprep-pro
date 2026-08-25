@@ -1,0 +1,31 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/Icon.astro';
+import EmptyState from '../components/EmptyState.astro';
+---
+
+<BaseLayout
+	title="Your Favorite Questions"
+	description="Questions you saved while practicing — revisit the tricky ones until they stick."
+>
+	<section class="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+		<header class="mb-8">
+			<h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">Favorites</h1>
+			<p class="mt-2 text-sm text-ink-secondary">Save questions here so you can review them later.</p>
+		</header>
+
+		<div id="fav-list" class="grid gap-4 sm:grid-cols-2"></div>
+
+		<div id="fav-empty" class="hidden">
+			<EmptyState
+				icon="heart"
+				title="No favorites yet"
+				message="Save questions here so you can review them later. Tap the heart on any question and it will wait for you."
+			>
+				<a href="/questions" class="btn btn-primary mt-5">Browse questions</a>
+			</EmptyState>
+		</div>
+	</section>
+</BaseLayout>
+
+<script src="../scripts/page-favorites.ts"></script>

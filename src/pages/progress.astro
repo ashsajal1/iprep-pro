@@ -1,0 +1,138 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Icon from '../components/Icon.astro';
+import EmptyState from '../components/EmptyState.astro';
+import { getCategoriesWithStats } from '../lib/content';
+
+const categories = getCategoriesWithStats();
+---
+
+<BaseLayout
+	title="Your Progress — Interview Prep Dashboard"
+	description="Track your interview prep: questions completed, streaks, favorites and per-category progress. Stored privately in your browser."
+>
+	<section class="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+		<header class="mb-8">
+			<h1 class="text-2xl font-semibold tracking-tight sm:text-3xl">Your progress</h1>
+			<p class="mt-2 text-sm text-ink-secondary">Everything below is saved locally in your browser — no account involved.</p>
+		</header>
+
+		<div id="dashboard-content" class="space-y-10">
+			<!-- Overview -->
+			<div class="grid gap-4 md:grid-cols-[auto_minmax(0,1fr)]">
+				<!-- Ring -->
+				<div class="card flex items-center gap-6 p-6">
+					<div class="relative h-32 w-32 shrink-0" role="img" aria-label="Overall completion">
+						<svg viewBox="0 0 120 120" class="h-full w-full -rotate-90">
+							<circle cx="60" cy="60" r="52" fill="none" stroke-width="12" class="stroke-zinc-100 dark:stroke-zinc-800" />
+							<circle
+								id="ring"
+								cx="60" cy="60" r="52" fill="none" stroke-width="12" stroke-linecap="round"
+								class="stroke-indigo-500 transition-[stroke-dashoffset] duration-700 ease-out"
+								stroke-dasharray="326.7"
+								stroke-dashoffset="326.7"
+							></circle>
+						</svg>
+						<div class="absolute inset-0 grid place-items-center">
+							<div class="text-center">
+								<p class="text-2xl font-bold tabular-nums" id="overall-pct">0%</p>
+								<p class="text-[10px] font-medium tracking-wide text-ink-muted uppercase">complete</p>
+							</div>
+						</div>
+					</div>
+					<div class="min-w-0 space-y-3 text-sm">
+						<div class="flex items-baseline gap-2">
+							<span class="text-xl font-bold tabular-nums" id="stat-completed">0</span>
+							<span class="text-ink-secondary">completed</span>
+						</div>
+						<div class="flex items-baseline gap-2">
+							<span class="text-xl font-bold tabular-nums" id="stat-remaining">0</span>
+							<span class="text-ink-secondary">remaining</span>
+						</div>
+						<a href="/questions?sort=progress" class="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
+							Practice unfinished <Icon name="arrow-right" class="h-3.5 w-3.5" />
+						</a>
+					</div>
+				</div>
+
+				<!-- Stat cards -->
+				<div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+					<div class="card p-5">
+						<div class="flex items-center gap-3">
+							<span class="grid h-10 w-10 place-items-center rounded-xl bg-orange-100 text-orange-600 dark:bg-orange-950/50 dark:text-orange-400">
+								<Icon name="flame" class="h-5 w-5" />
+							</span>
+							<div>
+								<p class="text-2xl font-semibold tabular-nums" id="stat-streak">0</p>
+								<p class="text-xs text-ink-muted">day learning streak</p>
+							</div>
+						</div>
+					</div>
+					<div class="card p-5">
+						<div class="flex items-center gap-3">
+							<span class="grid h-10 w-10 place-items-center rounded-xl bg-rose-100 text-rose-500 dark:bg-rose-950/50 dark:text-rose-400">
+								<Icon name="heart" class="h-5 w-5" />
+							</span>
+							<div>
+								<p class="text-2xl font-semibold tabular-nums" id="stat-favorites">0</p>
+								<p class="text-xs text-ink-muted">favorite questions</p>
+							</div>
+						</div>
+						<a href="/favorites" class="mt-3 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">Review them <Icon name="arrow-right" class="h-3.5 w-3.5" /></a>
+					</div>
+					<div class="card p-5">
+						<div class="flex items-center gap-3">
+							<span class="grid h-10 w-10 place-items-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400">
+								<Icon name="refresh-cw" class="h-5 w-5" />
+							</span>
+							<div>
+								<p class="text-2xl font-semibold tabular-nums" id="stat-review">0</p>
+								<p class="text-xs text-ink-muted">marked to review</p>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Category progress -->
+			<section aria-labelledby="cat-progress-heading">
+				<h2 id="cat-progress-heading" class="section-title mb-4">Category breakdown</h2>
+				<div class="card grid gap-x-8 gap-y-5 p-6 sm:grid-cols-2" id="category-bars"></div>
+			</section>
+
+			<!-- Recent + review suggestions -->
+			<div class="grid gap-6 lg:grid-cols-2">
+				<section aria-labelledby="recent-heading">
+					<h2 id="recent-heading" class="section-title mb-4 flex items-center gap-2">
+						<Icon name="clock" class="h-5 w-5 text-ink-muted" /> Recently practiced
+					</h2>
+					<ul id="recent-list" class="card divide-y divide-line p-1 empty:hidden"></ul>
+					<p id="recent-empty-hint" class="hidden text-sm text-ink-muted px-1 py-3">Nothing yet — your practice history will show up here.</p>
+				</section>
+
+				<section aria-labelledby="suggested-heading">
+					<h2 id="suggested-heading" class="section-title mb-4 flex items-center gap-2">
+						<Icon name="lightbulb" class="h-5 w-5 text-ink-muted" /> Suggested review
+					</h2>
+					<ul id="review-list" class="card divide-y divide-line p-1 empty:hidden"></ul>
+					<p id="review-empty-hint" class="hidden text-sm text-ink-muted px-1 py-3">No review backlog — nice work!</p>
+				</section>
+			</div>
+		</div>
+
+		<!-- Empty state for zero activity -->
+		<div id="dashboard-empty" class="hidden">
+			<EmptyState
+				icon="trending"
+				title="No progress yet"
+				message="Complete your first question and this dashboard will come alive with stats, streaks and suggestions."
+			>
+				<a href="/practice" class="btn btn-primary mt-5">Start practicing</a>
+			</EmptyState>
+		</div>
+	</section>
+
+	<script type="application/json" data-category-totals set:html={JSON.stringify(Object.fromEntries(categories.map((c) => [c.id, c.count])))} />
+</BaseLayout>
+
+<script src="../scripts/page-progress.ts"></script>
