@@ -14,18 +14,37 @@ pnpm preview    # preview the production build
 pnpm test       # run unit tests (vitest)
 ```
 
+## Coding challenges
+
+`/coding` hosts write-and-run JavaScript challenges. Each entry lives in
+`src/data/coding/*.json`:
+
+```json
+{
+	"id": "code-001",
+	"slug": "reverse-string",
+	"title": "Reverse a String",
+	"topic": "Strings",
+	"difficulty": "beginner",
+	"description": "Implement reverseString(str)…",
+	"hints": ["…"],
+	"starterCode": "function reverseString(str) {}",
+	"solution": "function reverseString(str) { … }",
+	"tests": [{ "fn": "reverseString", "args": ["hello"], "expected": "olleh" }]
+}
+```
+
+- `args` / `expected` must be JSON values; results are deep-compared inside a
+  sandboxed Web Worker (`public/coding-worker.js`) with console capture and a
+  4s infinite-loop timeout.
+- The editor is Monaco from CDN with an automatic textarea fallback.
+
 ## Testing
 
-`pnpm test` runs 50 unit tests over the parts most likely to break as content grows:
-
-- `src/lib/content.test.ts` — guards the JSON bank itself: unique ids,
-  prefix/category consistency, valid topics & difficulties, non-empty fields,
-  resolvable `relatedQuestions`, plus search/sort/count behavior.
-- `src/lib/progress.test.ts` — localStorage store: assessments, favorites,
-  history capping, streak day-boundary logic, change events, stats.
-- `src/lib/highlight.test.ts` — code language normalization.
-
-If you add questions in bulk or touch the loader/store, run the tests first.
+`pnpm test` runs the full stack: 50+ Vitest unit tests (content integrity,
+progress store, language normalization) followed by Playwright integration
+tests that build the site, serve it and drive a real browser through search,
+practice modes, progress, theming and the coding workspace.
 
 ## Architecture
 

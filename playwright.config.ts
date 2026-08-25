@@ -18,7 +18,12 @@ export default defineConfig({
 	},
 
 	webServer: {
-		command: 'pnpm build && pnpm preview --port 4173 --host 127.0.0.1',
+		// `astro preview` daemonizes in this setup, so start it detached and
+		// hold the command open until the server answers. If a previous server
+		// is already bound to the port, preview exits fast and curl still
+		// succeeds — both paths work.
+		command:
+			'pnpm build && sh -c \'(npx astro preview --port 4173 --host 127.0.0.1 > /dev/null 2>&1 &); until curl -sf http://127.0.0.1:4173/ > /dev/null 2>&1; do sleep 0.5; done\'',
 		url: 'http://127.0.0.1:4173/',
 		reuseExistingServer: !process.env.CI,
 		timeout: 240_000,
