@@ -1,0 +1,87 @@
+[
+	{
+		"id": "git-006",
+		"category": "git-github",
+		"topic": "collaboration",
+		"question": "What makes a good pull request?",
+		"difficulty": "beginner",
+		"shortAnswer": "Small focused scope, clear title/description explaining what and why, self-review before requesting reviewers, passing CI, linked issue, screenshots for UI changes — and prompt responses to feedback. Reviewers' time is the scarcest resource.",
+		"explanation": "PR quality determines review speed. Scope: under ~400 changed lines review meaningfully; large features ship as stacked PRs or feature-flagged increments. Description answers three questions — what changed, why (link the ticket), how to verify (steps, test evidence) — with before/after screenshots for visual work. Self-review catches debug leftovers, stray formatting, and forces you to reread your own diff; it's also where you add comments guiding reviewers through tricky sections. Hygiene: branch rebased/current with main, CI green, no unrelated commits mixed in (that's what cherry-pick/rebase are for). During review, respond to every comment (even just 'done'), push follow-up commits rather than force-pushing mid-review so incremental diffs stay readable, then squash-merge per team convention. As reviewer: small PRs get thorough reviews within hours; giant ones get rubber-stamped within days — size is kindness.",
+		"example": "## What\nAdds pagination to /api/orders (cursor-based).\n\n## Why\nCloses #482 — endpoint times out beyond ~5k orders.\n\n## How tested\n- Unit tests for cursor encoding\n- Verified against 50k-row staging DB (screenshots)\n- p95 latency: 1.2s → 140ms\n\n## Note for reviewers\nCursor logic in `src/pagination.ts:40` is the subtle part.",
+		"exampleLanguage": "markdown",
+		"interviewTip": "Frame everything around reviewer efficiency, volunteer a concrete number (~400 lines), and show a mini description template — practical experience speaks loudest here.",
+		"commonMistakes": [
+			"Giant mixed-concern PRs nobody reviews properly.",
+			"'Fixed' replies without pushed commits addressing feedback."
+		],
+		"relatedQuestions": ["git-007", "git-010", "git-001"]
+	},
+	{
+		"id": "git-007",
+		"category": "git-github",
+		"topic": "collaboration",
+		"question": "How do you resolve merge conflicts?",
+		"difficulty": "beginner",
+		"shortAnswer": "Git marks conflicts with <<<<<<< / ======= / >>>>>>> markers. Open each file, decide the correct combined content, remove markers, git add, then continue the operation (rebase --continue/merge --continue). Understand both sides' intent — never blindly pick one.",
+		"explanation": "Conflicts arise when two branches modify overlapping lines, or one deletes what another edits. Git pauses the integration, inserting four-part markers: yours above =======, theirs below, labeled by commit. Resolution means producing what the code *should* say given both intents — sometimes both changes, sometimes one superseding with knowledge of why. Tooling helps: VS Code's inline Accept Current/Mine/Theirs buttons, git meretool, or diff3 context (merge.conflictStyle diff3) showing the common ancestor for smarter judgment. After fixing each file: stage it, then continue — rebase replays remaining commits (later conflicts may recur), merge completes once. Abort cleanly anytime (git merge --abort / rebase --abort). Prevention matters more than cure: small frequent merges of main into long branches, coordinated module ownership, and communication when touching shared files reduce conflict frequency dramatically. Binary/generated files need explicit strategy (ours/theirs).",
+		"example": "<<<<<<< HEAD\nconst timeout = 5000;\n=======\nconst timeout = 10_000;\n>>>>>>> feature/configurable-timeout\n\n// Resolved by understanding intent:\nconst timeout = Number(process.env.TIMEOUT_MS ?? 10_000);\n\ngit add config.js\ngit rebase --continue   # or merge --continue",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Walk the marker anatomy fast, emphasize intent-understanding over side-picking, then close with prevention habits — that arc shows real team experience.",
+		"commonMistakes": [
+			"Committing files with leftover conflict markers.",
+			"Not knowing --abort escapes cleanly."
+		],
+		"relatedQuestions": ["git-001", "git-006", "git-003"]
+	},
+	{
+		"id": "git-008",
+		"category": "git-github",
+		"topic": "collaboration",
+		"question": "What's the difference between clone, fork and branch?",
+		"difficulty": "beginner",
+		"shortAnswer": "Branch is a movable pointer inside one repository — parallel lines of development. Clone downloads a repository to your machine with full history. Fork copies the repository to your own hosting account — used when you can't push to the original.",
+		"explanation": "Three levels of isolation. Branches live *within* a repo: cheap pointers letting contributors share one remote while isolating work for review — the default team workflow. Clone brings a repo to local disk: full history, remotes configured; everyone clones regardless of access level. Fork duplicates the entire repository under your account on the platform — your copy, your permissions — connected to upstream via convention (git remote add upstream). Forks serve two audiences: external open-source contributors without write access (fork → clone fork → branch → push → PR upstream), and organizations needing experimentation space or security separation. Team members with write access skip forking entirely: clone canonical, push branches directly. Practical notes: sync forks via upstream fetch + main reset, or GitHub's 'Sync fork' button; keep origin/upstream naming consistent across teams; forks don't include issues/wiki/settings — they're code copies.",
+		"example": "# Open-source contribution flow:\ngit clone https://github.com/YOU/project.git\ncd project\ngit remote add upstream https://github.com/ORIG/project.git\ngit checkout -b fix-typo\n# ...commit...\ngit push origin fix-typo     # → open PR against upstream\n\n# Team member flow:\ngit clone https://github.com/ORIG/project.git\ngit checkout -b feature-x && git push -u origin feature-x",
+		"exampleLanguage": "bash",
+		"interviewTip": "Anchor each to permission levels — branch (same repo), clone (local copy), fork (hosting-level copy for no-write-access contributors). The OSS workflow demo seals it.",
+		"commonMistakes": [
+			"Forking repos they already have write access to.",
+			"Not knowing forks lack issues/settings from upstream."
+		],
+		"relatedQuestions": ["git-003", "git-006", "git-007"]
+	},
+	{
+		"id": "git-009",
+		"category": "git-github",
+		"topic": "collaboration",
+		"question": "What is detached HEAD state and how does reflog save you?",
+		"difficulty": "advanced",
+		"shortAnswer": "Detached HEAD means you checked out a commit instead of a branch — new commits aren't on any line and risk garbage collection. reflog records every HEAD movement (~90 days default), recovering 'lost' commits after resets, rebases or amends: git reset --hard <reflog-entry>.",
+		"explanation": "HEAD normally points at a branch tip; checking out an arbitrary commit detaches it — fine for inspection, dangerous for work: commits made there belong to no branch, invisible in git log of any line, eventually collected. Recovery paths differ by goal: continuing work means creating a branch at that spot immediately (git switch -c new-branch); accidental detachment just needs returning to a named branch. The deeper lesson is reflog: Git journals every reference movement — checkouts, resets, amends, rebases — locally, keeping entries ~90 days. After a disastrous reset --hard or botched interactive rebase, git reflog shows the pre-mistake entry; restore via reset --hard HEAD@{n} or branch from it. This reframes Git psychology: almost nothing committed is ever truly lost — only unreferenced. Committed-but-never-added work (untracked/stashed carelessly dropped) has narrower recovery (fsck --lost-found). Share the mantra: reflog first, panic never.",
+		"example": "# Oops — hard reset lost three commits:\ngit reflog\n# abc1234 HEAD@{0}: reset: moving to origin/main\n# 8f3e21d HEAD@{1}: commit: add rate limiting   ← the one I want\n# def5678 HEAD@{2}: commit: add retry logic\n\ngit reset --hard HEAD@{1}       # everything restored\n\n# Or keep as a branch:\ngit branch rescue/feature 8f3e21d",
+		"exampleLanguage": "bash",
+		"interviewTip": "Define detachment crisply, then perform a live reflog rescue narrative — 'nothing is lost' confidence is exactly what this question tests.",
+		"commonMistakes": [
+			"Thinking reset --hard permanently deletes commits.",
+			"Committing extensively while detached without branching."
+		],
+		"relatedQuestions": ["git-002", "git-005", "git-004"]
+	},
+	{
+		"id": "git-010",
+		"category": "git-github",
+		"topic": "collaboration",
+		"question": "What are conventional commits and how do they connect to versioning?",
+		"difficulty": "beginner",
+		"shortAnswer": "Conventional commits structure messages as type(scope): description — feat, fix, docs, refactor, test, chore. Types drive semantic versioning automatically: feat bumps minor, fix bumps patch, breaking changes (feat!:/BREAKING CHANGE) bump major — tools like semantic-release automate releases and changelogs from history.",
+		"explanation": "Standardized messages turn commit history into machine-readable release data. Format: type(optional scope): imperative description — feat(auth): add OAuth login. Core types: feat (new capability), fix (bug), plus non-release-affecting docs/refactor/perf/test/build/chore/ci. Breaking changes signal two ways: exclamation feat!:(api): ... or a BREAKING CHANGE: footer paragraph — both trigger major bumps. The payoff chain: semantic-version tooling reads commits since last tag, computes next version (patch/minor/major), generates changelogs grouped by type, tags and publishes — semantic-release/release-please run this hands-free in CI. Benefits compound: reviewers scan type prefixes for relevance, git log --grep='fix' filters bug timelines, generated changelogs stay accurate without manual curation. Enforcement ranges from commit-msg hooks (commitlint + husky) squashing mistakes early, to squash-merge conventions where the PR title becomes the commit — making well-formed titles a team habit rather than a plugin mandate.",
+		"example": "feat(checkout): support Apple Pay\nfix(api): handle empty cart 400s        # → patch bump\ndocs: update setup guide                # no release\nrefactor!: drop Node 16 support         # → major bump\n\nBREAKING CHANGE: /v1/orders removed; use /v2/orders.\n\n# Automated pipeline:\ncommits since v2.3.0 → feat+fix detected → release v2.4.0 + changelog",
+		"exampleLanguage": "text",
+		"interviewTip": "Recite format + the version-bump mapping table quickly, then name semantic-release automation — connecting messages to pipelines shows systems thinking beyond etiquette.",
+		"commonMistakes": [
+			"Mixing up which types trigger which version bumps.",
+			"Forgetting BREAKING CHANGE footers exist alongside the ! shorthand."
+		],
+		"relatedQuestions": ["git-006", "git-001", "nde-005"]
+	}
+]

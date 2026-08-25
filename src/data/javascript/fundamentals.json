@@ -1,0 +1,87 @@
+[
+	{
+		"id": "js-001",
+		"category": "javascript",
+		"topic": "fundamentals",
+		"question": "What is the difference between let, const and var?",
+		"difficulty": "beginner",
+		"shortAnswer": "var is function-scoped and hoisted as undefined; let and const are block-scoped with a temporal dead zone. const additionally forbids reassignment.",
+		"explanation": "Before ES6, var was the only option. It is scoped to the nearest function, gets hoisted to the top of its scope and initialized with undefined, which is why referencing it early doesn't throw. let and const are block-scoped: they exist only inside the nearest {} block. They are also hoisted, but not initialized — accessing them before their declaration line throws a ReferenceError, a period known as the Temporal Dead Zone (TDZ). The difference between let and const is reassignment: const bindings cannot be reassigned, though objects and arrays held by a const can still be mutated internally. Modern style guides recommend const by default, let when reassignment is needed, and avoiding var entirely.",
+		"example": "function demo() {\n  console.log(a); // undefined (hoisted)\n  // console.log(b); // ReferenceError (TDZ)\n\n  var a = 1;\n  let b = 2;\n  const c = [1, 2];\n\n  if (true) {\n    var a = 10;   // same variable — function scope\n    let b = 20;   // new variable — block scope\n  }\n\n  c.push(3);      // allowed: mutation ≠ reassignment\n  // c = [9];     // TypeError: assignment to constant\n}\ndemo();\nconsole.log(a); // 10 — var leaked out of the block",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Name all three differences explicitly: scoping, hoisting behavior, and reassignment rules. Mentioning the Temporal Dead Zone signals depth beyond memorized definitions.",
+		"commonMistakes": [
+			"Saying 'const makes objects immutable' — only the binding is fixed, the object contents can still change.",
+			"Claiming let/const are not hoisted at all; they are hoisted but uninitialized (TDZ)."
+		],
+		"relatedQuestions": ["js-004", "js-002", "js-010"]
+	},
+	{
+		"id": "js-002",
+		"category": "javascript",
+		"topic": "fundamentals",
+		"question": "What's the difference between == and === in JavaScript?",
+		"difficulty": "beginner",
+		"shortAnswer": "== compares after coercing both values to a common type; === compares type and value with no conversion. Prefer === in almost all cases.",
+		"explanation": "Loose equality (==) applies the Abstract Equality algorithm: null == undefined is true, numbers get compared to strings after coercion, booleans are converted to numbers, and objects are compared by reference after calling valueOf/toString. These rules produce surprising results like '' == 0 being true or '0' == false being true. Strict equality (===) returns true only when both operands share the same type and equal value — with one quirk: NaN !== NaN even under strict equality, because NaN is defined as not equal to everything including itself. Object.is() handles that edge case correctly while treating +0 and -0 as different. In day-to-day code the convention is simple: always use ===, reserving == for intentional null-or-undefined checks (value == null).",
+		"example": "'5' == 5;       // true  — string coerced to number\n'5' === 5;      // false — different types\nnull == undefined;  // true\nnull === undefined; // false\nNaN === NaN;    // false\nObject.is(NaN, NaN); // true",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Give one concrete coercion surprise ('' == 0) rather than reciting theory, then mention Object.is for the NaN edge case — it shows real-world experience.",
+		"commonMistakes": [
+			"Saying === 'checks types' loosely — explain precisely that no coercion happens.",
+			"Forgetting that NaN never equals anything, even itself."
+		],
+		"relatedQuestions": ["js-003", "js-005", "js-011"]
+	},
+	{
+		"id": "js-003",
+		"category": "javascript",
+		"topic": "fundamentals",
+		"question": "What are JavaScript's primitive data types and how do they differ from objects?",
+		"difficulty": "beginner",
+		"shortAnswer": "There are seven primitives — string, number, bigint, boolean, undefined, symbol, and null. Primitives are immutable and compared by value; objects are mutable and compared by reference.",
+		"explanation": "typeof reveals most of them: 'string', 'number', 'bigint', 'boolean', 'undefined', 'symbol', 'object', plus 'function'. Two famous quirks live here: typeof null returns 'object' (a bug kept forever for backwards compatibility), and numbers follow the IEEE-754 double standard, so 0.1 + 0.2 !== 0.3. Primitives are immutable — every 'modification' creates a new value — and variables holding them store the value directly, so copies are independent. Objects (plain objects, arrays, dates, functions…) store a reference: assigning one variable to another copies the pointer, so mutations through either name affect the same underlying data. This value-vs-reference distinction explains most 'why did my array change?' bugs and drives techniques like spreading to clone before mutating state.",
+		"example": "typeof null;        // 'object' (historical bug)\ntypeof function(){}; // 'function'\n0.1 + 0.2;          // 0.30000000000000004\n\nlet a = { n: 1 };\nlet b = a;\nb.n = 2;\nconsole.log(a.n);   // 2 — same object, copied reference",
+		"exampleLanguage": "javascript",
+		"interviewTip": "List all seven primitives without pausing, then volunteer the typeof-null bug and floating-point quirk unprompted. Interviewers use this question to calibrate attention to detail.",
+		"commonMistakes": [
+			"Counting arrays or functions as separate primitive types — they are objects.",
+			"Not knowing typeof null === 'object'."
+		],
+		"relatedQuestions": ["js-002", "js-005", "js-020"]
+	},
+	{
+		"id": "js-004",
+		"category": "javascript",
+		"topic": "fundamentals",
+		"question": "Explain hoisting in JavaScript.",
+		"difficulty": "intermediate",
+		"shortAnswer": "Hoisting moves declarations to the top of their scope during compilation: var initializes as undefined, function declarations initialize fully, and let/const stay uninitialized until execution reaches them (TDZ).",
+		"explanation": "JavaScript executes two passes. During creation, the engine scans the scope and allocates memory for declarations before running any code. Function declarations are hoisted completely, so you can call them before they appear in source. var declarations are hoisted but initialized to undefined, giving undefined instead of an error on early access. let and const are hoisted too — the binding exists — but remain uninitialized until the engine evaluates the declaration line, producing a ReferenceError if touched earlier: the Temporal Dead Zone. Class declarations behave like let. Function expressions follow the rules of the variable holding them, so a var-assigned arrow function is unusable before its line. Understanding hoisting as 'creation phase vs execution phase' is more accurate than the common myth that code physically moves.",
+		"example": "sayHi();            // works — full function declaration hoisted\nfunction sayHi() { console.log('hi'); }\n\nconsole.log(x);     // undefined — var hoisted & initialized\nvar x = 5;\n\n// console.log(y);  // ReferenceError — TDZ\nlet y = 10;",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Structure the answer around the creation phase and execution phase. Distinguishing 'declaration registered' from 'initialized' separates senior answers from junior ones.",
+		"commonMistakes": [
+			"Saying let/const are 'not hoisted' — they are, just without initialization.",
+			"Ignoring that hoisting is per-scope, not just global or top-of-function."
+		],
+		"relatedQuestions": ["js-001", "js-006", "ts-001"]
+	},
+	{
+		"id": "js-005",
+		"category": "javascript",
+		"topic": "fundamentals",
+		"question": "What is the difference between null and undefined?",
+		"difficulty": "beginner",
+		"shortAnswer": "undefined means a value was never assigned; null means 'intentionally empty' and must be assigned explicitly. They are loosely equal (==) but not strictly equal (===).",
+		"explanation": "undefined appears when the language itself has nothing to give you: an uninitialized let variable, a missing object property, an omitted function argument, or a function with no return statement. Its type is 'undefined'. null is a deliberate placeholder written by the developer meaning 'no value on purpose', typed as 'object' due to a historical bug. Practically: prefer letting things be undefined when absent, use null when APIs need an explicit empty signal (e.g., resetting a selected item). Both are falsy and both satisfy x == null, which is why the loose-equality idiom `if (x == null)` safely covers both cases. Optional chaining (?.) and default values (??) were designed around exactly this pair.",
+		"example": "let a;\nconsole.log(a);        // undefined\nconsole.log({}.missing); // undefined\n\nfunction f(x) { return x ?? 'fallback'; }\nf(null);              // 'fallback'\nf(undefined);         // 'fallback'\nf(0);                 // 0 — ?? ignores only null/undefined",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Anchor the answer in intent: 'undefined = not assigned yet, null = deliberately empty.' Then connect it to modern syntax like ?? and ?. — that lands well.",
+		"commonMistakes": [
+			"Muddling semantics into a vague 'both mean nothing' answer without intent.",
+			"Forgetting typeof null === 'object' while typeof undefined === 'undefined'."
+		],
+		"relatedQuestions": ["js-002", "js-003", "js-012"]
+	}
+]

@@ -1,0 +1,172 @@
+[
+	{
+		"id": "beh-001",
+		"category": "behavioral",
+		"topic": "common",
+		"question": "Tell me about yourself.",
+		"difficulty": "beginner",
+		"shortAnswer": "A 60–90 second narrative: present role and focus, two or three relevant past highlights with outcomes, why you're excited about THIS role. Not your life story, not your resume read aloud.",
+		"explanation": "This opener sets interview tone — it's really the question 'frame yourself as relevant to us.' Structure beats improvisation: Present ('I'm a frontend engineer at X, focused on design systems'), Past (two proof points with numbers — 'rebuilt checkout, lifting conversion 12%'), Future ('your scale + my performance background is exactly the challenge I want'). Rehearse until natural but not robotic; vary emphasis per company by swapping the Future segment. Pitfalls: starting with childhood or full chronological history (interviewer stops listening), reciting bullet points verbatim (they have your resume), exceeding two minutes (signals poor judgment), and personal-life detours unless invited. Close by tossing the ball back — 'happy to go deeper anywhere' — inviting direction. This answer gets repeated in every interview round; invest hours polishing it once, benefit for years.",
+		"example": "\"I'm a frontend developer at a fintech startup, where I own our React dashboard. Before that I rebuilt an e-commerce checkout that lifted mobile conversion about 12% — that's where I got hooked on performance work. I'm looking to join a team where front-end craft directly moves product metrics, which is exactly what this role is about. Happy to expand on any of that.\"",
+		"exampleLanguage": "text",
+		"interviewTip": "Use the Present–Past–Future arc explicitly. Time yourself: target 75 seconds. Customize only the final sentence per company.",
+		"commonMistakes": [
+			"Chronologically narrating from university onward.",
+			"Ending without connecting to the specific role."
+		],
+		"relatedQuestions": ["beh-005", "beh-010", "beh-004"]
+	},
+	{
+		"id": "beh-002",
+		"category": "behavioral",
+		"topic": "common",
+		"question": "Tell me about a time you had a conflict with a coworker.",
+		"difficulty": "beginner",
+		"shortAnswer": "Pick a real professional disagreement, tell it in STAR form, emphasize understanding their viewpoint, direct respectful communication, and the shared-goal resolution. Show maturity — never badmouth, never claim you were simply right.",
+		"explanation": "Interviewers assess emotional maturity: can you disagree productively? Situation/Task set stakes briefly (one or two sentences); Action carries the weight — how YOU initiated the conversation, listened first ('I asked them to walk me through their reasoning'), found common ground, escalated appropriately if needed; Result states the outcome plus relationship status ('we shipped on time and pair more often now'). Choose disagreements about technical approaches or priorities, not personality clashes. Red flags that fail candidates: blaming language, positioning self as sole genius, avoiding conflict entirely ('I've never disagreed' reads as passive or dishonest), going over someone's head as first move. Strong answers show curiosity about the other side before advocacy — 'I realized they were optimizing for X while I worried about Y' — then a concrete collaboration mechanism like writing down tradeoffs or getting data.",
+		"example": "S/T: Our lead wanted server-side rendering everywhere; launch was slipping.\nA: I asked to understand his concerns first — SEO and first paint. I prototyped hybrid rendering showing SSR for marketing routes, CSR behind auth, shared a benchmark doc rather than arguing verbally.\nR: He accepted the hybrid approach, we launched two weeks later than the aggressive date but six weeks earlier than full-SSR would've allowed, and it became our standard architecture.",
+		"exampleLanguage": "text",
+		"interviewTip": "Lead Action with listening verbs ('I asked', 'I learned') before advocacy verbs. Name what you'd do differently if anything — humility lands well.",
+		"commonMistakes": [
+			"Casting the coworker as the villain.",
+			"Choosing a trivial conflict that shows nothing."
+		],
+		"relatedQuestions": ["beh-007", "beh-006", "beh-008"]
+	},
+	{
+		"id": "beh-003",
+		"category": "behavioral",
+		"topic": "common",
+		"question": "Tell me about a time you failed.",
+		"difficulty": "beginner",
+		"shortAnswer": "Choose a genuine failure with real consequences, own it without excuses, spend most time on lessons and changed behavior. The point is accountability plus growth — not proving you're perfect or collecting sympathy.",
+		"explanation": "This tests self-awareness under vulnerability. Pick something true but survivable: underestimated a migration's complexity, shipped without load-testing, misjudged scope. Structure: briefly establish context and YOUR decision (owning agency matters — failures caused purely by others dodge the question), state impact honestly with specifics, then invert the ratio — 70% of airtime on reflection and systemic fixes: new personal checklists, team process changes ('we added staging load tests to CI'), follow-up success proving behavior change. Fatal answers: humble-brags ('I work too hard'), blaming circumstances or teammates, choosing something trivial ('once I typo'd a variable'), or failing to close the loop with what changed. Seniority signal: failures whose lessons generalized — 'now I prototype risky integrations before committing to timelines' beats 'now I test more.'",
+		"example": "S: I committed to migrating 40k lines to TypeScript in one quarter.\nA/R: I sequenced by folder instead of dependency depth; circular imports surfaced late, forcing a partial rollback mid-quarter and three weeks of dual-maintenance.\nReflection: I optimized for visible progress over dependency risk. Since then I map dependency graphs before large migrations and stage rollouts by blast radius. Next migration went clean using that playbook.",
+		"exampleLanguage": "text",
+		"interviewTip": "State ownership in one sentence, impact in concrete terms, then dedicate most of the answer to the *systemic* lesson. End with evidence the fix worked.",
+		"commonMistakes": [
+			"Picking disguised bragging rights as 'failures'.",
+			"No concrete process change afterward."
+		],
+		"relatedQuestions": ["beh-007", "beh-006", "beh-009"]
+	},
+	{
+		"id": "beh-004",
+		"category": "behavioral",
+		"topic": "common",
+		"question": "What are your greatest strengths and weaknesses?",
+		"difficulty": "beginner",
+		"shortAnswer": "Strengths: two or three traits backed by specific evidence matched to the job description. Weakness: one genuine, non-fatal gap plus the concrete system you use to manage it — showing self-awareness, not confession.",
+		"explanation": "For strengths, specificity wins: 'strong debugging intuition' plus the story proving it (found a race condition others chased for days) beats adjective lists. Match them to the posting's top requirements and vary types — technical skill, collaboration trait, execution habit. For weaknesses, the trap is fake ones ('perfectionism') — interviewers hear hundreds. Real-but-manageable works: 'I historically over-invested in edge-case handling early; now I timebox exploration spikes and validate scope with the team before deep dives.' The formula: honest gap → awareness story → compensating system → improving trajectory. Avoid disqualifying weaknesses for the role (applying for backend with 'databases confuse me'), avoid multiple weaknesses when asked for one, and skip anything touching core ethics. Practice both out loud — rambling here signals unpreparedness more than content does.",
+		"example": "Strengths: 'Debugging distributed systems — last quarter I traced a payment double-charge to a retry race nobody could reproduce for a week.' Plus: 'I write docs people actually read; onboarding time dropped from two weeks to four days.'\nWeakness: 'My code reviews used to nitpick style, slowing merges. I built a lint config covering 90% of my pet issues and now reserve comments for logic and architecture — review turnaround halved.'",
+		"exampleLanguage": "text",
+		"interviewTip": "Evidence-first strengths tied to the JD; one weakness with a named system fixing it. Never say 'I can't think of a weakness.'",
+		"commonMistakes": [
+			"Humble-brag weaknesses ('I care too much').",
+			"Generic adjectives without supporting stories."
+		],
+		"relatedQuestions": ["beh-001", "beh-003", "beh-010"]
+	},
+	{
+		"id": "beh-005",
+		"category": "behavioral",
+		"topic": "common",
+		"question": "Why do you want to work here?",
+		"difficulty": "beginner",
+		"shortAnswer": "Connect three researched threads: what the company does that genuinely interests you (product/mission), what the role offers matching your trajectory, and what you bring that maps to their current needs. Specifics prove research; generic praise kills credibility.",
+		"explanation": "This filters mass-applicants from interested ones. Research layer: recent launches, engineering blog posts, tech-stack mentions in job posts, funding/product news, Glassdoor themes. Build the bridge both directions — 'their problem' meets 'my strength': 'You're rebuilding for scale after that outage postmortem; I've led similar migrations' outperforms 'you're an industry leader' every time. Genuine angle required: find the part you'd actually care about — if mission feels distant, connect through craft ('complex domain problems'), growth ('you're doubling the platform team'), or product love ('I use it daily'). Structure: hook with a specific observation → tie to your experience → forward-looking contribution. Avoid: compensation-first framing, vague culture compliments, reading their About page aloud, comparing against competitors negatively. Interviewers want evidence you'll stay engaged through hard sprints.",
+		"example": "\"Your engineering blog post on cutting p95 latency by rewriting the ingestion pipeline caught my attention — I spent last year doing exactly that for our analytics service. This role owns that pipeline's next phase, and my experience with Kafka partitioning strategies maps directly onto your scaling roadmap. Honestly, rare to see a role match a specialty this closely.\"",
+		"exampleLanguage": "text",
+		"interviewTip": "Cite one artifact you actually consumed (blog post, changelog, talk). Then make the skills-match explicit. One specific detail outweighs ten compliments.",
+		"commonMistakes": [
+			"Answering generically enough to fit any company.",
+			"Leading with perks or salary rationale."
+		],
+		"relatedQuestions": ["beh-001", "beh-010", "beh-009"]
+	},
+	{
+		"id": "beh-006",
+		"category": "behavioral",
+		"topic": "common",
+		"question": "Describe a time you worked under a tight deadline.",
+		"difficulty": "beginner",
+		"shortAnswer": "STAR a story showing prioritization and communication under pressure: scoped ruthlessly, communicated tradeoffs early, delivered the critical path on time. Include how you protected quality — deadlines don't excuse broken production.",
+		"explanation": "Interviewers evaluate judgment under constraint, not heroics. Strong signals: triage thinking ('separated must-launch from nice-to-have, cut dark-mode, kept payments flow'), early expectation management ('flagged risk day one, proposed reduced scope rather than surprising stakeholders Friday'), smart shortcuts (feature flags for unfinished paths, extra manual testing instead of automated), and asking for help fast. Results quantify: shipped on date, incident-free week following, deferred items scheduled honestly. Cautionary notes: chronic crunch stories imply poor boundaries or chaotic teams — frame deadline pressure as occasional reality handled professionally; avoid martyrdom narratives (all-nighters as virtue) since senior evaluators read that as planning failure; never end with quality sacrificed silently. If asked follow-ups about what you'd do differently, having a real answer prepared shows continued growth.",
+		"example": "S/T: Compliance deadline forced GDPR export feature live in ten days — normally a month.\nA: Day one I split requirements: legal-mandated CSV export vs nice UI. Shipped CLI-based export wrapped in feature flag by day eight, flagged the admin UI for sprint+1. Paired with QA daily on data-accuracy checks.\nR: Met the legal date, zero data complaints post-launch, UI shipped two weeks later. My scoping checklist became team standard for deadline work.",
+		"exampleLanguage": "text",
+		"interviewTip": "Show the scoping conversation happening EARLY with stakeholders. Mention one quality-protection mechanism explicitly — that's what separates professionals from cowboys.",
+		"commonMistakes": [
+			"Glorifying all-nighters as the solution.",
+			"No mention of communicating tradeoffs to stakeholders."
+		],
+		"relatedQuestions": ["beh-003", "beh-009", "beh-008"]
+	},
+	{
+		"id": "beh-007",
+		"category": "behavioral",
+		"topic": "common",
+		"question": "Tell me about a time you received difficult feedback.",
+		"difficulty": "beginner",
+		"shortAnswer": "Describe feedback that stung but was fair: how you listened without defensiveness, verified you understood, acted visibly on it, and what improved. Coachability is the entire point — show you treat feedback as data, not attack.",
+		"explanation": "Teams screen for ego-vs-growth response patterns. Pick real criticism from a credible source — manager review, PR discussion, retro moment. The action sequence matters: regulate first (didn't respond immediately/reactively), seek clarity ('asked for specific examples so I understood the pattern, not just the instance'), extract truth even if delivery was clumsy ('the tone was harsh but the pattern was real — my PRs were huge'), implement visibly, follow up later ('checked back a month later whether it improved'). Feedback about interpersonal impact (communication style, dominating discussions) demonstrates more maturity than pure technical gaps. Avoid: stories where you were right all along, dismissing delivery to dismiss content, vague 'I take feedback well' assertions without a story. Bonus maturity: mentioning feedback you now give OTHERS using lessons learned — closing the loop from receiver to giver.",
+		"example": "S: My manager said my updates were too detailed — leadership tuned out before hearing decisions.\nA: Stung, but I asked for one example of good vs bad. Built a template: decision needed, options considered, recommendation. Asked her to review my next two updates against it.\nR: Within a month she cited my updates as the format for the whole team. Lesson: communication is for the listener, not the writer.",
+		"exampleLanguage": "text",
+		"interviewTip": "Include the 'asked for specifics' step — it converts defensiveness into coachability visibly. Acknowledge the sting honestly, then pivot to action fast.",
+		"commonMistakes": [
+			"Focusing on unfair delivery to invalidate the content.",
+			"Claiming no memory of difficult feedback ever."
+		],
+		"relatedQuestions": ["beh-002", "beh-003", "beh-004"]
+	},
+	{
+		"id": "beh-008",
+		"category": "behavioral",
+		"topic": "common",
+		"question": "Tell me about a time you showed leadership without formal authority.",
+		"difficulty": "intermediate",
+		"shortAnswer": "A story where you drove outcome through influence: spotted the problem, rallied others voluntarily, coordinated execution — no title involved. Emphasize initiative, persuasion through evidence, and making others successful rather than commanding.",
+		"explanation": "Organizations need leaders at every level; this finds them. Your story needs: origin (YOU noticed — tech debt slowing releases, unclear on-call rotation, cross-team duplication), voluntary followers (convinced teammates via prototypes, data, one-on-ones — not assignment), coordination mechanics (wrote the proposal doc, ran the sync, tracked actions), and outcome attribution shared generously ('the team adopted...'). Influence tactics worth naming: building consensus pre-meeting, demonstrating rather than arguing (working prototype > debate), making others' ideas central to gain ownership. Distinguish from just doing extra work alone — leadership multiplies others. Common failure modes: claiming credit for team results you merely participated in, or describing pure individual contribution. Seniority calibration: junior = organized self within group; mid = aligned peers informally; senior = shifted how multiple teams operate. Prepare quantified outcomes.",
+		"example": "S: Three teams each rebuilt retry logic differently; incidents kept recurring.\nA: No mandate existed, so I audited all implementations, wrote a comparison doc, pitched a shared library at the guild meeting with migration cost estimates. Two seniors volunteered; I coordinated reviews and staged rollout across services.\nR: Adopted by all teams in a quarter; retry-related incidents dropped ~70%. It's still the standard two years later — and I got promoted partly on it.",
+		"exampleLanguage": "text",
+		"interviewTip": "Show the persuasion artifact (doc, prototype) and how volunteers joined. Credit the team generously — authority-less leadership IS coalition-building.",
+		"commonMistakes": [
+			"Describing solo heroics as leadership.",
+			"No concrete coordination mechanism shown."
+		],
+		"relatedQuestions": ["beh-006", "beh-009", "beh-002"]
+	},
+	{
+		"id": "beh-009",
+		"category": "behavioral",
+		"topic": "common",
+		"question": "How do you handle ambiguity?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Show a repeatable method: clarify the goal behind the ask, define what's knowable vs assumed, timebox discovery, prototype or spike to shrink uncertainty, communicate assumptions explicitly, and iterate. Comfort WITH ambiguity plus systems FOR it.",
+		"explanation": "Ambiguity questions reveal seniority because real projects start murky — 'improve onboarding' with no spec. Strong answers demonstrate both mindset (calm, curious) and mechanics: interrogate intent ('what does success look like for stakeholders?'), inventory unknowns explicitly (write them down), separate reversible from irreversible decisions (bias toward fast experiments on cheap ones), timebox research ('two-day spike answering: can we stream this?'), and surface assumptions publicly ('operating on assumption users complete step 2 — validating Thursday'). Communication thread runs throughout: regular written updates letting stakeholders correct course cheaply. A concrete STAR example anchors it: vague request → clarifying questions → smallest viable experiment → findings reshaped approach → shipped. Avoid extremes: paralysis waiting for perfect specs, or charging ahead ignoring stakeholders. Naming decision frameworks (reversibility, one-way vs two-way doors) signals executive-function maturity.",
+		"example": "S: 'Make search feel faster' — no baseline, no definition.\nA: Interviewed support tickets to learn perceived slowness concentrated on filtering. Wrote assumptions doc, ran a two-day spike measuring actual latency (backend was fine — frontend re-rendered per keystroke). Prototyped debounce + optimistic UI, validated with five users.\nR: Shipped the cheap fix in one sprint; subjective satisfaction scores rose 30% despite unchanged backend. Assumption logs became our team's default for fuzzy asks.",
+		"exampleLanguage": "text",
+		"interviewTip": "Present your personal playbook first, then prove it lived via one story. The phrase 'timeboxed spike' and 'assumptions doc' carry disproportionate weight here.",
+		"commonMistakes": [
+			"Claiming to simply 'thrive in chaos' without method.",
+			"Waiting passively for complete specifications."
+		],
+		"relatedQuestions": ["beh-006", "beh-008", "beh-003"]
+	},
+	{
+		"id": "beh-010",
+		"category": "behavioral",
+		"topic": "common",
+		"question": "Where do you see yourself in five years?",
+		"difficulty": "beginner",
+		"shortAnswer": "Describe a plausible professional trajectory — deeper expertise, broader scope, mentorship — that plausibly grows WITHIN this kind of role. Honest ambition plus alignment; avoid both 'your seat' theatrics and aimless drifting.",
+		"explanation": "Underlying questions: will you stay, grow, and is this role a stepping stone consistent with our needs? Effective answers pick a direction matching the position: IC track ('become the person others consult for performance problems, maybe staff-level') or leadership track ('lead a small team owning this area') — either fine, choose authentically. Add texture: skills you're deliberately building now (system design, mentoring juniors), evidence of trajectory already underway. Connect loosely to their environment ('companies at your stage need engineers who grow into scope') without promising lifetime loyalty — everyone knows math. Traps to avoid: naming titles at THEIR company presumptuously, 'doing your job' jokes, pure vertical ambition implying you'll leave if not promoted fast, or honesty failures like 'haven't thought about it' (everyone has). If genuinely exploring options, share the dimension you're certain about (craft depth, domain) while staying flexible on form.",
+		"example": "\"Two things I'm sure about: I want to keep going deeper technically, and I enjoy bringing people along — I've been mentoring two juniors this year and it's the most fun I've had. Five years out, I'd like to be the staff-level engineer a team trusts for hard architecture calls, ideally having grown into that here as the platform scales.\"",
+		"exampleLanguage": "text",
+		"interviewTip": "Name ONE clear direction (IC depth vs people path) with current evidence you're already walking it. One sentence linking growth to their context suffices.",
+		"commonMistakes": [
+			"Saying 'your job' or naming their manager's title.",
+			"Claiming zero ambition — reads as flight risk from effort."
+		],
+		"relatedQuestions": ["beh-001", "beh-005", "beh-004"]
+	}
+]

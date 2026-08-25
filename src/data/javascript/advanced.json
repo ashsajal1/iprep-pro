@@ -1,0 +1,36 @@
+[
+	{
+		"id": "js-019",
+		"category": "javascript",
+		"topic": "advanced",
+		"question": "What is the difference between debounce and throttle? When do you use each?",
+		"difficulty": "advanced",
+		"shortAnswer": "Debounce delays execution until events stop firing for a wait period — only the last call runs. Throttle guarantees execution at most once per interval. Debounce for search inputs; throttle for scroll/resize handlers.",
+		"explanation": "Both limit how often a function executes under rapid event bursts, but they answer different questions. Debounce asks 'has the user stopped?' — every new event resets a timer, so the function fires once, after quiet. Ideal when only the final state matters: autosaving after typing pauses, validating a form field, resizing calculations. Throttle asks 'is it time again?' — the function runs at a fixed maximum rate regardless of burst size, ensuring regular feedback during continuous activity: scroll position indicators, drag movements, analytics sampling, game loops. Implementation-wise, debounce stores one timeout handle that gets cleared on each call; throttle stores a last-run timestamp (often plus a pending flag for the trailing call). Interviewers love asking you to implement either from scratch on a whiteboard.",
+		"example": "function debounce(fn, wait = 300) {\n  let timer;\n  return (...args) => {\n    clearTimeout(timer);\n    timer = setTimeout(() => fn(...args), wait);\n  };\n}\n\nfunction throttle(fn, interval = 300) {\n  let last = 0;\n  return (...args) => {\n    const now = Date.now();\n    if (now - last >= interval) {\n      last = now;\n      fn(...args);\n    }\n  };\n}\n\nsearchInput.addEventListener('input', debounce(e => search(e.target.value)));\nwindow.addEventListener('scroll', throttle(updateProgressBar, 100));",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Lead with the mnemonic — debounce = 'wait for silence', throttle = 'steady drip' — then implement debounce live if asked; it's ~6 lines and interviewers frequently request it.",
+		"commonMistakes": [
+			"Swapping the two use cases in examples.",
+			"Forgetting to pass through arguments (...args) in the returned wrapper."
+		],
+		"relatedQuestions": ["js-006", "js-013", "rct-011"]
+	},
+	{
+		"id": "js-020",
+		"category": "javascript",
+		"topic": "advanced",
+		"question": "How does prototypal inheritance work in JavaScript?",
+		"difficulty": "advanced",
+		"shortAnswer": "Every object has an internal [[Prototype]] link. Property lookups walk this chain from the object upward until found or null. Objects inherit directly from other objects — classes are syntactic sugar over the same mechanism.",
+		"explanation": "When you read obj.x, the engine checks obj itself, then its prototype via Object.getPrototypeOf(obj), then that object's prototype, and so on up the chain until it hits null. Writes create properties on the receiving object rather than mutating ancestors. The chain gets established by Object.create(proto), constructors' hidden prototype linkage, or class extends. ES6 classes don't change the runtime model — class Dog extends Animal compiles to the same prototype wiring with nicer syntax and stricter rules. Key related methods: hasOwnProperty / Object.hasOwn distinguish own vs inherited keys; Object.keys ignores the chain entirely. Practical modern relevance is mostly conceptual — understanding why instances share methods without copying them, how polyfills attach to built-in prototypes (Array.prototype.at), and why extending native prototypes is risky.",
+		"example": "const animal = {\n  eat() { return `${this.name} eats`; },\n};\n\nconst dog = Object.create(animal); // dog's prototype is animal\ndog.name = 'Rex';\ndog.bark = () => 'Woof';\n\nconsole.log(dog.eat());   // found on animal via the chain\nconsole.log(Object.hasOwn(dog, 'eat'));    // false — inherited\nconsole.log(Object.hasOwn(dog, 'name'));   // true — own",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Walk the lookup algorithm step by step, then drop 'classes are sugar over prototypes' — concise and signals you understand what the syntax actually does.",
+		"commonMistakes": [
+			"Describing prototypal inheritance as copies of classes.",
+			"Not knowing Object.create sets the prototype link directly."
+		],
+		"relatedQuestions": ["js-003", "js-008", "ts-002"]
+	}
+]

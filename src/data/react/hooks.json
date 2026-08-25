@@ -1,0 +1,121 @@
+[
+	{
+		"id": "rct-009",
+		"category": "react",
+		"topic": "hooks",
+		"question": "How does useState work? Explain functional updates and lazy initialization.",
+		"difficulty": "intermediate",
+		"shortAnswer": "useState returns [value, setter]. Functional updates (setX(prev => next)) are safe against stale closures and batching; lazy initialization — passing a function to useState — runs the expensive initial computation only once, on first render.",
+		"explanation": "The setter schedules a re-render with a new value; React may batch multiple updates into one render pass. If your new state depends on the previous value — counters, toggles, array appends — use the functional form: setCount(c => c + 1). Calling setCount(count + 1) twice in one handler yields the same number both times because `count` is frozen from that render's closure; two functional updates compose correctly. Lazy initialization matters when computing initial state is expensive (reading localStorage, building big structures): useState(() => heavySetup()) invokes the function once during the first render only; useState(heavySetup()) would run on *every* render even though the result is ignored after the first. State is preserved across re-renders by position in the hook call order — which is why hooks can't be conditional.",
+		"example": "// Stale closure trap:\nconst [count, setCount] = useState(0);\nconst broken = () => { setCount(count + 1); setCount(count + 1); }; // +1 total\nconst fixed  = () => { setCount(c => c + 1); setCount(c => c + 1); }; // +2\n\n// Lazy init:\nconst [filters] = useState(() => JSON.parse(localStorage.getItem('f') ?? '{}'));",
+		"exampleLanguage": "tsx",
+		"interviewTip": "Demonstrate the double-increment bug live — it proves understanding of closures plus batching. Then mention lazy init for localStorage reads.",
+		"commonMistakes": [
+			"Calling the setter with computed values inside loops/handlers instead of functional updates.",
+			"Passing an invoked function to useState instead of a thunk."
+		],
+		"relatedQuestions": ["rct-014", "rct-010", "rct-002"]
+	},
+	{
+		"id": "rct-010",
+		"category": "react",
+		"topic": "hooks",
+		"question": "How does useEffect work? What goes in the dependency array?",
+		"difficulty": "intermediate",
+		"shortAnswer": "useEffect runs after render to synchronize with external systems. The dependency array lists everything the effect reads from render scope: empty [] = run once after mount, values = re-run whenever any changes, omitted = after every render. The returned cleanup runs before re-runs and on unmount.",
+		"explanation": "Effects exist for things outside React's render flow — fetching, subscriptions, timers, direct DOM APIs. After each committed render whose dependencies changed, React runs cleanup from the previous effect, then the effect body. Dependency rules are strict: include every reactive value used inside (props, state, derived values); the ESLint exhaustive-deps rule enforces this because omitting deps creates stale-closure bugs where effects read outdated data. Empty array means the effect uses nothing reactive — mount-only semantics. For async work, define the async function inside and clean up with an ignore flag, since the effect itself can't be async: fetch → check if cancelled before setState to avoid 'update after unmount' races. Ask yourself 'what am I synchronizing with?' — if the answer is another component's data, you probably don't need an effect at all.",
+		"example": "useEffect(() => {\n  let ignore = false;\n\n  async function load() {\n    const res = await fetch(`/api/users/${userId}`);\n    const data = await res.json();\n    if (!ignore) setUser(data);\n  }\n  load();\n\n  return () => { ignore = true; }; // cancel stale responses\n}, [userId]);",
+		"exampleLanguage": "tsx",
+		"interviewTip": "Explain the cleanup-then-run ordering explicitly, then show the ignore-flag pattern for fetches — it answers the most common follow-up ('how do you handle race conditions?').",
+		"commonMistakes": [
+			"Lying to the dependency array to avoid re-runs.",
+			"Making the effect callback async directly (returns a promise, not cleanup)."
+		],
+		"relatedQuestions": ["rct-007", "rct-015", "rct-011"]
+	},
+	{
+		"id": "rct-011",
+		"category": "react",
+		"topic": "hooks",
+		"question": "When do useMemo and useCallback actually help performance?",
+		"difficulty": "intermediate",
+		"shortAnswer": "They cache computation results (useMemo) and function identity (useCallback) between renders. They help when skipping expensive calculations or preserving referential equality — e.g., feeding memoized children or stable effect dependencies. Otherwise they add overhead.",
+		"explanation": "Every render recreates objects, arrays and functions, breaking referential equality. useMemo caches a value until its dependencies change; useCallback returns a memoized version of a callback (it's useMemo for functions). Two legitimate wins: avoiding genuinely expensive recomputation (large sorts, heavy filtering), and referential stability — keeping a child wrapped in React.memo from re-rendering when it receives 'new' props every time, or preventing effect churn caused by unstable deps. Everything else is premature optimization: memoization itself costs memory and comparison work, and naive wrapping everywhere complicates code without measurable gains. Measure first with the Profiler. Also note they don't make renders cheaper by themselves — React.memo on components and virtualization for long lists usually matter far more.",
+		"example": "// Expensive calc — worth caching:\nconst sorted = useMemo(\n  () => [...rows].sort(expensiveComparator),\n  [rows],\n);\n\n// Stable identity for memoized child:\nconst onSave = useCallback(id => updateRow(id), []);\n<MemoizedRow id={row.id} onSave={onSave} />",
+		"exampleLanguage": "tsx",
+		"interviewTip": "State the two valid reasons (expensive compute, referential equality), then say 'measure with the Profiler first' — restraint signals seniority here.",
+		"commonMistakes": [
+			"Wrapping every variable in useMemo hoping to speed up renders.",
+			"Not realizing useCallback(fn, []) still captures stale closures."
+		],
+		"relatedQuestions": ["rct-008", "rct-007", "js-019"]
+	},
+	{
+		"id": "rct-012",
+		"category": "react",
+		"topic": "hooks",
+		"question": "What are the main use cases of useRef?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Refs store mutable values that persist across renders without triggering re-renders: DOM element access, timer/subscription handles, and any 'instance variable' like previous values or latest-callback references.",
+		"explanation": "useRef returns { current } — a box React preserves between renders but doesn't treat as state. Writing ref.current doesn't schedule a re-render, which is exactly what distinguishes it from useState. Classic uses: focusing/scrolling/measuring DOM nodes (ref={inputRef} then inputRef.current.focus()), holding interval or websocket handles so cleanup can reach them, tracking previous prop/state values for comparisons, storing whether a fetch is in-flight without re-rendering, and implementing latest-value refs so callbacks always see fresh data. Rules of thumb: if UI should update when the value changes, use state; if it's bookkeeping invisible to render output, a ref fits. Never read/write ref.current during render itself — do it in handlers or effects to keep renders pure.",
+		"example": "function Stopwatch() {\n  const [ms, setMs] = useState(0);\n  const intervalRef = useRef<number>();\n  const startedAtRef = useRef<number>();\n\n  const start = () => {\n    startedAtRef.current = Date.now();\n    intervalRef.current = setInterval(\n      () => setMs(Date.now() - startedAtRef.current!), 50,\n    );\n  };\n  const stop = () => clearInterval(intervalRef.current);\n\n  return (<>\n    <button onClick={start}>Start</button>\n    <button onClick={stop}>Stop</button> {Math.floor(ms / 1000)}s\n  </>);\n}",
+		"exampleLanguage": "tsx",
+		"interviewTip": "Lead with the key distinction — mutating a ref doesn't re-render — then give the stopwatch/timer example; it demonstrates persistence without state naturally.",
+		"commonMistakes": [
+			"Using useRef for values the UI depends on.",
+			"Reading or writing ref.current during render."
+		],
+		"relatedQuestions": ["rct-004", "rct-009", "rct-010"]
+	},
+	{
+		"id": "rct-013",
+		"category": "react",
+		"topic": "hooks",
+		"question": "How do you write a custom hook and what makes it useful?",
+		"difficulty": "intermediate",
+		"shortAnswer": "A custom hook is a function named use* that composes built-in hooks and returns values/functions to callers. It extracts reusable stateful logic while keeping state isolated per component instance.",
+		"explanation": "Custom hooks solve logic duplication, not rendering duplication: each component calling useToggle() gets its own independent state because hooks are per-instance, unlike extracting a shared component. Conventions matter — names must start with 'use' so lint rules apply and React's hook ordering assumptions hold: call hooks unconditionally at the top level of the hook, never inside loops or conditions. Typical patterns: useFetch wrapping loading/error/data handling, useLocalStorage syncing state with storage events, useDebounce returning a debounced value, useMediaQuery for responsive behavior. A good custom hook returns a small explicit API (tuple or object), documents side effects, cleans up after itself, and stays presentation-free. Testing them is straightforward with @testing-library/react-hooks style renderHook utilities.",
+		"example": "function useLocalStorage<T>(key: string, initial: T) {\n  const [value, setValue] = useState<T>(() => {\n    try {\n      const raw = localStorage.getItem(key);\n      return raw ? (JSON.parse(raw) as T) : initial;\n    } catch { return initial; }\n  });\n\n  useEffect(() => {\n    localStorage.setItem(key, JSON.stringify(value));\n  }, [key, value]);\n\n  return [value, setValue] as const;\n}",
+		"exampleLanguage": "tsx",
+		"interviewTip": "Emphasize 'per-component isolated state' as the differentiator vs plain utility functions, then demo a small real hook like useLocalStorage end-to-end.",
+		"commonMistakes": [
+			"Conditionally calling hooks inside custom hooks.",
+			"Building hooks so tightly coupled to one component that reuse is impossible."
+		],
+		"relatedQuestions": ["rct-009", "rct-010", "rct-008"]
+	},
+	{
+		"id": "rct-014",
+		"category": "react",
+		"topic": "hooks",
+		"question": "Why must React state be updated immutably?",
+		"difficulty": "beginner",
+		"shortAnswer": "React detects changes by reference comparison (Object.is). Mutating in place keeps the same reference, so React sees 'no change', skips re-rendering, and memoization breaks. Always create new objects/arrays with spread or structured updates.",
+		"explanation": "React's rendering model assumes state transitions produce a new snapshot: setState receives a different reference and re-renders accordingly. Mutating state.push(item) leaves the reference identical — Object.is(oldState, newState) is true — so React may skip the update entirely, and memoized components or useMemo comparisons see nothing changed either. Immutable updates also enable cheap history (undo/redo), time-travel debugging, and predictable diffs since old snapshots never change underneath you. Patterns: spread for top-level ({ ...user, name }), map/filter for arrays, targeted spread for nested paths ({ ...form, address: { ...form.address, city } }). For deep trees, libraries like Immer let you write mutations that produce immutable results. Note: only the path that changed needs copying — shallow-copy along the changed branch.",
+		"example": "// ❌ mutation — same reference\nitems.push(newItem);\nsetItems(items);\nuser.address.city = 'NYC';\n\n// ✅ immutable updates\nsetItems([...items, newItem]);\nsetItems(items.filter(i => i.id !== id));\nsetUser({ ...user, address: { ...user.address, city: 'NYC' } });",
+		"exampleLanguage": "tsx",
+		"interviewTip": "Anchor everything to Object.is reference comparison — one sentence explains why mutation silently fails — then show nested-update syntax fluently.",
+		"commonMistakes": [
+			"Sorting/reversing state arrays in place (sort mutates!).",
+			"Deep-cloning entire state when only one branch changed."
+		],
+		"relatedQuestions": ["rct-009", "js-011", "rct-011"]
+	},
+	{
+		"id": "rct-015",
+		"category": "react",
+		"topic": "hooks",
+		"question": "What changed with concurrent rendering in React 18+ (batching, transitions)?",
+		"difficulty": "advanced",
+		"shortAnswer": "React 18 added automatic batching across promises/timeouts/native handlers, concurrent rendering with priority via useTransition/useDeferredValue, and Suspense improvements. Updates can be interruptible so urgent input stays responsive while expensive renders proceed in the background.",
+		"explanation": "Previously updates were batched only inside React event handlers; in React 18 automatic batching covers promises, setTimeout, native events too — multiple setStates collapse into one render everywhere. Concurrency is the bigger shift: React can prepare renders in the background, pause, abandon, or restart them without blocking user input. useTransition marks non-urgent updates (tab switches, filtering large lists) as transitionable — clicking stays snappy while the expensive list re-renders; isPending exposes in-progress status for spinners. useDeferredValue achieves similar results by deferring a value rather than wrapping the update. StrictMode now double-invokes effects and renders in development to surface unsafe patterns. Effects also fire once under concurrency assumptions, cementing the rule: render must stay pure, side effects belong in effects.",
+		"example": "function SearchResults({ query }) {\n  const [isPending, startTransition] = useTransition();\n  const [input, setInput] = useState(query);\n\n  const onChange = e => {\n    setInput(e.target.value);                       // urgent: input stays snappy\n    startTransition(() => {\n      setQuery(e.target.value);                     // non-urgent: big list render\n    });\n  };\n\n  return (<>\n    <input value={input} onChange={onChange} />\n    {isPending ? <Spinner /> : <HugeList query={query} />}\n  </>);\n}",
+		"exampleLanguage": "tsx",
+		"interviewTip": "Explain 'interruptible rendering' in one sentence, then pick useTransition and walk the urgent-vs-non-urgent split with the search example.",
+		"commonMistakes": [
+			"Describing concurrent mode as making renders multi-threaded.",
+			"Not knowing what automatic batching expanded to cover in v18."
+		],
+		"relatedQuestions": ["rct-001", "rct-011", "nxt-003"]
+	}
+]

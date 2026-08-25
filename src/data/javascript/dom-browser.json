@@ -1,0 +1,36 @@
+[
+	{
+		"id": "js-017",
+		"category": "javascript",
+		"topic": "dom-browser",
+		"question": "What is event delegation and how does event bubbling work?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Events bubble from the target element up through its ancestors. Delegation attaches one listener to a stable parent and inspects event.target for each bubbled event — fewer listeners, and it keeps working for dynamically added children.",
+		"explanation": "When an event fires, it travels in three phases: capturing from the document down to the target, the target phase itself, then bubbling back up through every ancestor. Listeners on parents receive events from their descendants during bubbling (unless stopPropagation cuts it off). Delegation exploits this: instead of wiring a listener onto 200 list items — or re-wiring whenever items are added or removed — you attach one listener to the container, read event.target (and often closest(selector) to find the meaningful ancestor), and act accordingly. Benefits: less memory, simpler cleanup, automatic support for future elements. Use cases include list actions, form validation, and dropdown menus. The inverse is event.stopPropagation(), which halts bubbling when a child must handle something alone.",
+		"example": "document.querySelector('#todo-list').addEventListener('click', (e) => {\n  const item = e.target.closest('li');\n  if (!item) return;\n\n  if (e.target.matches('.delete-btn')) {\n    item.remove();\n  } else {\n    item.classList.toggle('done');\n  }\n});\n// Works for every li — including ones added later",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Explain the three phases briefly, then show closest() in code. Mentioning 'works for dynamically added elements' demonstrates you know why teams use it in practice.",
+		"commonMistakes": [
+			"Forgetting closest() and matching event.target too literally, breaking nested markup.",
+			"Confusing bubbling direction — it goes upward from target."
+		],
+		"relatedQuestions": ["js-018", "js-013", "hcs-001"]
+	},
+	{
+		"id": "js-018",
+		"category": "javascript",
+		"topic": "dom-browser",
+		"question": "What do defer and async attributes do on script tags?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Neither blocks HTML parsing while downloading. async scripts execute as soon as they're ready (order not guaranteed); defer executes after parsing finishes, in order, right before DOMContentLoaded.",
+		"explanation": "A classic <script src> pauses HTML parsing: download, execute, resume — slow and render-blocking. Adding async lets parsing continue during download, but execution still pauses parsing at the moment the script arrives, so async scripts run unpredictably relative to each other — fine for independent analytics widgets, wrong for scripts that depend on each other. defer downloads in parallel but queues execution until the document is fully parsed, preserving order; deferred scripts run before DOMContentLoaded fires, so they can safely query the full DOM without a load-event listener. Modern defaults: module scripts are deferred automatically, and bundlers inject hashed bundles with defer semantics. If you need nothing from the page, plain async or even dynamic import() is fine.",
+		"example": "<script src=\"vendor.js\"></script>          <!-- blocking -->\n<script async src=\"analytics.js\"></script><!-- runs whenever ready -->\n<script defer src=\"app.js\"></script>      <!-- ordered, after parse -->\n<script type=\"module\" src=\"main.js\"></script> <!-- deferred by default -->",
+		"exampleLanguage": "html",
+		"interviewTip": "Draw the three timelines verbally: parse-blocked vs parallel-download-execute-immediately vs parallel-download-execute-in-order-after-parse.",
+		"commonMistakes": [
+			"Saying async preserves execution order.",
+			"Not knowing type=\"module\" implies defer behavior."
+		],
+		"relatedQuestions": ["js-013", "js-017", "nxt-004"]
+	}
+]

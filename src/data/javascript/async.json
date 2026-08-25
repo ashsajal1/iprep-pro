@@ -1,0 +1,70 @@
+[
+	{
+		"id": "js-013",
+		"category": "javascript",
+		"topic": "async",
+		"question": "Explain the event loop. What does setTimeout(fn, 0) actually do?",
+		"difficulty": "intermediate",
+		"shortAnswer": "The event loop repeatedly takes the oldest runnable task off a queue and runs it to completion after the current script finishes. setTimeout(fn, 0) schedules fn as a macrotask, so it runs only after synchronous code and all microtasks (promises) complete — never instantly.",
+		"explanation": "JavaScript runs on a single thread with a run-to-completion model: one task at a time, no preemption. After each macrotask (script chunk, timer callback, I/O event), the engine drains the entire microtask queue — promise reactions and MutationObservers — before rendering or picking the next macrotask. That ordering is why promise callbacks beat setTimeout even with a 0ms delay. A 0ms timeout isn't 'run immediately'; browsers clamp nested timeouts to ~4ms minimums, and the callback still waits for the stack to clear plus queued microtasks. This model explains UI jank too: any long-running synchronous loop blocks both timers and paint, which is why heavy work gets chunked, debounced, or moved to a Web Worker.",
+		"example": "console.log('1');\nsetTimeout(() => console.log('2'), 0);\nPromise.resolve().then(() => console.log('3'));\nconsole.log('4');\n\n// Output order: 1, 4, 3, 2\n// sync → microtasks (promises) → macrotasks (timers)",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Recite the exact output of the four-line snippet before explaining — predicting it confidently is the fastest way to prove mastery of this question.",
+		"commonMistakes": [
+			"Saying setTimeout(0) executes immediately.",
+			"Not knowing promises are microtasks that jump ahead of timers."
+		],
+		"relatedQuestions": ["js-014", "js-015", "nde-001"]
+	},
+	{
+		"id": "js-014",
+		"category": "javascript",
+		"topic": "async",
+		"question": "How do promises work? Explain their states and chaining.",
+		"difficulty": "intermediate",
+		"shortAnswer": "A promise is an object representing an eventual value with three states: pending, fulfilled, rejected. Once settled it never changes. .then chains transform values; .catch handles any failure in the chain; .finally always runs.",
+		"explanation": "A promise starts pending and settles exactly once — to fulfilled with a value or rejected with a reason. Handlers registered via .then(onFulfilled, onRejected) are guaranteed to fire asynchronously regardless of when settlement happens, avoiding the race conditions of older callback APIs. Every .then returns a new promise, enabling flat chains instead of nested callbacks; returning a plain value resolves the next link, while returning another promise makes the chain wait for it. Errors propagate down the chain until a .catch catches them — like try/catch across time. Static helpers compose sets: Promise.all fails fast on first rejection, Promise.allSettled waits for every outcome, Promise.race settles with the first settled, and Promise.any resolves with the first success. Common pitfall: forgetting to return inside .then breaks value flow silently.",
+		"example": "fetchUser(1)\n  .then(user => loadProfile(user.id)) // return = chain continues\n  .then(profile => render(profile))\n  .catch(err => showError(err))       // catches either step\n  .finally(() => hideSpinner());\n\nPromise.all([api.users(), api.posts()])\n  .then(([users, posts]) => dashboard(users, posts));",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Say 'settles exactly once' early — it's the phrase interviewers listen for. Then contrast Promise.all vs allSettled with a parallel-fetch example.",
+		"commonMistakes": [
+			"Forgetting to return promises inside then callbacks.",
+			"Saying a settled promise can be re-resolved later."
+		],
+		"relatedQuestions": ["js-015", "js-013", "nde-007"]
+	},
+	{
+		"id": "js-015",
+		"category": "javascript",
+		"topic": "async",
+		"question": "What does async/await do and how should errors be handled with it?",
+		"difficulty": "intermediate",
+		"shortAnswer": "async functions implicitly return promises and let you await them with synchronous-looking code; await pauses the function without blocking the thread. Errors are handled with try/catch or .catch on the returned promise.",
+		"explanation": "Marking a function async wraps its return value in a promise and allows await expressions inside. Await suspends the function's execution — other code keeps running — and resumes when the awaited promise settles. Rejections become thrown exceptions, so try/catch works naturally; alternatively attach .catch() to the call. Two subtleties trip people up: an async function *always* returns a promise even if you return a plain value, and awaiting inside loops serializes requests — Promise.all preserves concurrency for independent work. Sequential awaits are correct when each step needs the previous result. Since ES2022, top-level await works in modules. For multiple awaits where partial failures are acceptable, combine Promise.allSettled with await.",
+		"example": "async function loadDashboard() {\n  const user = await getUser();          // sequential: needs user\n  const [posts, notifications] = await Promise.all([\n    getPosts(user.id),                    // concurrent\n    getNotifications(user.id),\n  ]);\n  return { user, posts, notifications };\n}\n\nloadDashboard()\n  .then(render)\n  .catch(err => console.error('Failed:', err));",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Volunteer the loop-vs-Promise.all distinction unprompted — accidental serialization is one of the most common real-world bugs and mentioning it lands strongly.",
+		"commonMistakes": [
+			"Awaiting inside forEach expecting parallelism (forEach ignores promises).",
+			"Forgetting async functions always wrap returns in a promise."
+		],
+		"relatedQuestions": ["js-014", "js-013", "rct-010"]
+	},
+	{
+		"id": "js-016",
+		"category": "javascript",
+		"topic": "async",
+		"question": "What was 'callback hell' and how did promises and async/await solve it?",
+		"difficulty": "beginner",
+		"shortAnswer": "Callback hell was deeply nested callbacks for sequential async work, producing unreadable, error-prone pyramids. Promises flattened sequences into chains, and async/await made them read like synchronous code with try/catch error handling.",
+		"explanation": "Early Node-style APIs took callbacks with the convention cb(error, result). Chaining several operations meant nesting each step inside the previous callback, growing indentation rightward — hard to read, impossible to refactor, with error handling duplicated at every level. Inversion of control added risk: you handed your continuation to someone else's code, which might call back twice or never. Promises fixed control by making the continuation an object you own: chains are flat, errors funnel into one .catch, and guarantees ensure exactly one settlement. Async/await completed the shift syntactically: same machinery, but written top-to-bottom like blocking code, integrating with try/catch and standard debugging tools like breakpoints and stack traces that follow logical flow.",
+		"example": "// Callback pyramid:\ngetUser(id, (err, user) => {\n  if (err) return fail(err);\n  getPosts(user, (err, posts) => {\n    if (err) return fail(err);\n    getComments(posts[0], (err, comments) => {\n      if (err) return fail(err);\n      done(comments);\n    });\n  });\n});\n\n// Same logic today:\ntry {\n  const user = await getUser(id);\n  const posts = await getPosts(user);\n  done(await getComments(posts[0]));\n} catch (err) { fail(err); }",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Show the pyramid collapsing into linear code side-by-side — visual contrast communicates the evolution better than history alone.",
+		"commonMistakes": [
+			"Only saying 'callbacks are bad' without naming inversion-of-control issues.",
+			"Not recognizing the (err, result) Node convention."
+		],
+		"relatedQuestions": ["js-014", "js-015", "nde-007"]
+	}
+]

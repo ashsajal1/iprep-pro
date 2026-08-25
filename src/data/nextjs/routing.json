@@ -1,0 +1,121 @@
+[
+	{
+		"id": "nxt-009",
+		"category": "nextjs",
+		"topic": "routing",
+		"question": "How does file-based routing work in the App Router? What are layouts?",
+		"difficulty": "beginner",
+		"shortAnswer": "Folders map to URL segments; page.tsx makes a route public. layout.tsx wraps its segment and all children, persists across navigations, and nests — a root layout holds <html>; nested layouts compose for shared section chrome.",
+		"explanation": "The app directory encodes structure: app/dashboard/settings/page.tsx serves /dashboard/settings. Files have reserved meanings — page.tsx (route UI), layout.tsx (persistent wrapper), loading.tsx (Suspense fallback), error.tsx (error boundary), not-found.tsx, route.ts (API handler), template.tsx (layout that re-mounts on navigation). Layouts receive children and render them without unmounting during child navigation: state inside a sidebar survives moving between pages. Nesting composes naturally — root layout defines html/body; a dashboard layout adds nav; each page fills the innermost slot. Only one active page renders per URL; multiple layouts stack automatically. Route groups (folder-name) organize without affecting URLs, handy for marketing vs app shells with different roots. Colocation keeps private files beside their routes since only special filenames become endpoints.",
+		"example": "app/\n├─ layout.tsx            # <html>, global providers\n├─ page.tsx              # /\n└─ dashboard/\n   ├─ layout.tsx         # sidebar wraps everything below\n   ├─ page.tsx           # /dashboard\n   └─ settings/\n      └─ page.tsx        # /dashboard/settings\n\n// app/dashboard/layout.tsx\nexport default function DashboardLayout({ children }) {\n  return (\n    <div className=\"flex\">\n      <Sidebar />          {/* never unmounts between pages */}\n      <main>{children}</main>\n    </div>\n  );\n}",
+		"exampleLanguage": "tsx",
+		"interviewTip": "Sketch the folder tree verbally while explaining layout persistence — the sidebar-stays-mounted example demonstrates you understand why layouts exist.",
+		"commonMistakes": [
+			"Not knowing only special filenames create routes.",
+			"Confusing layouts with templates (templates remount per navigation)."
+		],
+		"relatedQuestions": ["nxt-010", "nxt-013", "nxt-014"]
+	},
+	{
+		"id": "nxt-010",
+		"category": "nextjs",
+		"topic": "routing",
+		"question": "How do dynamic routes work, and what does generateStaticParams do?",
+		"difficulty": "intermediate",
+		"shortAnswer": "[param] folders match dynamic segments, [...slug] catches rest, [[slug]] is optional catch-all. generateStaticParams pre-renders known param values at build time (SSG); unknown params either render on demand or 404 depending on dynamicParams.",
+		"explanation": "Dynamic segments make data-driven URLs type-safe-ish: app/blog/[slug]/page.tsx receives params.slug. Catch-all [...slug] matches /docs/a/b/c; optional catch-all [[...slug]] also matches the bare prefix. In Server Components params arrives as a prop (a Promise in recent versions). generateStaticParams returns the list of values to prerender at build — like getStaticPaths before it — commonly fetching all slugs from your CMS or DB: return posts.map(p => ({ slug: p.slug })). The companion flag dynamicParams controls strangers: true (default) renders unknown params on demand then caches; false hard-404s anything not prerendered. Combine with revalidate for ISR on dynamic pages. Nested dynamics compose — parent and child each declare their own params. Common production concern: thousands of params × long builds → prefer on-demand rendering with caching over exhaustive prerendering.",
+		"example": "// app/blog/[slug]/page.tsx\nexport async function generateStaticParams() {\n  const posts = await getAllPosts();\n  return posts.map((p) => ({ slug: p.slug }));\n}\n\nexport const revalidate = 3600; // ISR refresh hourly\n\nexport default async function Post({ params }: { params: Promise<{ slug: string }> }) {\n  const { slug } = await params;\n  const post = await getPost(slug);\n  if (!post) notFound();\n  return <Article post={post} />;\n}",
+		"exampleLanguage": "tsx",
+		"interviewTip": "Name all three segment syntaxes quickly, then focus on the generateStaticParams + dynamicParams pairing — that's where understanding actually shows.",
+		"commonMistakes": [
+			"Mixing up [...slug] and [[...slug]] semantics.",
+			"Not knowing dynamicParams controls whether unknown paths render."
+		],
+		"relatedQuestions": ["nxt-009", "nxt-001", "nxt-013"]
+	},
+	{
+		"id": "nxt-011",
+		"category": "nextjs",
+		"topic": "routing",
+		"question": "What are Route Handlers and how do they replace API routes?",
+		"difficulty": "beginner",
+		"shortAnswer": "Route Handlers live in route.ts files and export functions per HTTP method (GET, POST...), replacing pages/api/*. They're full Request/Response Web-standard handlers, cacheable like fetches, and colocated with the routes they serve.",
+		"explanation": "app/api/users/route.ts exports async GET(request) { ... } replacing the old default-export switch statements. They use Web standard APIs — Request, Response, URLSearchParams — so code ports to edge runtimes, workers, tests unchanged. Method exports map directly to verbs; unsupported methods fall through to 405 automatically. Caching integrates with the same machinery as fetch: static handlers (no request-time input) can be prerendered, revalidate applies, dynamic = 'force-dynamic' forces runtime. Reading request data via searchParams/headers opts into dynamism. Handlers suit external API surface areas — webhooks, REST endpoints for mobile apps. Important nuance: when both client and server are Next.js, Server Components often call databases/services *directly*, skipping an internal API hop entirely — handlers aren't always needed. Middleware remains separate at the root for cross-cutting concerns.",
+		"example": "// app/api/subscribe/route.ts\nexport async function POST(request: Request) {\n  const { email } = await request.json();\n  if (!email?.includes('@')) {\n    return Response.json({ error: 'Invalid email' }, { status: 400 });\n  }\n  await addSubscriber(email);\n  return Response.json({ ok: true }, { status: 201 });\n}\n\nexport async function GET() {\n  const count = await subscriberCount();\n  return Response.json({ count });\n}",
+		"exampleLanguage": "ts",
+		"interviewTip": "Show the method-export mapping in code, then drop the senior insight — 'internal calls often skip HTTP entirely with RSC' — it reframes when handlers are actually necessary.",
+		"commonMistakes": [
+			"Building internal APIs out of habit instead of querying from Server Components.",
+			"Not knowing Web-standard Request/Response powers them."
+		],
+		"relatedQuestions": ["nxt-005", "nxt-012", "nde-008"]
+	},
+	{
+		"id": "nxt-012",
+		"category": "nextjs",
+		"topic": "routing",
+		"question": "What is Next.js middleware and what do you use it for?",
+		"difficulty": "intermediate",
+		"shortAnswer": "middleware.ts runs before every matching request at the edge — rewriting URLs, redirecting, setting headers, and gating access by cookies. It can't run heavy logic or use Node APIs; think fast routing decisions, not business logic.",
+		"explanation": "A single middleware.ts at the project root exports a function receiving every incoming request (filtered by matcher config): auth gates checking session cookies before protected routes render, A/B experiments rewriting to variant pages transparently, geo/locale redirects from headers, adding security headers globally, logging. It runs in a lightweight edge runtime: Web APIs yes, heavy Node libraries no, execution time budgeted in milliseconds. Two response patterns: NextResponse.next() passes through (optionally rewriting/adding headers), redirect()/rewrite() change destination. Rewrites differ from redirects — URL stays in browser while content swaps, enabling clean experiments. Matcher config limits scope cheaply ('/dashboard/:path*'). Common mistake: treating middleware as general backend code — DB queries and sessions belong in Server Components/handlers; middleware should decide *where* requests go, quickly.",
+		"example": "// middleware.ts\nimport { NextResponse } from 'next/server';\nimport type { NextRequest } from 'next/server';\n\nexport function middleware(request: NextRequest) {\n  const hasSession = request.cookies.has('session');\n  if (!hasSession && request.nextUrl.pathname.startsWith('/dashboard')) {\n    const login = new URL('/login', request.url);\n    login.searchParams.set('from', request.nextUrl.pathname);\n    return NextResponse.redirect(login);\n  }\n  return NextResponse.next();\n}\n\nexport const config = { matcher: ['/dashboard/:path*'] };",
+		"exampleLanguage": "ts",
+		"interviewTip": "List three concrete uses fast (auth gate, rewrites for experiments, header injection), then state the constraint that shapes design: edge runtime, milliseconds, no heavy compute.",
+		"commonMistakes": [
+			"Putting database calls into middleware.",
+			"Forgetting the matcher config and running on every asset request."
+		],
+		"relatedQuestions": ["nxt-011", "nde-007", "nxt-009"]
+	},
+	{
+		"id": "nxt-013",
+		"category": "nextjs",
+		"topic": "routing",
+		"question": "How do loading.tsx, error.tsx and not-found.tsx work together?",
+		"difficulty": "intermediate",
+		"shortAnswer": "They're per-segment conventions built on React primitives: loading.tsx is an automatic Suspense boundary, error.tsx is an error boundary that must be a client component receiving reset(), not-found.tsx renders for 404s including notFound() calls. Each scopes to its folder level and nests.",
+		"explanation": "Next.js turns common UI states into file conventions wrapping each route segment. loading.tsx wraps the segment's page in <Suspense fallback={<Loading/>}>: navigation shows it instantly while server data streams in — no manual skeleton wiring. error.tsx creates an Error Boundary catching render/data failures below its position; it must start with 'use client', receives error plus reset() to retry the segment without reloading the whole app — pair with a button calling reset(). not-found.tsx handles two triggers: users hitting unmatched URLs and code calling notFound() deliberately for missing records (the idiomatic 404 for dynamic params). Nesting means granular recovery: a failing widget errors its nearest boundary, keeping surrounding chrome alive. template.tsx rounds out the family (remounts on navigation). Together they encode resilient UI architecture declaratively.",
+		"example": "// app/products/error.tsx\n'use client';\nexport default function ProductsError({ error, reset }) {\n  return (\n    <div role=\"alert\">\n      <p>Couldn't load products: {error.message}</p>\n      <button onClick={reset}>Try again</button>\n    </div>\n  );\n}\n\n// app/products/[id]/page.tsx\nimport { notFound } from 'next/navigation';\nif (!product) notFound(); // renders nearest not-found.tsx",
+		"exampleLanguage": "tsx",
+		"interviewTip": "Map each file to its React primitive (Suspense, ErrorBoundary) first — then the reset() retry flow and notFound() usage show practical fluency.",
+		"commonMistakes": [
+			"Forgetting 'use client' in error.tsx.",
+			"Expecting error boundaries to catch event handlers or server actions."
+		],
+		"relatedQuestions": ["rct-007", "nxt-009", "nxt-010"]
+	},
+	{
+		"id": "nxt-014",
+		"category": "nextjs",
+		"topic": "routing",
+		"question": "What do route groups and underscore-prefixed folders do?",
+		"difficulty": "intermediate",
+		"shortAnswer": "(group) folders organize routes without affecting the URL — useful for different layout shells sharing a path space. Underscore prefixes mark private folders excluded from routing: _components, _lib keep colocation tidy.",
+		"explanation": "Route groups wrap related routes in parentheses: app/(marketing)/about/page.tsx still serves /about but inherits only (marketing)/layout.tsx — letting marketing pages use one shell while app/(shop)/products uses another, even coexisting at the same URL path level (only one may claim a given final path though). Groups solve real problems: separate root layouts for auth flows, applying Suspense/loading per section, organizing without polluting URLs. Private folders (_name) opt files out of the filesystem router entirely — components, utilities, fixtures sit next to the routes using them without creating accidental endpoints; the alternative $ prefix opts back INTO routing for unusual needs. Conflicts to watch: groups sharing a path must not define competing pages at identical URLs, and multiple root layouts require groups with each holding its own html/body. These features reward deliberate information architecture.",
+		"example": "app/\n├─ (marketing)/\n│  ├─ layout.tsx        # marketing shell\n│  └─ about/page.tsx    # /about\n├─ (shop)/\n│  ├─ layout.tsx        # shop shell w/ cart\n│  └─ products/page.tsx # /products\n└─ dashboard/\n   ├─ _components/Chart.tsx   # NOT a route\n   └─ page.tsx                # /dashboard",
+		"exampleLanguage": "text",
+		"interviewTip": "Draw the tree with both groups showing same-level URLs mapping to different layouts. The 'private folders prevent accidental routes' point shows attention to safety.",
+		"commonMistakes": [
+			"Creating duplicate paths across groups causing build conflicts.",
+			"Not knowing _folders stay out of the router."
+		],
+		"relatedQuestions": ["nxt-009", "nxt-002", "hcs-001"]
+	},
+	{
+		"id": "nxt-015",
+		"category": "nextjs",
+		"topic": "routing",
+		"question": "How does navigation work — Link vs router.push — and what does prefetching do?",
+		"difficulty": "beginner",
+		"shortAnswer": "<Link> is the default: client-side transitions, prefetching viewport-visible routes, preserving scroll/state of shared layouts. router.push programmatically navigates (after mutations). Prefetching downloads route payloads ahead of clicks making transitions instant.",
+		"explanation": "Link renders an anchor (SEO-friendly, middle-click works) but intercepts clicks for soft navigation: only changed segments fetch/render, layouts stay mounted, browser history updates correctly. Prefetching starts automatically when links scroll into viewport — static routes fully prefetch; dynamic ones fetch the shared layout/shell, streaming the rest on click. That's why App Router navigations feel instant. router.push/replace/back/refresh handle imperative cases: navigating after form success, programmatic redirects post-login, forcing refresh after mutations (router.refresh() re-fetches server components preserving client state — the idiomatic post-mutation update alongside revalidation). usePathname/useSearchParams power active-link styling and query-driven UI. Pitfalls: plain <a> tags lose prefetching and trigger full reloads; prefetch={false} disables eager fetching for logout links etc.; nested same-route push needs care to avoid duplicate history entries.",
+		"example": "'use client';\nimport Link from 'next/link';\nimport { useRouter, usePathname } from 'next/navigation';\n\nfunction Nav() {\n  const router = useRouter();\n  const pathname = usePathname();\n\n  async function handleLogout() {\n    await fetch('/api/logout', { method: 'POST' });\n    router.push('/');       // imperative, after side effect\n    router.refresh();       // re-run server components\n  }\n\n  return (\n    <nav>\n      <Link href=\"/products\" className={pathname === '/products' ? 'active' : ''}>Products</Link>\n      <button onClick={handleLogout}>Log out</button>\n    </nav>\n  );\n}",
+		"exampleLanguage": "tsx",
+		"interviewTip": "Explain prefetching behavior (viewport-triggered, static vs dynamic difference) — most candidates know Link but not how prefetching changes perceived performance.",
+		"commonMistakes": [
+			"Using raw <a> tags internally, losing client navigation.",
+			"Not knowing router.refresh() exists for post-mutation server updates."
+		],
+		"relatedQuestions": ["nxt-009", "nxt-003", "rct-008"]
+	}
+]

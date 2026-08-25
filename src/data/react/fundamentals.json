@@ -1,0 +1,138 @@
+[
+	{
+		"id": "rct-001",
+		"category": "react",
+		"topic": "fundamentals",
+		"question": "What is the Virtual DOM and how does React's reconciliation work?",
+		"difficulty": "intermediate",
+		"shortAnswer": "The Virtual DOM is a lightweight in-memory tree of plain objects describing the UI. On updates, React diffs the new tree against the previous one (reconciliation) and applies only the minimal set of real DOM changes.",
+		"explanation": "Touching the real DOM is expensive — each mutation can trigger layout and paint. React decouples your declarative description of the UI from imperative DOM operations. When state changes, the component re-renders producing a new element tree; React compares it with the previous tree using its diffing algorithm and commits just the differences to the actual DOM. The diff uses two key heuristics to stay O(n): elements of different types (div → span, or a different component) tear down and rebuild their subtree rather than diffing inside; and sibling lists are matched by keys, not index order. This is exactly why stable keys matter — without them React may misidentify which items changed, causing wrong state or extra work.",
+		"example": "// State change:\n// <ul><li>A</li><li>B</li></ul>\n// ↓ re-render\n// <ul><li>B</li><li>A</li></ul>\n\n// Without keys: React sees position 0 changed (A→B),\n// position 1 changed (B→A) → 2 mutations.\n// With keys: React matches key=\"a\" and key=\"b\",\n// reorders pointers → minimal work.",
+		"exampleLanguage": "jsx",
+		"interviewTip": "Name the two diff heuristics (type check + keyed siblings) — most candidates stop at 'it diffs trees'. Mentioning Fiber briefly as the reconciler engine adds senior polish.",
+		"commonMistakes": [
+			"Saying React re-renders mean the whole DOM is rebuilt.",
+			"Not connecting keys to reconciliation behavior."
+		],
+		"relatedQuestions": ["rct-003", "rct-007", "rct-015"]
+	},
+	{
+		"id": "rct-002",
+		"category": "react",
+		"topic": "fundamentals",
+		"question": "What is the difference between props and state?",
+		"difficulty": "beginner",
+		"shortAnswer": "Props are read-only inputs passed from a parent describing how a component should render; state is data a component owns and can update over time, triggering re-renders when it changes.",
+		"explanation": "Props flow down the component tree one way. A component treats them as immutable configuration — changing what a parent passes re-renders the child, but the child never edits props itself. State is private memory owned by the component (useState/useReducer); updating it schedules a re-render with new values. The mental model: 'state is for data that changes over time from within; props are for data that varies by usage from outside.' Derived values belong to neither — compute them during render instead of duplicating into state. When two components need the same data, lift that state to their closest common parent and pass pieces down as props. Lifting state up is the canonical answer to 'how do siblings share data?'",
+		"example": "function Counter({ step = 1, label }) { // props: configured by parent\n  const [count, setCount] = useState(0); // state: owned here\n  return (\n    <button onClick={() => setCount(c => c + step)}>\n      {label}: {count}\n    </button>\n  );\n}",
+		"exampleLanguage": "tsx",
+		"interviewTip": "Use the phrase 'one-way data flow' and finish with lifting state up — it preempts the standard follow-up about sharing data between siblings.",
+		"commonMistakes": [
+			"Mutating props or state directly instead of using setters.",
+			"Storing derived values in state, creating sync bugs."
+		],
+		"relatedQuestions": ["rct-005", "rct-009", "rct-008"]
+	},
+	{
+		"id": "rct-003",
+		"category": "react",
+		"topic": "fundamentals",
+		"question": "Why are keys important in React lists?",
+		"difficulty": "beginner",
+		"shortAnswer": "Keys give each list item a stable identity across renders so React's reconciler knows which item is which — enabling efficient moves and preserving per-item state. Use unique, stable IDs, not array indices.",
+		"explanation": "During reconciliation React matches old and new children by key. With proper keys, reordering means moving existing instances rather than rebuilding them — input focus, animations, and local state survive correctly. Index keys break this: if the array shifts (insert at front, removal, sorting), every item's index changes, so React thinks different content lives at each slot. Consequences range from wasted re-renders to notorious bugs like typing in row 2's input while editing row 1. Indices are acceptable only when the list is static, never reordered, and items carry no identity or internal state. Keys need to be unique among siblings only, not globally, and shouldn't be generated randomly per render — that destroys identity entirely.",
+		"example": "// ❌ index keys — breaks on reorder/delete\n{todos.map((todo, i) => <TodoRow key={i} todo={todo} />)}\n\n// ✅ stable identity\n{todos.map(todo => <TodoRow key={todo.id} todo={todo} />)}",
+		"exampleLanguage": "tsx",
+		"interviewTip": "Give the concrete failure mode — 'type into an input, delete a row above, watch your text jump' — then state the rule: stable IDs unless truly static lists.",
+		"commonMistakes": [
+			"Defaulting to index keys without knowing the tradeoff.",
+			"Suggesting random keys like Math.random() — worse than indices."
+		],
+		"relatedQuestions": ["rct-001", "rct-007", "rct-010"]
+	},
+	{
+		"id": "rct-004",
+		"category": "react",
+		"topic": "fundamentals",
+		"question": "What's the difference between controlled and uncontrolled components?",
+		"difficulty": "intermediate",
+		"shortAnswer": "In controlled components, form inputs get value from state and onChange writes back to it — React is the single source of truth. Uncontrolled inputs keep their own internal state, read via refs when needed.",
+		"explanation": "Controlled inputs bind value={state} and update state on every keystroke, making the UI fully driven by React state: instant validation, conditional disabling, formatted input (masks), and easy resets all fall out naturally because the value can't drift from state. Uncontrolled inputs behave like vanilla HTML: the DOM holds the current value and you pull it on demand with ref.current.value — less code for simple forms, but no per-keystroke control. Rule of thumb: default to controlled for anything interactive or validated; use uncontrolled for simple one-shot reads (file inputs must be uncontrolled anyway since their value is read-only). Libraries like react-hook-form embrace uncontrolled internals precisely to skip per-keystroke re-renders while still giving validation.",
+		"example": "// Controlled\nconst [email, setEmail] = useState('');\n<input value={email} onChange={e => setEmail(e.target.value)} />\n\n// Uncontrolled\nconst emailRef = useRef<HTMLInputElement>(null);\n<input defaultValue=\"\" ref={emailRef} />\nonSubmit={() => console.log(emailRef.current!.value)}",
+		"exampleLanguage": "tsx",
+		"interviewTip": "Frame both around 'who owns the truth' — React state vs the DOM — then mention file inputs as the classic forced-uncontrolled case.",
+		"commonMistakes": [
+			"Forgetting onChange on a controlled input (value locks it read-only).",
+			"Not knowing file inputs can't be controlled."
+		],
+		"relatedQuestions": ["rct-002", "rct-012", "rct-009"]
+	},
+	{
+		"id": "rct-005",
+		"category": "react",
+		"topic": "fundamentals",
+		"question": "What does 'lifting state up' mean and when should you do it?",
+		"difficulty": "beginner",
+		"shortAnswer": "Moving shared state to the closest common ancestor of components that need it, then passing it down via props. Do it whenever two or more components must stay in sync with the same data.",
+		"explanation": "React's one-way data flow means siblings can't share state directly. If a search input and results list live in different subtrees but depend on the same query string, that query belongs to their nearest shared parent: the parent owns useState, passes the value and setter down. The children become 'controlled' by the parent — presentational and reusable. Signs you should lift: duplicated copies of the same value drifting out of sync, or a child needing to change something a sibling displays. Counter-pressure matters too: over-lifting bloats parents and causes wide re-render cascades, so colocate state as low as possible until sharing is genuinely needed. For deeply nested or widely shared data, Context or external stores (Redux/Zustand/React Query) replace prop-threading through many layers ('prop drilling').",
+		"example": "function SearchPage() {\n  const [query, setQuery] = useState(''); // lifted here\n  return (\n    <>\n      <SearchBox query={query} onQueryChange={setQuery} />\n      <ResultsList query={query} />\n    </>\n  );\n}",
+		"exampleLanguage": "tsx",
+		"interviewTip": "State the principle — 'own state at the lowest common ancestor, no lower, no higher' — and mention prop drilling as the natural follow-up topic.",
+		"commonMistakes": [
+			"Lifting everything to the top-level app 'just in case'.",
+			"Duplicating synced state instead of lifting."
+		],
+		"relatedQuestions": ["rct-002", "rct-008", "rct-013"]
+	},
+	{
+		"id": "rct-006",
+		"category": "react",
+		"topic": "fundamentals",
+		"question": "What are the ways to do conditional rendering in React?",
+		"difficulty": "beginner",
+		"shortAnswer": "Ternaries for either/or output, && for render-or-nothing, early returns for whole branches, variables/ifs for complex logic — plus element variables and returning null to render nothing.",
+		"explanation": "JSX is just expressions, so any JavaScript condition works. The ternary operator handles two-branch rendering inline. Logical && renders something only when the left side is truthy — with one famous trap: a numeric left side like {count && <Badge/>} renders literal 0 when count is zero, because 0 is falsy but still rendered; guard with count > 0 && instead. Early returns inside the component keep complex conditions readable before JSX starts. For multi-branch UIs, assigning the chosen element to a variable keeps markup clean. Switching entire screens usually belongs at the routing level rather than conditionals. Whatever the technique, prefer readability: nested ternaries inside JSX are where bugs hide.",
+		"example": "function Banner({ user, error }) {\n  if (error) return <Alert type=\"error\">{error}</Alert>;\n  if (!user) return null;\n\n  return user.isAdmin ? (\n    <AdminPanel user={user} />\n  ) : (\n    <>\n      Welcome back{user.unread > 0 && <Badge count={user.unread} />}\n    </>\n  );\n}",
+		"exampleLanguage": "tsx",
+		"interviewTip": "Cover ternary, &&, and early return quickly, then volunteer the `{0 && ...}` renders-zero gotcha — it's a favorite follow-up probe.",
+		"commonMistakes": [
+			"Using `x && <Y/>` where x can be 0 or NaN.",
+			"Nesting ternaries three levels deep inside JSX."
+		],
+		"relatedQuestions": ["rct-002", "rct-007", "rct-006"]
+	},
+	{
+		"id": "rct-007",
+		"category": "react",
+		"topic": "fundamentals",
+		"question": "How do class lifecycle methods map to hooks?",
+		"difficulty": "intermediate",
+		"shortAnswer": "componentDidMount ≈ useEffect(fn, []), componentDidUpdate ≈ useEffect without deps (or with deps), componentWillUnmount ≈ a cleanup function returned from useEffect. Hooks unify these into one API tied to synchronization, not lifecycle stages.",
+		"explanation": "Classes split logic by *when* it runs: componentDidMount for setup, componentDidUpdate for reacting to changes, componentWillUnmount for teardown — often scattering one concern across three methods. useEffect merges them around *what* you're synchronizing with: one effect per concern, with a dependency array deciding when it re-runs and a returned function handling cleanup before the next run and on unmount. So subscribing to a websocket lives in one effect (subscribe on mount, unsubscribe on cleanup), regardless of how many times deps change. ShouldComponentUpdate corresponds to React.memo (props) and useMemo/useCallback (values/functions). getDerivedStateFromProps is intentionally unsupported — derive during render instead. componentDidCatch maps to Error Boundaries, which remain class-only (or library wrappers).",
+		"example": "// Class version spread over 3 methods:\nclass Chat extends React.Component {\n  componentDidMount() { subscribe(this.props.room); }\n  componentDidUpdate(prev) {\n    if (prev.room !== this.props.room) {\n      unsubscribe(prev.room); subscribe(this.props.room);\n    }\n  }\n  componentWillUnmount() { unsubscribe(this.props.room); }\n}\n\n// Same concern as one effect:\nuseEffect(() => {\n  const conn = subscribe(room);\n  return () => unsubscribe(conn);\n}, [room]);",
+		"exampleLanguage": "tsx",
+		"interviewTip": "Present the mapping table fast, then make the conceptual point — effects synchronize with external systems, they aren't lifecycles. That reframing is what interviewers score.",
+		"commonMistakes": [
+			"Treating useEffect(fn, []) as literally 'didMount' and ignoring cleanup timing.",
+			"Claiming there's a hook equivalent for componentDidCatch."
+		],
+		"relatedQuestions": ["rct-001", "rct-010", "rct-011"]
+	},
+	{
+		"id": "rct-008",
+		"category": "react",
+		"topic": "fundamentals",
+		"question": "What is prop drilling and how does Context solve it?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Prop drilling threads props through intermediate components that don't use them, just to reach deeper ones. Context lets a provider broadcast values that any descendant consumes directly via useContext — no middle layers involved.",
+		"explanation": "When deeply nested components need data owned far up the tree, passing it through every level pollutes intermediate components with irrelevant props and makes refactors brittle. Context creates a subscription channel: create a context, wrap a subtree in <Context.Provider value={...}>, and any descendant calls useContext(Context) to receive the current value. It shines for genuinely ambient data — theme, locale, authenticated user, feature flags. Costs to acknowledge: every consumer re-renders when the context value changes (so memoize the value object), it couples consumers to implicit dependencies making reuse harder, and it's not a state manager — no caching, retries, or devtools story for mutations. Common pattern: context for low-frequency global data, component props for everything else, libraries like Zustand or TanStack Query for server/app state at scale.",
+		"example": "const ThemeContext = createContext<'light' | 'dark'>('light');\n\n<ThemeContext.Provider value={theme}>\n  <Layout /> {/* middle layers no longer need theme */}\n</ThemeContext.Provider>\n\nfunction Button() {\n  const theme = useContext(ThemeContext);\n  return <button className={theme}>Go</button>;\n}",
+		"exampleLanguage": "tsx",
+		"interviewTip": "Define drilling with a quick three-component example, then immediately balance with the costs — value memoization and re-render blast radius show production experience.",
+		"commonMistakes": [
+			"Using Context for rapidly-changing server data, causing mass re-renders.",
+			"Forgetting to memoize the provider value object."
+		],
+		"relatedQuestions": ["rct-005", "rct-011", "rct-015"]
+	}
+]

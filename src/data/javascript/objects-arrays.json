@@ -1,0 +1,53 @@
+[
+	{
+		"id": "js-010",
+		"category": "javascript",
+		"topic": "objects-arrays",
+		"question": "How does destructuring work for objects and arrays?",
+		"difficulty": "beginner",
+		"shortAnswer": "Destructuring unpacks values from objects or arrays into variables using a pattern that mirrors the structure: { a, b } = obj picks properties by name, [x, y] = arr picks items by position.",
+		"explanation": "Object destructuring matches property names, so order doesn't matter, and you can rename ({ name: userName }) or provide defaults ({ age = 18 }). Nested patterns reach into inner structures in one line. Array destructuring works positionally, supports skipping holes ([a, , c]) and defaults, and its rest element collects the tail. The swap idiom [a, b] = [b, a] falls out naturally. In function signatures, destructured parameters give named options with defaults — the pattern behind most modern APIs (e.g., fetch options). Combined with spread it handles immutable updates: ({ ...user, name: 'New' }) clones while overriding. Common uses: pulling data out of API responses, iterating Object.entries, and cleaning up props in React components.",
+		"example": "const user = { name: 'Ada', address: { city: 'London' }, roles: ['admin', 'dev'] };\n\nconst { name, address: { city }, country = 'UK' } = user;\n// name='Ada', city='London', country='UK'\n\nconst [primary, ...rest] = user.roles;\n// primary='admin', rest=['dev']\n\nfunction render({ title, size = 'md' }) {\n  return `${title} (${size})`;\n}\nrender({ title: 'Card' }); // 'Card (md)'",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Show renaming, defaults and nesting in one compact example — three features in five lines reads as fluency rather than memorization.",
+		"commonMistakes": [
+			"Misremembering that arrays destructure by key — they use position.",
+			"Forgetting parentheses when destructuring to existing variables: ({a} = obj);"
+		],
+		"relatedQuestions": ["js-011", "js-012", "rct-014"]
+	},
+	{
+		"id": "js-011",
+		"category": "javascript",
+		"topic": "objects-arrays",
+		"question": "What is the difference between shallow and deep copies, and how do you create each?",
+		"difficulty": "intermediate",
+		"shortAnswer": "A shallow copy duplicates only the top level — nested objects are still shared references. A deep copy duplicates every level so nothing is shared. Spread/Object.assign are shallow; structuredClone is deep.",
+		"explanation": "Objects live on the heap and variables hold references, so assignment never copies. Spread ({ ...obj }) and Object.assign() create new top-level containers, but any nested object/array is copied as a pointer — mutating nestedObj.x through either version affects both. Deep copying historically meant JSON.parse(JSON.stringify(obj)), which loses functions, undefined, Dates, Maps/Sets and throws on circular refs. Modern JavaScript ships structuredClone(), which handles all built-in types and cycles correctly (but still not functions). Libraries like Lodash's cloneDeep remain common in older codebases. Choosing depth is a real design decision: shallow copies are cheap and usually right for state updates where you replace nested levels wholesale; deep copies protect against untrusted or deeply mutated input at higher cost.",
+		"example": "const original = { meta: { views: 1 } };\n\nconst shallow = { ...original };\nshallow.meta.views = 99;\nconsole.log(original.meta.views); // 99 — shared!\n\nconst deep = structuredClone(original);\ndeep.meta.views = 42;\nconsole.log(original.meta.views); // 99 — untouched\n\nJSON.parse(JSON.stringify({ d: new Date() })).d; // string, not Date!",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Demonstrate the shared-reference bug first — it proves you understand *why* — then present structuredClone as the modern answer and note JSON's pitfalls.",
+		"commonMistakes": [
+			"Believing spread performs a deep copy.",
+			"Recommending JSON round-trip without mentioning Date/undefined loss."
+		],
+		"relatedQuestions": ["js-010", "js-012", "js-003"]
+	},
+	{
+		"id": "js-012",
+		"category": "javascript",
+		"topic": "objects-arrays",
+		"question": "When would you choose map, filter, and reduce?",
+		"difficulty": "beginner",
+		"shortAnswer": "map transforms every item into a new array of the same length, filter keeps items matching a predicate, and reduce folds everything into a single value — sum, object, anything.",
+		"explanation": "These three cover most array processing. map answers 'transform each element': same length in and out. filter answers 'which elements do I keep?': length shrinks, elements unchanged. reduce is the general-purpose folder: it accumulates a result across iterations — numbers (totals), objects (grouping/counting), even new arrays when chaining feels wasteful. They're chainable because each returns a fresh array/value, leaving the original untouched — important for predictable code and immutable state updates. Performance note: many chained passes can be merged into one reduce if profiling shows it matters, but clarity wins by default. Knowing forEach exists too helps articulate the difference: forEach returns undefined and is for side effects, not transformation.",
+		"example": "const orders = [\n  { id: 1, total: 120, status: 'paid' },\n  { id: 2, total: 80, status: 'pending' },\n  { id: 3, total: 45, status: 'paid' },\n];\n\norders.filter(o => o.status === 'paid')\n      .map(o => o.total)\n      .reduce((sum, t) => sum + t, 0); // 165\n\n// reduce building an object:\norders.reduce((acc, o) => {\n  acc[o.status] = (acc[o.status] ?? 0) + 1;\n  return acc;\n}, {}); // { paid: 2, pending: 1 }",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Anchor each method to one verb — transform, select, fold — then run a realistic pipeline. Mentioning forEach's side-effect-only role shows completeness.",
+		"commonMistakes": [
+			"Using map for side effects instead of forEach.",
+			"Forgetting the initial value argument of reduce, causing crashes on empty arrays."
+		],
+		"relatedQuestions": ["js-009", "js-010", "ts-010"]
+	}
+]

@@ -1,0 +1,70 @@
+[
+	{
+		"id": "nde-007",
+		"category": "nodejs",
+		"topic": "patterns",
+		"question": "How does error handling work across callback, promise and EventEmitter APIs in Node.js?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Callbacks follow error-first convention (err, result). Promises/async use try/catch and .catch. EventEmitters emit 'error' events that must have a listener — unhandled ones crash the process. Unhandled rejections also crash by default in modern Node.",
+		"explanation": "Three conventions coexist because Node's APIs evolved over a decade. Error-first callbacks reserve the first argument for errors — null on success; forgetting to return after handling creates double-invocation bugs. Promises centralize failures into .catch chains or try/catch around await; async functions that forget await silently swallow errors. EventEmitters are different: 'error' is special, and emitting one with no listener throws — crashing the process by design (fail-fast for unrecoverable state like broken sockets). Modern defaults enforce discipline: unhandled promise rejections terminate the process (since v15) rather than warn. Server strategy: catch at boundaries (route handlers, middleware), wrap async entry points, use process.on('uncaughtException') only to log-and-exit gracefully — never to continue running in unknown state. Domain-specific wrappers (Express async error forwarding, Fastify hooks) standardize per-framework.",
+		"example": "// Callback style:\nfs.readFile(path, (err, data) => {\n  if (err) return next(err); // return prevents double-calls\n  process(data);\n});\n\n// Promise/async style:\ntry {\n  const data = await fs.promises.readFile(path);\n  process(data);\n} catch (err) {\n  next(err);\n}\n\n// EventEmitter style:\nsocket.on('error', (err) => logger.error(err)); // required listener",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Organize strictly by the three API styles, then land the modern behavior — unhandled rejections crash since v15 — which shows you know current runtime semantics.",
+		"commonMistakes": [
+			"Forgetting return after error-first callback handling.",
+			"Not knowing missing 'error' listeners crash the process."
+		],
+		"relatedQuestions": ["js-014", "js-015", "nde-010"]
+	},
+	{
+		"id": "nde-008",
+		"category": "nodejs",
+		"topic": "patterns",
+		"question": "How does Express middleware actually work?",
+		"difficulty": "beginner",
+		"shortAnswer": "Middleware are functions receiving (req, res, next), executing in registration order. Each either ends the response or calls next() to pass control down the stack. Errors skip ahead to four-argument error middleware via next(err).",
+		"explanation": "Express maintains an ordered array of handlers matched against method+path. Each request flows through them sequentially: middleware may mutate req/res (attach user from token, parse body, log timing), terminate with res.send(), or invoke next() continuing the chain. Path prefixes scope middleware (app.use('/api', router)); Router instances nest composable stacks. The error variant is signature-based: handlers declaring exactly (err, req, res, next) receive anything passed to next(err) — normal handlers between are skipped, enabling centralized error formatting at the end of the stack. Ordering bugs dominate real issues: body parser registered after routes sees empty bodies; error handler placed early never triggers. Forgetting next() hangs requests until timeout. Modern alternatives (Fastify hooks, Koa's async composition, Hono) formalize the same pipeline concept — understanding request lifecycle transfers directly.",
+		"example": "app.use(requestLogger);                    // 1st: logs everything\napp.use(express.json());                   // 2nd: parses bodies\napp.use('/api', apiRouter);                // scoped routes\n\napp.use((req, res) => res.status(404).end());       // fallthrough\napp.use((err, req, res, _next) => {                 // error handler: 4 args!\n  console.error(err);\n  res.status(500).json({ error: 'Internal error' });\n});\n\nfunction requestLogger(req, _res, next) {\n  console.log(`${req.method} ${req.url}`);\n  next();\n}",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Walk one request through the stack aloud, then highlight the two classic gotchas — ordering matters and the 4-argument error signature is how errors get routed.",
+		"commonMistakes": [
+			"Registering json() parser after routes.",
+			"Defining error middleware with three arguments."
+		],
+		"relatedQuestions": ["nde-007", "nxt-011", "nde-005"]
+	},
+	{
+		"id": "nde-009",
+		"category": "nodejs",
+		"topic": "patterns",
+		"question": "What are Buffers and when do you need them over strings?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Buffer is Node's fixed-size raw binary data type — sequences of bytes outside V8's heap. Use it for binary protocols, file/network chunks, hashing, encodings. Strings are UTF-16 internally and imply character encoding semantics buffers don't have.",
+		"explanation": "JavaScript strings encode characters; network and disk speak bytes. Buffer bridges them: allocates fixed byte arrays outside the regular object heap, exposing binary-safe reads/writes with explicit encoding control (utf8, base64, hex, latin1...). You meet them constantly without noticing — stream chunks ARE buffers, crypto.digest returns one, fs.readFileSync without encoding returns one. Converting carelessly costs correctness and performance: buf.toString('utf8') on multi-byte characters split across chunk boundaries corrupts text (streaming decoders like StringDecoder fix this); string concatenation re-encodes repeatedly where buffer.concat copies once efficiently. TypedArrays overlap conceptually (Buffer subclasses Uint8Array) but Buffer adds encoding-aware APIs and pooling. Practical rules: stay in buffers through transformations, convert to string once at boundaries, specify encoding explicitly everywhere rather than trusting defaults.",
+		"example": "import crypto from 'node:crypto';\n\nconst payload = Buffer.from('hello world', 'utf8');\nconst hash = crypto.createHash('sha256').update(payload).digest('hex');\n\n// Binary-safe round trip:\nconst encoded = payload.toString('base64');   // send as text\nconst decoded = Buffer.from(encoded, 'base64');\ndecoded.toString('utf8');                     // 'hello world'\n\npayload.byteLength; // 11 — actual bytes, unlike string length",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Open with 'strings are characters, networks speak bytes' then give the split-multibyte-chunk bug — it proves hands-on stream experience instantly.",
+		"commonMistakes": [
+			"Calling toString() per-chunk in streams with multibyte content.",
+			"Not knowing Buffer extends Uint8Array."
+		],
+		"relatedQuestions": ["nde-004", "nde-002", "nde-003"]
+	},
+	{
+		"id": "nde-010",
+		"category": "nodejs",
+		"topic": "patterns",
+		"question": "How do you implement graceful shutdown in a Node.js server?",
+		"difficulty": "advanced",
+		"shortAnswer": "Listen for SIGTERM/SIGINT, stop accepting new connections (server.close), finish in-flight requests within a timeout budget, close downstream resources (DB, queues), then exit. Orchestrators give ~30s before SIGKILL.",
+		"explanation": "Killing a server mid-request drops responses, corrupts batch jobs, and leaks connections. Graceful shutdown coordinates a sequence when platforms signal termination (deployments, scale-downs): first stop the intake — server.close() stops accepting new connections while existing ones finish (keep-alive connections need closing too); simultaneously flag load balancers/readiness probes unhealthy so traffic reroutes. Then wait for active requests with a hard deadline — typically force-exit after 20-30s since Kubernetes sends SIGKILL shortly after its grace period. Finally release dependencies in order: flush message queues/logs, close database pools, cancel timers/workers. Edge cases worth naming: long-running requests exceeding the window get cut (set per-request deadlines), WebSocket connections need explicit close codes, idempotency protects retried writes during the window. Libraries like terminus (@godaddy/terminus) package this correctly — implementing it raw demonstrates you understand every step.",
+		"example": "import http from 'node:http';\n\nconst server = http.createServer(handler);\nserver.listen(3000);\n\nconst connections = new Set();\nserver.on('connection', (conn) => {\n  connections.add(conn);\n  conn.on('close', () => connections.delete(conn));\n});\n\nasync function shutdown(signal) {\n  console.log(`${signal} received — draining…`);\n  server.close();                          // stop new requests\n  setTimeout(() => process.exit(1), 25_000).unref(); // hard deadline\n\n  await Promise.allSettled([\n    ...[...connections].map((c) => new Promise((r) => c.end(r))),\n    closeDatabasePool(),\n    queue.flush(),\n  ]);\n  process.exit(0);\n}\nprocess.on('SIGTERM', () => shutdown('SIGTERM'));\nprocess.on('SIGINT', () => shutdown('SIGINT'));",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Narrate the ordered checklist — intake off → drain → resources → exit — and mention the Kubernetes grace-period race. Naming terminus signals practical experience.",
+		"commonMistakes": [
+			"Forgetting keep-alive/idle connections hang server.close().",
+			"No timeout fallback, so the process never exits."
+		],
+		"relatedQuestions": ["nde-001", "nde-006", "nde-005"]
+	}
+]

@@ -1,0 +1,87 @@
+[
+	{
+		"id": "hcs-006",
+		"category": "html-css",
+		"topic": "layout-styling",
+		"question": "Flexbox vs Grid — how do you choose?",
+		"difficulty": "beginner",
+		"shortAnswer": "Flexbox lays out along ONE axis (row or column) — toolbars, nav, card content. Grid works in TWO dimensions simultaneously — page layouts, galleries, forms with aligned rows/columns. They compose: grid for macro structure, flex inside cells.",
+		"explanation": "The axis distinction drives everything. Flexbox distributes children in a single direction with powerful alignment/growth controls (flex-grow/shrink/basis, justify-content, align-items) and handles dynamic content wrapping gracefully — ideal when items flow: navigation bars, button groups, media objects, form rows. Grid defines tracks in both dimensions upfront (grid-template-columns/rows), placing items into cells that stay visually aligned even with ragged content heights — dashboards, card grids, magazine layouts, whole-page scaffolding. Grid also enables named areas and overlap placement; flex can't place arbitrarily. Content-out vs layout-in framing helps: flex sizes to its content, grid carves structure for content to fill. Real interfaces mix them constantly — a grid page shell containing flex navs and card internals. Bonus points: gap works in both now, subgrid finally solves nested-track alignment, auto-fit/minmax creates responsive grids without media queries.",
+		"example": "/* Macro: two-column page */\n.page {\n  display: grid;\n  grid-template-columns: 250px 1fr;\n  gap: 1rem;\n}\n\n/* Responsive cards without media queries */\n.cards {\n  display: grid;\n  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));\n  gap: 1.5rem;\n}\n\n/* Micro: card internals flow on one line */\n.card-header { display: flex; justify-content: space-between; }",
+		"exampleLanguage": "css",
+		"interviewTip": "Answer with the one-axis/two-axis rule first, then show auto-fit + minmax — the no-media-query responsive grid always impresses.",
+		"commonMistakes": [
+			"Building page scaffolds entirely in nested flexbox.",
+			"Not knowing gap applies to flexbox too."
+		],
+		"relatedQuestions": ["hcs-002", "hcs-008", "hcs-009"]
+	},
+	{
+		"id": "hcs-007",
+		"category": "html-css",
+		"topic": "layout-styling",
+		"question": "Explain CSS positioning values and stacking contexts.",
+		"difficulty": "intermediate",
+		"shortAnswer": "static is normal flow; relative offsets without removing from flow (and anchors absolutes); absolute positions against nearest positioned ancestor, out of flow; fixed against viewport; sticky scrolls then sticks. Stacking contexts decide z-index battles — created by positioned+z-index, opacity<1, transforms, filters.",
+		"explanation": "Position controls removal from normal flow. relative stays in place but offsets visually and — crucially — becomes the containing block for absolute descendants. absolute removes from flow entirely, sizing to content, anchoring to the nearest ancestor with position other than static. fixed pins to viewport (ignoring scroll) unless an ancestor's transform/filter/perspective captures it into a containing block — a classic bug source. sticky combines: behaves relative until crossing a threshold, then acts fixed within its scrolling parent (needs a top value). Z-index only matters within stacking contexts — atomic groups formed by root, positioned elements with z-index, opacity < 1, transform, isolation, will-change and more. A child's z-index can never escape its context: why your modal (z-index 9999) sits under a sidebar whose parent has opacity 0.99. Debug strategy: find the unexpected context creator via devtools' 3D view, add isolation: isolate where needed.",
+		"example": ".badge {\n  position: absolute;      /* anchored to .card below */\n  top: -8px; right: -8px;\n  z-index: 2;\n}\n.card { position: relative; }\n\n.header { position: sticky; top: 0; } /* sticks while scrolling */\n\n.faded { opacity: 0.99; }  /* creates stacking context! */",
+		"exampleLanguage": "css",
+		"interviewTip": "Give each value one crisp sentence, then spend your depth budget on stacking contexts with the opacity-traps-modal story — that's the senior signal.",
+		"commonMistakes": [
+			"Forgetting absolute needs a positioned ancestor.",
+			"Not knowing transforms/opacity create stacking contexts."
+		],
+		"relatedQuestions": ["hcs-006", "hcs-003", "hcs-002"]
+	},
+	{
+		"id": "hcs-008",
+		"category": "html-css",
+		"topic": "layout-styling",
+		"question": "How many ways can you center an element? Name the modern go-to.",
+		"difficulty": "beginner",
+		"shortAnswer": "Modern default: display: grid; place-items: center on the parent (or flex + align-items/justify-content center). Legacy options include margin auto for horizontal blocks, absolute+transform, text-align/line-height tricks, and the new align-content: center shorthand.",
+		"explanation": "Interviewers ask this to gauge fluency recency. The contemporary answer leads: grid's place-items: center centers any child both axes in two words — or flex equivalents (justify-content + align-items) when already using flex. Horizontal-only block centering remains margin-inline: auto with a constrained width. The old absolute + left/top 50% + translate(-50%, -50%) still appears for overlays where the element must ignore flow, though fixed-position modals increasingly use grid too. Text centering uses text-align (horizontal) and line-height equal to height (vertical, single-line). Worth naming: inset: 0 + margin auto for sized absolutely-positioned elements, and the brand-new top-level centering syntax (align-content: center making margin-auto-like behavior work everywhere in modern browsers) signals cutting-edge knowledge. Know tradeoffs: transform-based centering can blur text on fractional pixels; flex/grid keep text crisp.",
+		"example": "/* The 2024+ answer: */\n.parent {\n  display: grid;\n  place-items: center;   /* both axes, any child */\n  min-height: 100dvh;\n}\n\n/* Overlay variant: */\n.overlay-child {\n  position: fixed;\n  inset: 0;\n  margin: auto;\n  width: fit-content; height: fit-content;\n}",
+		"exampleLanguage": "css",
+		"interviewTip": "Lead with place-items: center confidently, list two legacy methods briefly, close with dvh/align-content novelty. Brevity plus recency wins here.",
+		"commonMistakes": [
+			"Only knowing the absolute+transform approach.",
+			"Using line-height hacks for multi-line vertical centering."
+		],
+		"relatedQuestions": ["hcs-006", "hcs-007", "hcs-004"]
+	},
+	{
+		"id": "hcs-009",
+		"category": "html-css",
+		"topic": "layout-styling",
+		"question": "What does mobile-first responsive development mean in practice?",
+		"difficulty": "beginner",
+		"shortAnswer": "Write base styles for small screens, then layer enhancements with min-width media queries as space grows. It forces content prioritization and produces cleaner cascades than desktop-first max-width overrides.",
+		"explanation": "Mobile-first is an authoring order, not just breakpoints. Base CSS targets the constraint environment — single column, touch targets ≥44px, essential content only — then min-width queries progressively add columns, larger type, hover states as real estate allows. Benefits compound: the cascade adds rather than undoes (desktop-first buries you in overrides), performance improves because mobile avoids downloading/hiding desktop cruft, and forced prioritization clarifies what actually matters. Breakpoint selection follows content, not devices: add one where the design breaks (~480px, ~768px, ~1024px typical), letting container queries handle component-level adaptation independent of viewport — the modern evolution for reusable components. Pair with fluid techniques so fewer breakpoints are needed: fluid type via clamp(), percentage/fr/grid auto-fit layouts, rem-based spacing scaling. Test across real device classes and throttled networks.",
+		"example": "/* Mobile base */\n.features { display: grid; gap: 1rem; }\n\n/* Tablet: two columns */\n@media (min-width: 48rem) {\n  .features { grid-template-columns: repeat(2, 1fr); }\n}\n\n/* Desktop: three + wider gutters */\n@media (min-width: 64rem) {\n  .features { grid-template-columns: repeat(3, 1fr); gap: 2rem; }\n}",
+		"exampleLanguage": "css",
+		"interviewTip": "Stress 'additive cascade' and content-driven breakpoints, then mention container queries + clamp() reducing breakpoint count — current best practice vocabulary.",
+		"commonMistakes": [
+			"Writing desktop styles then patching with max-width queries.",
+			"Picking breakpoints per-device instead of per-design-breakage."
+		],
+		"relatedQuestions": ["hcs-004", "hcs-006", "nde-005"]
+	},
+	{
+		"id": "hcs-010",
+		"category": "html-css",
+		"topic": "layout-styling",
+		"question": "What's the difference between pseudo-classes and pseudo-elements?",
+		"difficulty": "beginner",
+		"shortAnswer": "Pseudo-classes style states/positions of existing elements (:hover, :focus-visible, :nth-child, :first-child) — single colon. Pseudo-elements create virtual sub-elements you can style (::before, ::after, ::placeholder, ::selection) — double colon.",
+		"explanation": "Pseudo-classes select *real* elements under specific conditions — interaction state (:hover/:focus/:active/:focus-visible), structural position (:first-child, :nth-of-type(3n), :empty), input states (:checked, :disabled, :valid), and relational selectors modernized (:has() lets parents respond to children!). Pseudo-*elements* target portions of rendered content that have no DOM node: ::before/::after inject generated boxes (icons, decorations) requiring content property; ::placeholder styles input hints; ::selection colors highlights; ::first-letter drops caps. History note: CSS2 used single colons for both; CSS3 split them apart, browsers keep :before/:after working for backwards compatibility. Power combos worth citing: :focus-visible giving keyboard-only focus rings, :nth-child(odd) zebra tables, :has() enabling parent selection ('card containing checked box') — long-requested and now broadly available, changing architecture possibilities.",
+		"example": "/* Pseudo-classes: states & positions */\n.btn:hover { background: indigo; }\n.btn:focus-visible { outline: 2px solid indigo; }\ntr:nth-child(even) { background: #f5f5f5; }\n.card:has(img) { padding-top: 0; }   /* parent responds to child */\n\n/* Pseudo-elements: virtual content */\n.required::after { content: \" *\"; color: red; }\n::selection { background: indigo; color: white; }",
+		"exampleLanguage": "css",
+		"interviewTip": "One-liner definitions, then flex with :has() and :focus-visible — modern selector fluency distinguishes current practitioners from textbook readers.",
+		"commonMistakes": [
+			"Muddling which takes double colons.",
+			"Not knowing ::before/::after require the content property."
+		],
+		"relatedQuestions": ["hcs-003", "hcs-007", "hcs-001"]
+	}
+]

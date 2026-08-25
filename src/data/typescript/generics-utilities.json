@@ -1,0 +1,121 @@
+[
+	{
+		"id": "ts-009",
+		"category": "typescript",
+		"topic": "generics-utilities",
+		"question": "How do Partial, Required and Readonly transform object types?",
+		"difficulty": "intermediate",
+		"shortAnswer": "They're mapped types: Partial<T> makes every property optional (draft/update shapes), Required<T> makes every property non-optional, Readonly<T> marks every property readonly. Each iterates over keyof T and applies a modifier.",
+		"explanation": "Mapped types iterate keys and rebuild properties with modifiers: { [K in keyof T]?: T[K] } is essentially Partial. Partial shines for update payloads — patchUser(id, changes: Partial<User>) accepts any subset without duplicating the interface. Required is its inverse, stripping optionality (useful after validation guarantees completeness). Readonly protects inputs from mutation contracts. Modifiers combine: Readonly<Partial<T>> for frozen drafts. You can remove modifiers with -?: { [K in keyof T]-?: T[K] } — that's literally Required's implementation. Custom mapped types follow the same recipe, e.g., making only certain methods nullable or stringifying all values ({ [K in keyof T]: string }). Understanding that these utilities are *just syntax sugar over mapped types* is what lets you write your own domain-specific variants.",
+		"example": "interface User { id: number; name: string; email?: string }\n\ntype UserPatch = Partial<User>;      // all optional\nfunction updateUser(id: number, patch: UserPatch) {}\nupdateUser(1, { name: 'New' });       // ✅ subset ok\n\ntype StrictUser = Required<User>;     // email now required\n// Under the hood:\ntype MyPartial<T> = { [K in keyof T]?: T[K] };",
+		"exampleLanguage": "typescript",
+		"interviewTip": "Define 'mapped type' first, then present each utility as one application of it. Writing MyPartial on the spot proves deep understanding instantly.",
+		"commonMistakes": [
+			"Not knowing these are built from mapped-type syntax.",
+			"Using Partial everywhere instead of modeling precise update types."
+		],
+		"relatedQuestions": ["ts-010", "ts-008", "ts-013"]
+	},
+	{
+		"id": "ts-010",
+		"category": "typescript",
+		"topic": "generics-utilities",
+		"question": "When do you reach for Pick, Omit and Record?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Pick<T, K> selects a subset of properties; Omit<T, K> removes specified ones; Record<K, V> builds a type keyed by K with values V. Together they compose view models, API projections and dictionaries from base types.",
+		"explanation": "These three cover most day-to-day type composition. Pick extracts public-safe shapes: type PublicUser = Pick<User, 'id' | 'name'> keeps responses minimal. Omit hides sensitive fields: SafeUser = Omit<User, 'passwordHash'> — note it stays in sync automatically if new sensitive fields are added to the exclusion list explicitly. Record constructs maps: Record<string, number> for counters, Record<Role, Permission[]> ensuring every role has an entry (with literal unions as keys, missing entries become compile errors). Combining them scales well: Record<Status, Omit<ScreenProps, 'status'>> models per-status UI configs. Caveats: Omit uses Exclude under the hood so it silently ignores nonexistent keys — Pick errors on typos, making it stricter. Deep transformations need recursive mapped types beyond these built-ins.",
+		"example": "interface Article {\n  id: string;\n  title: string;\n  body: string;\n  authorIp: string;\n}\n\ntype ArticleCard = Pick<Article, 'id' | 'title'>;\ntype PublicArticle = Omit<Article, 'authorIp'>;\n\ntype ViewsByStatus = Record<'draft' | 'published', number>;\nconst views: ViewsByStatus = { draft: 3, published: 12 };",
+		"exampleLanguage": "typescript",
+		"interviewTip": "Give one concrete use per utility from real work (API projection, hiding fields, exhaustive maps) — practical framing beats textbook definitions.",
+		"commonMistakes": [
+			"Not realizing Omit won't error on keys that never existed.",
+			"Forgetting literal-union keys in Record give exhaustiveness checking."
+		],
+		"relatedQuestions": ["ts-006", "ts-009", "ts-011"]
+	},
+	{
+		"id": "ts-011",
+		"category": "typescript",
+		"topic": "generics-utilities",
+		"question": "What do ReturnType and Parameters do? How would you implement them?",
+		"difficulty": "advanced",
+		"shortAnswer": "ReturnType<T> extracts a function's return type; Parameters<T> extracts its argument list as a tuple. Both use conditional types with infer: T extends (...args: infer A) => infer R.",
+		"explanation": "Conditional types ask structural questions at the type level: `T extends SomeShape ? X : Y`. The infer keyword declares a placeholder to be solved during matching. ReturnType's definition is `type ReturnType<T extends (...args: any) => any> = T extends (...args: any) => infer R ? R : never` — match T against a function pattern, capture R. Parameters similarly captures args as a tuple: infer A in the argument position yields [string, number] style tuples, perfect for building wrapper functions that forward arguments: function logged<F extends AnyFn>(fn: F, ...args: Parameters<F>): ReturnType<F>. Related family members: Awaited<T> unwraps promises recursively, InstanceType<T> gets constructor instance types, ThisParameterType handles this-typing. These shine when you can't modify source code — third-party functions, generated clients — letting you derive types instead of hand-writing duplicates that drift.",
+		"example": "function createSession(userId: string, ttlDays = 7) {\n  return { token: crypto.randomUUID(), expiresAt: Date.now() + ttlDays * 864e5 };\n}\n\ntype Session = ReturnType<typeof createSession>;\ntype SessionArgs = Parameters<typeof createSession>; // [userId: string, ttlDays?: number]\n\nfunction timed<A extends unknown[], R>(fn: (...args: A) => R): (...args: A) => R {\n  return (...args) => {\n    console.time('call');\n    try { return fn(...args); } finally { console.timeEnd('call'); }\n  };\n}",
+		"exampleLanguage": "typescript",
+		"interviewTip": "Write the conditional type with infer yourself rather than quoting docs — implementing ReturnType from scratch is a classic senior-level whiteboard moment.",
+		"commonMistakes": [
+			"Not knowing `infer` or where it may appear.",
+			"Forgetting the constraint (...args: any) => any required on these utilities."
+		],
+		"relatedQuestions": ["ts-013", "ts-005", "ts-010"]
+	},
+	{
+		"id": "ts-012",
+		"category": "typescript",
+		"topic": "generics-utilities",
+		"question": "What are user-defined type guards and assertion functions?",
+		"difficulty": "intermediate",
+		"shortAnswer": "A type guard is a boolean function with a `value is Type` return signature — inside if branches TypeScript narrows accordingly. An assertion function (`asserts value is Type`) throws when invalid and narrows everything after the call.",
+		"explanation": "Runtime data arrives untyped: JSON.parse, API responses, form input. Type guards bridge runtime checks and compile-time knowledge. A guard like `function isUser(v: unknown): v is User { return typeof v.id === 'number' && ... }` performs actual validation; calling it in an if gives narrowed flow in both branches (else branch excludes User). Guards compose with Array.prototype.filter using type predicates too. Assertion functions invert control: validateOrThrow(user): asserts user is User — execution continues only if valid, so following code narrows without an if. They require explicit return/break discipline in some call positions. Guards should genuinely verify structure (not lie via always-true), and libraries like Zod generate guards from schemas — mention schema-validation integration for bonus points since it eliminates hand-written drift between validator and type.",
+		"example": "interface ApiError { status: number; message: string }\n\nfunction isApiError(e: unknown): e is ApiError {\n  return typeof e === 'object' && e !== null\n    && 'status' in e && 'message' in e;\n}\n\ntry { await api.call(); }\ncatch (err: unknown) {\n  if (isApiError(err)) showToast(err.message); // err: ApiError here\n  else throw err;\n}\n\nfunction assertDefined<T>(v: T | undefined): asserts v is T {\n  if (v === undefined) throw new Error('Missing value');\n}",
+		"exampleLanguage": "typescript",
+		"interviewTip": "Show both forms back-to-back (is vs asserts), then connect to Zod/Valibot — 'guards derived from one schema' answers where this question always leads.",
+		"commonMistakes": [
+			"Writing guards that don't actually validate anything.",
+			"Confusing `v is T` with returning a plain boolean."
+		],
+		"relatedQuestions": ["ts-004", "ts-001", "ts-015"]
+	},
+	{
+		"id": "ts-013",
+		"category": "typescript",
+		"topic": "generics-utilities",
+		"question": "How do conditional types work, and what does NonNullable use?",
+		"difficulty": "advanced",
+		"shortAnswer": "Conditional types pick a branch based on whether T extends a pattern: `T extends U ? X : Y`. NonNullable<T> is simply `T extends null | undefined ? never : T`, filtering nullish members out of unions via distributive behavior.",
+		"explanation": "Conditionals make types computable: `type IsString<T> = T extends string ? true : false`. Two mechanics matter most. First, distribution: naked type parameters distribute unions across the check — NonNullable<string | null> becomes (string extends null|undefined ? never : string) | (null → never) = string | never = string. Wrapping the parameter ([T]) disables distribution when you need whole-union comparisons. Second, recursion: conditionals referencing themselves build arbitrary transforms — DeepReadonly walks nested objects until primitives. Combined with infer they express sophisticated queries (Awaited, Get array element type). Practical guardrails: keep conditionals shallow where possible, prefer simpler mapped types when they suffice, and remember never vanishes inside unions which is precisely why filtering patterns work.",
+		"example": "// NonNullable's implementation:\ntype MyNonNullable<T> = T extends null | undefined ? never : T;\ntype Clean = MyNonNullable<string | null | undefined>; // string\n\n// Recursion example:\ntype DeepReadonly<T> = T extends (infer U)[]\n  ? readonly DeepReadonly<U>[]\n  : T extends object\n    ? { readonly [K in keyof T]: DeepReadonly<T[K]> }\n    : T;",
+		"exampleLanguage": "typescript",
+		"interviewTip": "Explain distribution with the NonNullable walkthrough step by step — union goes in, each member evaluated separately, nevers drop out. Then show one recursive type briefly.",
+		"commonMistakes": [
+			"Not knowing naked parameters distribute over unions.",
+			"Writing deeply recursive types where simple mapped types would do."
+		],
+		"relatedQuestions": ["ts-011", "ts-009", "ts-001"]
+	},
+	{
+		"id": "ts-014",
+		"category": "typescript",
+		"topic": "generics-utilities",
+		"question": "What does the satisfies operator add over plain annotations?",
+		"difficulty": "advanced",
+		"shortAnswer": "satisfies validates a value against a type while preserving the value's inferred (often narrower) type. Plain annotations widen literals and lose specificity; satisfies keeps both safety and precision.",
+		"explanation": "Annotating `const config: Config = {...}` checks compliance but *widens* the variable to Config — literal values become their general types ('dark' widens to string), losing autocomplete and exactness downstream. satisfies flips it: `const config = {...} satisfies Config` verifies every requirement while keeping inferred narrowness — config.theme stays 'dark' | 'light' instead of string, excess-property checking still applies during validation, and no duplicate type declaration is needed. Ideal cases: typed constant maps (routes, feature flags, theme tokens) where consumers benefit from precise literal types, and validating objects whose specific shape matters later. Limitations: it's expression-level (not for function returns — those still use annotations), available since TS 4.9, and codebases on older versions rely on `as const` + separate checks. Knowing when NOT to use it — public API boundaries where widening is desirable — shows balanced judgment.",
+		"example": "type ThemeConfig = Record<string, { dark: boolean; accent: string }>;\n\nconst themes = {\n  sunset: { dark: true, accent: '#ff7a59' },\n  ocean:  { dark: false, accent: '#2563eb' },\n} satisfies ThemeConfig;\n\nthemes.sunset.accent; // type stays '#ff7a59' (literal!) — not string\n// typo key 'sunet'   ❌ caught by satisfies check",
+		"exampleLanguage": "typescript",
+		"interviewTip": "Contrast directly with annotation-widening in one example — the literal-preservation demo is the entire answer. Mention TS 4.9+ availability.",
+		"commonMistakes": [
+			"Thinking replaces as const entirely — they solve different problems.",
+			"Using satisfies where function return annotations are needed."
+		],
+		"relatedQuestions": ["ts-007", "ts-002", "ts-006"]
+	},
+	{
+		"id": "ts-015",
+		"category": "typescript",
+		"topic": "generics-utilities",
+		"question": "What is module augmentation and when would you use it?",
+		"difficulty": "advanced",
+		"shortAnswer": "Module augmentation lets you add or replace declarations in existing modules — extending third-party types, adding properties to Express's Request, or appending to global interfaces like Window — declared via `declare module 'mod'` blocks.",
+		"explanation": "Libraries evolve slower than your app's needs. Module augmentation merges your declarations into theirs: declare module 'express-serve-static-core' { interface Request { currentUser?: User } } makes req.currentUser type-safe everywhere after auth middleware runs. Same mechanism powers ambient global augmentation (declare global { interface Window { ... } }) for browser APIs you attach at runtime. Rules: augmentations must live in modules (files with import/export), target exported interfaces/classes — not type aliases — and merge structurally like normal declaration merging. Common scenarios: typing middleware-injected request fields, extending React's JSX namespace (JSX.IntrinsicElements custom elements), enriching library instances with plugin metadata, patching generated client types. Cautions: augmentation creates invisible coupling across the codebase — document where augmentations live (a dedicated types.d.ts), keep additions minimal, and prefer contributing upstream when the addition benefits everyone.",
+		"example": "// types/express.d.ts\nimport type { User } from '../auth/user';\n\ndeclare global {\n  namespace Express {\n    interface Request {\n      currentUser?: User;\n    }\n  }\n}\n\n// After authMiddleware sets req.currentUser:\napp.get('/me', (req, res) => {\n  res.json(req.currentUser?.name ?? null); // fully typed ✅\n});",
+		"exampleLanguage": "typescript",
+		"interviewTip": "Use the Express Request.currentUser example — nearly every backend dev has felt this pain. Note the 'must be a module file' gotcha to show depth.",
+		"commonMistakes": [
+			"Attempting to augment type aliases instead of interfaces.",
+			"Putting augmentations in scripts rather than module files, silently failing."
+		],
+		"relatedQuestions": ["ts-002", "ts-012", "nde-008"]
+	}
+]

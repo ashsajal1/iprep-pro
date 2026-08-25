@@ -1,0 +1,70 @@
+[
+	{
+		"id": "js-006",
+		"category": "javascript",
+		"topic": "functions",
+		"question": "What is a closure and when would you use one?",
+		"difficulty": "intermediate",
+		"shortAnswer": "A closure is a function bundled with references to its outer lexical scope, so it remembers and can use variables from where it was defined — even after that outer function has returned.",
+		"explanation": "Functions in JavaScript capture the environment they were created in, not a copy of the values. When an inner function survives beyond its outer function's lifetime (returned, passed as callback, stored), it keeps a live reference to those variables. This enables private state without classes: counters, caches and module patterns all rely on closures for encapsulation. Closures power event handlers that remember configuration, memoization wrappers, once() helpers, and are the foundation of how hooks like useState keep values between renders in React. The classic gotcha is creating closures inside loops with var: every iteration shares one variable, so all callbacks print the final value; let creates a fresh binding per iteration and fixes it.",
+		"example": "function createCounter() {\n  let count = 0;              // captured by closure\n  return {\n    increment: () => ++count,\n    value: () => count,\n  };\n}\nconst counter = createCounter();\ncounter.increment();\ncounter.increment();\nconsole.log(counter.value()); // 2 — count lives on\n\n// Classic loop pitfall:\nfor (var i = 0; i < 3; i++) {\n  setTimeout(() => console.log('var:', i)); // 3, 3, 3\n}\nfor (let j = 0; j < 3; j++) {\n  setTimeout(() => console.log('let:', j)); // 0, 1, 2\n}",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Define it crisply ('function + its lexical scope'), then immediately demonstrate with private counter code and mention the var-in-loop gotcha. That trio covers 90% of follow-up questions.",
+		"commonMistakes": [
+			"Saying closures 'copy' outer variables — they hold live references.",
+			"Not knowing a practical use case like memoization or private state."
+		],
+		"relatedQuestions": ["js-007", "js-013", "js-019"]
+	},
+	{
+		"id": "js-007",
+		"category": "javascript",
+		"topic": "functions",
+		"question": "How do arrow functions differ from regular functions?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Arrow functions don't get their own this, arguments, or prototype, can't be used as constructors, and inherit this lexically from their surrounding scope.",
+		"explanation": "The biggest difference is `this`. Regular functions receive `this` dynamically based on how they're called (as a method, standalone, with new, etc.), while arrows capture `this` from where they're written — perfect for callbacks inside methods where you want to keep referring to the object. Arrows also have no `arguments` object (use rest parameters instead), cannot be called with `new` (no [[Construct]] behavior or prototype property), and cannot be used as generators. They're always anonymous expressions. Because `this` is fixed, call/apply/bind cannot change an arrow's `this`. Use arrows for short callbacks and functional style; prefer regular functions (or methods) when you need dynamic `this`, constructors, or object methods that rely on being invoked via their owner.",
+		"example": "const timer = {\n  seconds: 0,\n  start() {\n    // arrow keeps `this` = timer from start()\n    setInterval(() => {\n      this.seconds++;\n      console.log(this.seconds);\n    }, 1000);\n  },\n};\ntimer.start();\n\n// Regular method form would lose `this` inside setInterval:\n// setInterval(function () { this.seconds++; }, 1000); // NaN error",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Lead with the lexical `this` difference, then list the missing features (arguments, prototype, new). A timer example makes it concrete instantly.",
+		"commonMistakes": [
+			"Using arrows as object methods and losing access to the object via this.",
+			"Saying arrows are 'just shorter syntax' without mentioning binding differences."
+		],
+		"relatedQuestions": ["js-006", "js-008", "rct-010"]
+	},
+	{
+		"id": "js-008",
+		"category": "javascript",
+		"topic": "functions",
+		"question": "What do call, apply and bind do?",
+		"difficulty": "intermediate",
+		"shortAnswer": "All three control what this refers to when invoking functions. call invokes immediately with listed arguments, apply invokes immediately with an array of arguments, bind returns a new permanently-bound function.",
+		"explanation": "Every regular function's `this` depends on its call site; these methods override that. fn.call(context, a, b) runs fn right away with this = context and arguments a, b. fn.apply(context, [a, b]) does the same but takes arguments as an array — historically useful for spreading arrays before the spread operator existed. fn.bind(context) doesn't run anything; it returns a copy of the function whose `this` is locked to context (partial application of leading args is possible too). Bound functions ignore later attempts to re-bind. Typical uses: borrowing methods (e.g., calling Array.prototype.slice on array-like objects), event handler binding in class-based code, and ensuring callbacks keep their intended context. Note arrows ignore all three for `this`, since theirs is lexical.",
+		"example": "function greet(greeting, punct) {\n  return `${greeting}, ${this.name}${punct}`;\n}\n\nconst user = { name: 'Ada' };\ngreet.call(user, 'Hello', '!');     // 'Hello, Ada!'\ngreet.apply(user, ['Hi', '?']);     // 'Hi, Ada?'\nconst bound = greet.bind(user, 'Hey');\nbound('.');                          // 'Hey, Ada.'",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Give the one-line mnemonic — call = comma-separated, apply = array, bind = later — then show one example each. Fast, complete, memorable.",
+		"commonMistakes": [
+			"Confusing apply's array-of-args signature with call's spread args.",
+			"Forgetting bind returns a new function rather than invoking."
+		],
+		"relatedQuestions": ["js-007", "js-009", "js-020"]
+	},
+	{
+		"id": "js-009",
+		"category": "javascript",
+		"topic": "functions",
+		"question": "What are higher-order functions and why do they matter?",
+		"difficulty": "beginner",
+		"shortAnswer": "A higher-order function either takes functions as arguments, returns a function, or both. They enable reusable abstractions like map, filter, setTimeout and middleware pipelines.",
+		"explanation": "Because JavaScript treats functions as first-class citizens — assignable to variables, passable as arguments, returnable from other functions — you can build logic that operates on other logic. map(fn), filter(fn) and reduce(fn) parameterize *what to do* separately from *how to iterate*. Event systems (addEventListener), timers (setTimeout), promises (.then) and React components receiving render props are all higher-order patterns. Returning functions unlocks factories and partial application, e.g., multiplyBy(2) producing specialized functions. This style tends to reduce duplication, make code more declarative, and compose small behaviors into bigger ones — a mindset interviewers want to see because it transfers directly to hooks, HOCs, Express middleware and RxJS-style streams.",
+		"example": "const numbers = [1, 2, 3, 4];\n\nnumbers.map(n => n * n)       // takes a function\n       .filter(n => n % 2 === 0)\n       .reduce((sum, n) => sum + n, 0); // 20\n\n// Returning a function:\nconst multiplyBy = factor => n => n * factor;\nconst double = multiplyBy(2);\ndouble(21); // 42",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Name the two forms explicitly (accepts / returns functions), give map as your canonical example, and connect to something framework-level like addEventListener or middleware.",
+		"commonMistakes": [
+			"Defining them vaguely as 'functions about functions' without the two concrete forms.",
+			"Failing to name any real-world examples beyond map/filter."
+		],
+		"relatedQuestions": ["js-012", "js-006", "nde-007"]
+	}
+]

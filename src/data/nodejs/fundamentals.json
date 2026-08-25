@@ -1,0 +1,104 @@
+[
+	{
+		"id": "nde-001",
+		"category": "nodejs",
+		"topic": "fundamentals",
+		"question": "Explain the Node.js event loop and its phases.",
+		"difficulty": "intermediate",
+		"shortAnswer": "The event loop cycles through phases — timers, pending callbacks, poll (I/O), check (setImmediate), close — processing callbacks per phase, draining microtasks (promises, process.nextTick) between each phase and after every macrotask.",
+		"explanation": "Node runs JavaScript on one thread while libuv offloads expensive operations (file I/O, DNS, crypto) to the thread pool and OS; completion callbacks queue for the loop. Each iteration visits phases in order: timers run expired setTimeout/setInterval callbacks; pending callbacks run deferred system events (like some TCP errors); poll blocks waiting for new I/O when queues are empty, then executes I/O callbacks; check runs setImmediate callbacks; close handles 'close' events. Microtasks have strict priority: process.nextTick drains before promise microtasks, and both flush between *every* phase transition and individual timer callback — which is why a recursive nextTick can starve the loop entirely. Practical consequences: CPU-heavy work blocks everything (use worker_threads); ordering between setTimeout(fn, 0) and setImmediate depends on context — inside an I/O cycle setImmediate wins deterministically.",
+		"example": "// Inside an I/O callback:\nconst fs = require('fs');\nfs.readFile(__filename, () => {\n  setTimeout(() => console.log('timeout'), 0);\n  setImmediate(() => console.log('immediate'));\n});\n// Logs: immediate → timeout (deterministic inside I/O phase)",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Name the four main phases in order (timers → poll → check → close), then volunteer the nextTick-starvation warning and the setImmediate-vs-setTimeout I/O quirk.",
+		"commonMistakes": [
+			"Saying Node is multi-threaded because of async operations.",
+			"Not knowing microtasks drain between phases, not only at the end."
+		],
+		"relatedQuestions": ["js-013", "nde-002", "nde-006"]
+	},
+	{
+		"id": "nde-002",
+		"category": "nodejs",
+		"topic": "fundamentals",
+		"question": "What does non-blocking I/O mean in Node.js?",
+		"difficulty": "beginner",
+		"shortAnswer": "I/O calls return immediately instead of pausing execution; completion arrives via callbacks/promises/events. One thread can thus juggle thousands of concurrent connections because it never sits idle waiting for disk or network.",
+		"explanation": "Blocking I/O ties a thread to each operation: read a file, wait 50ms doing nothing, continue. Non-blocking APIs hand work to the OS/thread pool and register a continuation, freeing the main thread to serve other requests meanwhile — throughput scales with concurrency rather than thread count. The tradeoff is discipline: any long synchronous operation on the main thread negates everything (fs.readFileSync in a request handler stalls ALL clients). That's why CPU-bound tasks go to worker_threads or child processes, and why sync methods exist only for startup-time scripts. Contrast with thread-per-request servers (Java/PHP classic models): they parallelize compute better but burn memory per connection; Node excels at I/O-bound workloads — APIs, proxies, realtime apps — where most time is spent waiting.",
+		"example": "// ❌ blocks the entire server while reading:\napp.get('/sync', (_req, res) => {\n  const data = fs.readFileSync('/tmp/huge.log', 'utf8');\n  res.send(data.length);\n});\n\n// ✅ yields to other requests:\napp.get('/async', async (_req, res) => {\n  const data = await fs.promises.readFile('/tmp/huge.log', 'utf8');\n  res.send(data.length);\n});",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Define it as 'never wait idly', then immediately contrast with the blocking example — showing you know what breaks the model matters more than praising it.",
+		"commonMistakes": [
+			"Equating non-blocking with faster raw execution.",
+			"Not knowing sync variants block all requests."
+		],
+		"relatedQuestions": ["nde-001", "nde-004", "nde-006"]
+	},
+	{
+		"id": "nde-003",
+		"category": "nodejs",
+		"topic": "fundamentals",
+		"question": "What's the difference between CommonJS and ESM modules?",
+		"difficulty": "beginner",
+		"shortAnswer": "CommonJS uses require/module.exports with synchronous loading and dynamic requires; ESM uses import/export syntax with static structure parsed ahead of time, enabling tree-shaking, top-level await and async loading. Modern packages declare \"type\": \"module\".",
+		"explanation": "CommonJS treats modules as runtime objects: require() resolves synchronously anywhere in code (even conditionally), exports are mutable object properties. Its flexibility prevents build-time analysis, so bundlers can't reliably eliminate dead code. ESM's static import/export statements let tools parse dependency graphs before execution: bundlers tree-shake unused exports, circular imports resolve predictably via live bindings (imported values reflect updates), top-level await works, and browsers natively understand it. Interop has sharp edges: CJS default exports become .default under ESM, __dirname/__filename need import.meta.url equivalents, JSON needs assertions/import attributes. Migration reality: many packages ship dual builds (exports map with import/require conditions). New code should standardize on ESM — but knowing how to consume legacy CJS dependencies remains an everyday skill.",
+		"example": "// CommonJS\nconst { readFile } = require('fs/promises');\nmodule.exports = { helper };\n\n// ESM\nimport { readFile } from 'node:fs/promises';\nexport function helper() {}\n\n// package.json\n{ \"type\": \"module\" } // .js files are now ESM",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Anchor on 'static vs dynamic' — that one word explains tree-shaking, top-level await, and live bindings. Mention dual-package interop pain for real-world credibility.",
+		"commonMistakes": [
+			"Saying require works in ESM files as-is.",
+			"Forgetting __dirname doesn't exist in ESM."
+		],
+		"relatedQuestions": ["nde-005", "ts-015", "nde-007"]
+	},
+	{
+		"id": "nde-004",
+		"category": "nodejs",
+		"topic": "fundamentals",
+		"question": "What are streams and why do they matter?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Streams process data incrementally in chunks instead of buffering everything in memory — readable, writable, duplex and transform types. They matter for handling large files/network data with constant memory and backpressure control.",
+		"explanation": "Reading a 10GB log into a Buffer exhausts memory; streams deliver manageable chunks as they arrive, keeping usage flat regardless of input size. Four types cover the patterns: Readable (file reads, HTTP requests), Writable (writes, responses), Duplex (both directions — sockets), Transform (modify en route — zlib compression, encryption). Pipes compose them: readable.pipe(zlib.createGzip()).pipe(writable) or the modern pipeline()/pipeline promise API which propagates errors and cleans up properly — pipe() famously swallows errors. Backpressure is the key mechanism: if the destination writes slowly, stream pauses the source automatically so fast producers don't drown slow consumers. Everyday encounters: Express serving files, proxying requests, CSV parsing line-by-line, video streaming ranges. HighWaterMark tunes chunk buffering when profiling shows pressure.",
+		"example": "import { createReadStream, createWriteStream } from 'node:fs';\nimport { createGzip } from 'node:zlib';\nimport { pipeline } from 'node:stream/promises';\n\n// Compress a huge file with ~constant memory:\nawait pipeline(\n  createReadStream('access.log'),   // readable\n  createGzip(),                     // transform\n  createWriteStream('access.log.gz'), // writable\n); // errors propagate & cleanup handled automatically",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Lead with the memory story (10GB file example), then name backpressure explicitly — it's the concept interviewers listen for — and recommend pipeline over pipe for error safety.",
+		"commonMistakes": [
+			"Using pipe() without error handling.",
+			"Not knowing what backpressure means."
+		],
+		"relatedQuestions": ["nde-002", "nde-009", "nde-001"]
+	},
+	{
+		"id": "nde-005",
+		"category": "nodejs",
+		"topic": "fundamentals",
+		"question": "How do you manage configuration and secrets in a Node.js app?",
+		"difficulty": "beginner",
+		"shortAnswer": "Read from environment variables (process.env), load .env files locally with dotenv, validate at startup with a schema (zod/envalid), keep secrets out of code/git, and use platform secret managers in production.",
+		"explanation": "Twelve-factor principles drive the pattern: config varies per deployment, code shouldn't. process.env provides values; dotenv (now built into Node 20+ via --env-file flag) hydrates them locally from .env files that stay gitignored alongside a committed .env.example documenting required keys. Startup validation catches misconfiguration before serving traffic: parse env into a typed config object once, fail fast with clear messages listing missing variables — infinitely better than undefined leaking three requests deep. Production secret storage shifts to platform features (Vercel/AWS/GCP secret stores, Kubernetes secrets, Vault) injected as env at runtime — same interface, safer custody. Layered defaults help: config.get('port', 3000) style accessors. Anti-patterns worth naming: config modules with hardcoded fallback credentials, importing env values at module scope before tests set them, and committing .env files 'just temporarily'.",
+		"example": "// config.ts — validated once at startup\nimport { z } from 'zod';\n\nconst Env = z.object({\n  PORT: z.coerce.number().default(3000),\n  DATABASE_URL: z.string().url(),\n  NODE_ENV: z.enum(['development', 'test', 'production']),\n});\n\nexport const config = Env.parse(process.env); // throws early w/ clear errors\n\n// Run locally: node --env-file=.env index.js",
+		"exampleLanguage": "typescript",
+		"interviewTip": "Emphasize fail-fast validation — most candidates mention dotenv and stop. Naming --env-file shows current Node knowledge; mentioning rotation of leaked keys shows ops awareness.",
+		"commonMistakes": [
+			"Committing .env files with real secrets.",
+			"Scattering process.env.X across the codebase without validation."
+		],
+		"relatedQuestions": ["nxt-008", "nde-010", "nde-003"]
+	},
+	{
+		"id": "nde-006",
+		"category": "nodejs",
+		"topic": "fundamentals",
+		"question": "How do you scale a Node.js app? Compare cluster mode and worker_threads.",
+		"difficulty": "advanced",
+		"shortAnswer": "cluster forks multiple processes sharing a port — scales throughput across cores, isolates crashes, but no shared memory. worker_threads spawn threads within one process sharing memory via SharedArrayBuffer — right for CPU-bound computation. Use both: cluster × workers.",
+		"explanation": "Node's single-threaded main loop uses one core by default; scaling strategies differ by bottleneck. cluster module forks N worker processes, each a full Node instance; the master distributes connections across them (round-robin typically). Benefits: uses all cores, a crashed worker restarts independently (resilience), zero shared-state complexity — communicate via IPC. Cost: duplicated memory, no direct state sharing (sessions need Redis etc.). worker_threads creates true threads inside one process sharing heap optionally (SharedArrayBuffer, transferable ArrayBuffers) — designed for parallelizing computation: image resizing, hashing, parsing, not for adding request capacity. Rule of thumb: more requests → cluster; faster single requests → workers. In containers/Kubernetes, orchestrators often replace cluster (one process per container, scale pods horizontally), making worker_threads the in-process tool. PM2 wraps clustering with zero-downtime reloads for VM deployments.",
+		"example": "// cluster.js — use all cores\nimport cluster from 'node:cluster';\nimport os from 'node:os';\n\nif (cluster.isPrimary) {\n  for (let i = 0; i < os.availableParallelism(); i++) cluster.fork();\n  cluster.on('exit', (worker) => {\n    console.log(`worker ${worker.process.pid} died — restarting`);\n    cluster.fork();\n  });\n} else {\n  await import('./server.js'); // each worker listens on same port\n}\n\n// CPU-bound task → worker_threads instead:\n// new Worker('./heavy-hash.js', { workerData: payload })",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Draw the decision line clearly — horizontal request capacity = cluster/pods; parallel computation = worker_threads. Mentioning container orchestration replacing cluster shows production maturity.",
+		"commonMistakes": [
+			"Using worker_threads expecting higher request throughput.",
+			"Not knowing cluster workers share nothing in memory."
+		],
+		"relatedQuestions": ["nde-001", "nde-002", "nde-010"]
+	}
+]

@@ -1,0 +1,87 @@
+[
+	{
+		"id": "git-001",
+		"category": "git-github",
+		"topic": "basics",
+		"question": "Merge vs rebase — what's the difference and when do you use each?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Merge preserves history as-is with a merge commit showing integration points. Rebase replays your commits onto another base, producing a linear, cleaner history but rewriting commit SHAs. Merge for shared/public branches; rebase for local/private work before sharing.",
+		"explanation": "Both integrate changes; they differ in the history they create. git merge main into your branch adds one commit joining both lines — honest about parallel development, easy to revert as a unit, but log graphs tangle over time. git rebase main lifts your commits off their old base and replays them on top: linear readable history, every feature reading as if written against latest main. The cost is rewriting: rebased commits get new SHAs, so teammates who already pulled them face conflicts and confusion — hence the golden rule: never rebase commits others may have based work on (shared branches). Practical workflow: rebase your feature branch onto main locally to stay current and squash messy WIP commits (interactive rebase), merge via PR when done. Teams codify this in policy — 'rebase local, merge remote'. Conflict handling differs too: rebase resolves per-commit (potentially repeatedly), merge once.",
+		"example": "# Keep feature current with linear history:\ngit checkout feature/login\ngit fetch origin\ngit rebase origin/main\n# Resolve conflicts per commit, then:\ngit rebase --continue\n\n# Integrate officially (preserves both histories):\ngit checkout main && git merge --no-ff feature/login",
+		"exampleLanguage": "bash",
+		"interviewTip": "Lead with the SHA-rewriting insight — it explains every team rule. Then give the policy one-liner: rebase private work, merge shared branches.",
+		"commonMistakes": [
+			"Saying rebase is just 'cleaner' without mentioning rewritten history dangers.",
+			"Not knowing conflicts resolve per-commit during rebase."
+		],
+		"relatedQuestions": ["git-002", "git-006", "git-007"]
+	},
+	{
+		"id": "git-002",
+		"category": "git-github",
+		"topic": "basics",
+		"question": "What's the difference between reset, revert and restore?",
+		"difficulty": "intermediate",
+		"shortAnswer": "reset moves a branch pointer, optionally changing working tree (--soft keeps changes staged, --mixed unstages, --hard discards) — rewrites local history. revert creates a new commit undoing an old one — safe for shared branches. restore discards/unstages working-tree changes without touching history.",
+		"explanation": "Three tools for three situations. reset rewinds your branch to a chosen commit: --soft leaves changes staged (redo commits differently), --mixed (default) unstages them, --hard deletes the changes outright — powerful locally, dangerous pushed, because it erases commits others may have. revert computes the inverse patch of a target commit and commits it — history stays intact, everyone sees the undo explicitly; the only safe way to cancel merged work (also how you revert a revert). restore (newer, friendlier) handles uncommitted messes: restore file.js discards edits, restore --staged file.js unstages without losing work — replacing awkward checkout syntax. Recovery safety net: reflog records where HEAD moved, so even hard resets are recoverable for ~90 days. Decision heuristic: uncommitted? restore. Committed locally? reset. Already public? revert.",
+		"example": "# Uncommitted changes:\ngit restore app.js              # discard file edits\ngit restore --staged app.js     # unstage only\n\n# Local-only commits:\ngit reset --soft HEAD~1         # undo last commit, keep staged\n\n# Public branch — safe undo:\ngit revert abc1234              # new inverse commit",
+		"exampleLanguage": "bash",
+		"interviewTip": "Organize by commit-state: working tree → restore, local commits → reset, pushed commits → revert. Mentioning reflog rescue earns bonus depth.",
+		"commonMistakes": [
+			"Using reset --hard on shared branches.",
+			"Not knowing --soft vs --mixed staging outcomes."
+		],
+		"relatedQuestions": ["git-009", "git-001", "git-005"]
+	},
+	{
+		"id": "git-003",
+		"category": "git-github",
+		"topic": "basics",
+		"question": "What's the difference between git fetch and git pull?",
+		"difficulty": "beginner",
+		"shortAnswer": "fetch downloads remote updates to your local remote-tracking branches without touching your work — safe inspection first. pull = fetch + merge (or rebase) into your current branch immediately. Prefer fetch then review then integrate for fewer surprises.",
+		"explanation": "fetch syncs your view of the remote: updates origin/main and friends so git log origin/main, diffs, and comparisons reflect reality — while your local branches remain untouched, letting you inspect incoming work before committing to it. pull collapses that into one step: fetch followed by merging (default) or rebasing (pull --rebase) origin/current-branch into yours. Convenience costs control — surprise merges, unexpected conflicts mid-flow. Recommended rhythm on active teams: fetch, review what changed (git log HEAD..origin/main), then integrate deliberately — rebase for clean personal history, merge otherwise. Configure pull.rebase true if your team prefers rebase-by-default pulls. Related hygiene: prune stale tracking refs (fetch --prune) after deleted remote branches, and remember push failures often mean the remote advanced — fetch before force-pushing anything.",
+		"example": "git fetch origin                  # update remote refs only\ngit log HEAD..origin/main --oneline  # preview incoming commits\ngit diff main...origin/main       # see actual changes\ngit merge --ff-only origin/main   # integrate if fast-forwardable\n\n# One-shot equivalent:\ngit pull --rebase origin main",
+		"exampleLanguage": "bash",
+		"interviewTip": "State the formula plainly — pull = fetch + merge — then demonstrate the inspect-before-integrate habit with the range-log command.",
+		"commonMistakes": [
+			"Believing pull never creates merge commits.",
+			"Not knowing fetch alone never modifies working files."
+		],
+		"relatedQuestions": ["git-001", "git-006", "git-008"]
+	},
+	{
+		"id": "git-004",
+		"category": "git-github",
+		"topic": "basics",
+		"question": "How does git stash help in daily work?",
+		"difficulty": "beginner",
+		"shortAnswer": "stash shelves uncommitted changes (tracked files by default), resetting the tree clean so you can switch context; git stash pop restores them later. Stacks multiple entries, supports messages, -u includes untracked files.",
+		"explanation": "Context switching with dirty work causes either broken builds or commit-litter ('WIP'). stash snapshots modified tracked files plus index state onto a stack, restoring a clean tree instantly. Common flow: stash → switch branch/pull/hotfix → return → pop (applies + removes) or apply (keeps entry). Nuances worth knowing: untracked/new files need -u flag; stashes survive across branches (they're not branch-bound); popping can conflict if the base shifted — resolve like merges; drop clears entries you no longer need. Alternatives deserve mention: dedicated WIP branches or commit-amend flows scale better for long-lived shelving, and worktrees run multiple checkouts simultaneously without stashing at all. Stash shines for short interruptions — urgent review requests, quick hotfixes, pulling when local edits block merge.",
+		"example": "git stash push -m \"wip: cart redesign\" -u  # include untracked\ngit checkout main && git pull               # handle urgent update\ngit checkout feature/cart\ngit stash list\ngit stash pop                               # restore + remove entry\n# conflict while popping? resolve, then:\ngit stash drop",
+		"exampleLanguage": "bash",
+		"interviewTip": "Give the interrupt-driven scenario (hotfix mid-feature) rather than defining abstractly. The -u untracked-files gotcha shows hands-on usage.",
+		"commonMistakes": [
+			"Forgetting untracked files don't stash by default.",
+			"Assuming stashes belong to specific branches."
+		],
+		"relatedQuestions": ["git-002", "git-003", "git-005"]
+	},
+	{
+		"id": "git-005",
+		"category": "git-github",
+		"topic": "basics",
+		"question": "You committed to the wrong branch — how do you fix it?",
+		"difficulty": "intermediate",
+		"shortAnswer": "If unpushed: cherry-pick the commit onto the right branch, then remove it from the wrong one (reset). If pushed: same cherry-pick, but use revert (or coordinate before any history rewrite) on the shared branch.",
+		"explanation": "The mechanics: switch to the correct branch, git cherry-pick <sha> copies the commit there with a new SHA; returning to the wrong branch, remove the original — git reset --hard HEAD~1 if it was the tip and unpushed, or interactive rebase to drop mid-history commits. Pushed commits change the calculus: rewriting shared history strands teammates, so prefer revert on the public branch (creating an explicit undo) while still cherry-picking forward to where the work belongs. Variations: committed everything to main instead of a feature? git branch feature creates the branch pointer at current position *before* resetting main back — no cherry-pick needed for the whole-batch case. Uncommitted changes headed to the wrong place? stash or git switch -c directly carrying them over. Prevention habits: status checks before committing, branch naming conventions, and IDE branch indicators.",
+		"example": "# Committed feature work on main by mistake (unpushed):\ngit branch feature/login          # save position first!\ngit reset --hard origin/main      # rewind main\ngit checkout feature/login        # work continues correctly\n\n# Or single commit already further along:\ngit checkout feature/login\ngit cherry-pick abc1234\ngit checkout main && git reset --hard HEAD~1",
+		"exampleLanguage": "bash",
+		"interviewTip": "Split the answer by pushed-vs-unpushed immediately, then show the whole-batch branch-then-reset trick — interviewers rarely expect candidates to know it.",
+		"commonMistakes": [
+			"Hard-resetting shared branches without coordination.",
+			"Cherry-picking without cleaning up the original commit."
+		],
+		"relatedQuestions": ["git-002", "git-001", "git-009"]
+	}
+]

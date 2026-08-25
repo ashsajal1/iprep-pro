@@ -1,0 +1,87 @@
+[
+	{
+		"id": "hcs-001",
+		"category": "html-css",
+		"topic": "fundamentals",
+		"question": "Why is semantic HTML important? Give examples of semantic elements.",
+		"difficulty": "beginner",
+		"shortAnswer": "Semantic elements describe meaning, not appearance — <nav>, <article>, <header>, <button>. They give assistive tech structure, improve SEO, and make code self-documenting. Divs with classes communicate nothing.",
+		"explanation": "Semantics create the machine-readable contract of a page. Screen readers navigate by landmarks (<header>, <nav aria-label>, <main>, <footer>), letting users skip sections instead of tab through everything; search engines weight content inside <article>, <h1>-<h6> hierarchy; browsers gain built-in behaviors (native <button> gets focus, keyboard activation, form submission). The classic test: strip all CSS — does the document still read like structured content? Common anti-patterns to call out: div-soup layouts, clickable <div>s missing keyboard support (a real accessibility failure native buttons solve free), heading levels chosen for font size instead of document outline, and lists not marked as <ul>/<ol> breaking screen-reader item counts. Forms deserve special mention: <label for> connections are both usability and compliance. Semantic HTML is the cheapest accessibility and SEO win available.",
+		"example": "<main>\n  <h1>Pricing plans</h1>\n  <article>\n    <h2>Pro plan</h2>\n    <p>Everything in Free plus…</p>\n    <button type=\"button\">Choose Pro</button>\n  </article>\n  <aside aria-label=\"Compare plans\">\n    <table>…</table>\n  </aside>\n</main>",
+		"exampleLanguage": "html",
+		"interviewTip": "Structure around the three beneficiaries — screen readers, SEO, maintainability — then drop the 'strip the CSS' heuristic and the clickable-div anti-pattern.",
+		"commonMistakes": [
+			"Naming only 'SEO' without accessibility specifics.",
+			"Not knowing native button behavior differences vs divs."
+		],
+		"relatedQuestions": ["hcs-005", "js-017", "hcs-002"]
+	},
+	{
+		"id": "hcs-002",
+		"category": "html-css",
+		"topic": "fundamentals",
+		"question": "Explain the CSS box model. What does box-sizing: border-box change?",
+		"difficulty": "beginner",
+		"shortAnswer": "Every element is a box: content → padding → border → margin. Default content-box makes width apply only to content, so padding/border grow the element beyond it. border-box includes padding and border in width — the modern standard.",
+		"explanation": "The box model defines how dimensions compute: total size equals content + padding + border (+ margin affects spacing outside). Under content-box (the CSS default), declaring width: 300px with padding: 20px yields a 340px element — arithmetic surprises that made layouts brittle for years. box-sizing: border-box redefines width/height as the *final* rendered size including padding and border, so boxes behave intuitively: set 300px, get 300px. Margin always stays outside either way (and collapses vertically between siblings — worth mentioning as bonus). Nearly every reset applies border-box globally: *, *::before, *::after { box-sizing: border-box }. Interview follow-ups often probe margin collapsing rules or how percentages resolve against containing blocks — know that width percentages reference the parent's content width.",
+		"example": "*, *::before, *::after {\n  box-sizing: border-box;\n}\n\n.box {\n  width: 300px;\n  padding: 20px;\n  border: 5px solid black;\n}\n/* border-box: renders exactly 300px wide\n   content-box: would render 350px */",
+		"exampleLanguage": "css",
+		"interviewTip": "Do the math out loud — 300 + 2×20 + 2×5 = 350 under content-box — then state border-box as the universal fix and mention global reset adoption.",
+		"commonMistakes": [
+			"Forgetting margins stay outside both models.",
+			"Not knowing margin collapsing between vertical siblings."
+		],
+		"relatedQuestions": ["hcs-003", "hcs-006", "hcs-004"]
+	},
+	{
+		"id": "hcs-003",
+		"category": "html-css",
+		"topic": "fundamentals",
+		"question": "How does CSS specificity work?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Specificity ranks selectors as (inline, id, class/attribute/pseudo-class, element/pseudo-element). Higher tiers beat any number of lower ones; equal specificity falls back to source order. !important overrides everything except another !important later.",
+		"explanation": "When multiple rules target an element, specificity decides the winner per-property. Compute as four buckets: inline styles (1000), IDs (100), classes/attributes/pseudo-classes (:hover, [type]) (10), elements/pseudo-elements (::before) (1) — compare bucket by bucket, never sum across tiers (11 classes still lose to one ID... wait, reversed: one ID beats eleven classes because tier beats count). Universal selector adds zero; inherited properties carry none. Equal weight resolves by later-in-source winning. !important escapes normal resolution but creates maintenance traps — reserved mostly for utilities/overrides frameworks. Practical strategy keeps specificity flat and low: single-class selectors everywhere (BEM-style), avoid ID styling entirely, order intentional cascade layers (@layer base < components < utilities in modern CSS) rather than fighting specificity wars. Understanding :where() (zero specificity) and :is() (takes highest argument) rounds out modern control.",
+		"example": "#nav .item { }        /* 1 ID, 1 class → strong */\n.menu li.selected {}   /* 2 classes, 1 element */\ndiv {}                 /* weakest tier */\n\n/* Modern layering beats specificity games: */\n@layer base, components, utilities;\n@layer components { .btn { color: blue; } }\n@layer utilities  { .text-red { color: red; } } /* wins regardless */",
+		"exampleLanguage": "css",
+		"interviewTip": "Recite the four buckets crisply, emphasize tier-beats-count with the ID example, then volunteer @layer/:where() as the modern escape from specificity battles.",
+		"commonMistakes": [
+			"Saying specificity sums numerically across tiers.",
+			"Not knowing source order breaks ties at equal specificity."
+		],
+		"relatedQuestions": ["hcs-002", "hcs-010", "hcs-009"]
+	},
+	{
+		"id": "hcs-004",
+		"category": "html-css",
+		"topic": "fundamentals",
+		"question": "When do you use rem vs em vs px units?",
+		"difficulty": "beginner",
+		"shortAnswer": "rem scales with the root font-size — ideal for spacing, sizes, breakpoints (respects user preferences). em compounds relative to the local context — good for component-relative padding. px is absolute — fine for hairlines/shadows, problematic for typography at scale.",
+		"explanation": "Unit choice encodes intent. rem anchors everything to html's font-size (default 16px): setting paddings, widths, media queries in rem means users who raise browser font size scale your entire layout proportionally — core accessibility behavior. em references the current element's computed font-size, compounding through nesting: powerful inside components (padding proportional to label text) but notorious for unexpected inheritance drift. px stays constant regardless of user settings — acceptable for sub-pixel borders, shadows, icon alignment where scaling harms crispness, risky for text since it ignores zoom-based accessibility on some browsers. Modern practice: typography/spacing/layout in rem, component-internal relationships in em where deliberate, pixels only for decorative detail. Also relevant: ch (character width) for input sizing, dvh/svh for mobile viewport height stability, clamp() fluid type bridging min/max without breakpoints.",
+		"example": ":root { font-size: 100%; } /* 16px base */\n\n.card {\n  padding: 1.5rem;            /* scales with root */\n  border: 1px solid #ddd;     /* crisp hairline */\n  max-width: 40ch;            /* readable line length */\n}\n\n.badge {\n  font-size: 0.75em;          /* relative to parent text */\n  padding-inline: 0.75em;     /* grows with its own font */\n}\n\nh1 { font-size: clamp(2rem, 5vw, 3.5rem); }",
+		"exampleLanguage": "css",
+		"interviewTip": "Frame each unit by what should scale when the user changes settings. Mention clamp() and dvh briefly — current-practice signals interviewers notice.",
+		"commonMistakes": [
+			"Saying px is always bad — hairline borders are legit.",
+			"Not understanding em compounding through nested elements."
+		],
+		"relatedQuestions": ["hcs-002", "hcs-009", "hcs-005"]
+	},
+	{
+		"id": "hcs-005",
+		"category": "html-css",
+		"topic": "fundamentals",
+		"question": "What accessibility essentials do you build into every page?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Semantic landmarks and headings, alt text on meaningful images, labeled form controls, visible focus states, sufficient contrast (4.5:1 text), keyboard operability, logical DOM order, and ARIA only when semantics fall short.",
+		"explanation": "Accessibility is a practice, not a checklist bolted on late. Structure first: one h1, hierarchical headings, landmark regions so screen reader navigation works. Images need alt reflecting purpose (decorative ones get empty alt=\"\" to be skipped). Every interactive element must be reachable and operable by keyboard — which semantic HTML gives mostly free; custom widgets demand full keyboard patterns and focus management (modals trap focus, return it on close). Focus indicators must stay visible — outline: none without replacement fails WCAG. Contrast ratios: 4.5:1 normal text, 3:1 large text/UI components. Labels belong to inputs via <label for>/aria-labelledby; error messages connect via aria-describedby. ARIA rule number one: prefer native elements; ARIA adds roles/states only where HTML can't express them (tab panels, live regions). Test cheaply: unplug the mouse, run Lighthouse/axe, try a screen reader once monthly.",
+		"example": "<!-- Label association -->\n<label for=\"email\">Email</label>\n<input id=\"email\" type=\"email\" aria-describedby=\"email-hint\" />\n<p id=\"email-hint\">We never share your email.</p>\n\n<!-- Decorative image skipped by readers -->\n<img src=\"divider.svg\" alt=\"\" />\n\n<!-- Visible focus -->\n<style>\n:focus-visible { outline: 2px solid indigo; outline-offset: 2px; }\n</style>",
+		"exampleLanguage": "html",
+		"interviewTip": "Pick 4–5 practices and explain WHY each matters (who benefits), then say 'ARIA last, semantics first.' Mentioning axe/Lighthouse testing shows operational habit.",
+		"commonMistakes": [
+			"Treating ARIA attributes as decoration without behavior.",
+			"Removing focus outlines without alternatives."
+		],
+		"relatedQuestions": ["hcs-001", "hcs-004", "rct-003"]
+	}
+]

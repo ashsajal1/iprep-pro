@@ -1,0 +1,138 @@
+[
+	{
+		"id": "nxt-001",
+		"category": "nextjs",
+		"topic": "fundamentals",
+		"question": "Compare SSR, SSG, ISR and CSR. When do you use each?",
+		"difficulty": "intermediate",
+		"shortAnswer": "SSG builds pages once at deploy time — fastest, best for stable content. SSR renders per request — always fresh, for personalized data. ISR regenerates static pages in the background on an interval. CSR renders in the browser after JS loads — good for dashboards behind auth.",
+		"explanation": "These are tradeoffs along two axes: when HTML is produced and how stale it may be. Static generation pre-renders at build: CDN-cacheable, near-instant response, ideal for marketing pages and docs. Server-side rendering computes HTML per request: right when content depends on cookies/headers or changes every hit (user dashboards, search results), at the cost of server time per visitor. Incremental Static Regeneration hybridizes: pages serve cached HTML instantly while regenerating in the background after N seconds (stale-while-revalidate), perfect for product pages or blogs with frequent-but-not-realtime updates. Client rendering ships a shell and fetches via JS: simplest for highly interactive views where SEO doesn't matter. In App Router these become defaults plus caching knobs — fetch cache options, revalidate segment config, dynamic = 'force-dynamic' — rather than separate functions.",
+		"example": "// App Router examples:\n// SSG (default if data is static)\nexport default async function Docs() { return <Markdown />; }\n\n// ISR — revalidate every hour\nexport const revalidate = 3600;\n\n// SSR — always dynamic\nexport const dynamic = 'force-dynamic';\nexport default async function Dashboard() {\n  const data = await getUserData(); // uses cookies → dynamic\n}",
+		"exampleLanguage": "tsx",
+		"interviewTip": "Organize by the 'freshness vs speed' tradeoff, then map each mode to a real page type. Mentioning how App Router unifies them via caching shows current knowledge.",
+		"commonMistakes": [
+			"Describing ISR as just 'slower SSG' instead of stale-while-revalidate.",
+			"Not knowing cookies/headers usage forces dynamic rendering."
+		],
+		"relatedQuestions": ["nxt-003", "nxt-005", "nxt-002"]
+	},
+	{
+		"id": "nxt-002",
+		"category": "nextjs",
+		"topic": "fundamentals",
+		"question": "What are the main differences between the Pages Router and the App Router?",
+		"difficulty": "beginner",
+		"shortAnswer": "Pages Router uses pages/ with per-page data fetching functions and client components only. App Router uses app/ with nested layouts, React Server Components by default, colocated special files (loading.tsx, error.tsx) and fetch-level caching.",
+		"explanation": "The shift is architectural, not just folder names. Data fetching moved from page-level props functions (getServerSideProps/getStaticProps) into async Server Components calling fetch directly — no boilerplate. Rendering defaults inverted: components are server-rendered unless marked 'use client', shrinking JavaScript bundles dramatically. Layouts nest and persist across navigations without re-rendering, so shared chrome stays mounted. Loading and error states became first-class files built on Suspense and error boundaries per route segment. Caching centralized around fetch semantics (force-cache, no-store, revalidate intervals) rather than choosing among export functions. Special files include route.ts handlers replacing API routes plus middleware.ts at root, template.tsx and not-found.tsx. Both routers still work together during incremental migrations — knowing coexistence rules signals real-world migration experience.",
+		"example": "// pages/products/[id].tsx\nexport async function getStaticProps({ params }) {\n  const p = await getProduct(params.id);\n  return { props: { p }, revalidate: 60 };\n}\n\n// app/products/[id]/page.tsx — same result, less ceremony:\nexport const revalidate = 60;\nexport default async function Page({ params }) {\n  const p = await getProduct(params.id);\n  return <ProductView p={p} />;\n}",
+		"exampleLanguage": "tsx",
+		"interviewTip": "Pick three contrasts you know deeply (data fetching, RSC default, nested layouts) rather than listing ten shallowly. Mention migration coexistence briefly.",
+		"commonMistakes": [
+			"Saying App Router removed caching — it changed where/how it's configured.",
+			"Not knowing both routers can run side-by-side."
+		],
+		"relatedQuestions": ["nxt-001", "nxt-003", "nxt-009"]
+	},
+	{
+		"id": "nxt-003",
+		"category": "nextjs",
+		"topic": "fundamentals",
+		"question": "What's the difference between Server Components and Client Components?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Server Components run only on the server — they can await data, access secrets, and ship zero JS to the browser, but can't use state or events. Client Components ('use client') also run in the browser, supporting interactivity, and receive serialized props across the boundary.",
+		"explanation": "Server Components execute at request/build time: direct database queries, file system access, secret keys — their output streams as HTML/RSC payload without adding bundle weight. They cannot hold state, use effects or browser APIs, or attach event handlers. Client Components are traditional React: interactive, stateful, rendered on the server initially then hydrated in the browser. The boundary rule: importing a Client Component into a Server Component marks everything from there down as client subtree; children passed through remain server-renderable (the children-as-props pattern keeps flexibility). Props crossing the boundary must serialize — functions and class instances don't cross. Strategy: keep pages/layouts server-side and push interactivity to leaf nodes — buttons, forms, carousels — minimizing hydration cost.",
+		"example": "// app/products/page.tsx — Server Component (default)\nexport default async function Page() {\n  const products = await db.product.findMany(); // direct DB access ✅\n  return <List items={products} />;\n}\n\n// components/AddToCart.tsx — Client Component\n'use client';\nexport function AddToCart({ productId }) {\n  const [added, setAdded] = useState(false);   // state needs 'use client'\n  return <button onClick={() => setAdded(true)}>{added ? 'Added ✓' : 'Add'}</button>;\n}",
+		"exampleLanguage": "tsx",
+		"interviewTip": "Lead with the capability split (server: data/secrets/no-JS; client: interactivity), then explain boundary propagation and the children-as-props escape hatch.",
+		"commonMistakes": [
+			"Thinking Client Components skip server rendering entirely.",
+			"Trying to pass event handler functions from server to client components."
+		],
+		"relatedQuestions": ["nxt-002", "rct-015", "nxt-005"]
+	},
+	{
+		"id": "nxt-004",
+		"category": "nextjs",
+		"topic": "fundamentals",
+		"question": "What is hydration and what causes hydration mismatch errors?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Hydration attaches listeners and state to server-rendered HTML, making it interactive. A mismatch happens when the client's first render produces different markup than the server sent — usually from non-deterministic values like Date.now(), Math.random(), localStorage reads, or timezone formatting.",
+		"explanation": "Next.js sends fully-formed HTML for fast first paint, then React hydrates: walks the DOM, reconstructs component trees, binds events without recreating elements. If the first client render disagrees with that HTML, React warns and repairs on the client, sacrificing performance. Common culprits: timestamps formatted differently per locale/timezone, random IDs generated independently, reading localStorage or theme during render, browser-only checks like typeof window inline, invalid nesting browsers auto-correct (<p><div>), or browser extensions mutating the DOM. Fixes: compute such values inside useEffect (after hydration), use suppressHydrationWarning for single-node known divergence like the theme class on html, or gate browser-dependent UI behind a mounted flag. The principle: the first client render must match the server exactly.",
+		"example": "// ❌ mismatch: server & client may format times differently\nfunction Clock() {\n  return <span>{new Date().toLocaleTimeString()}</span>;\n}\n\n// ✅ stable first render, update after mount\nfunction SafeClock() {\n  const [now, setNow] = useState(null);\n  useEffect(() => setNow(new Date().toLocaleTimeString()), []);\n  return <span suppressHydrationWarning>{now ?? '--:--:--'}</span>;\n}",
+		"exampleLanguage": "tsx",
+		"interviewTip": "Define hydration as 'attaching behavior to existing HTML', list your top three mismatch causes from experience, and show the mounted-state fix.",
+		"commonMistakes": [
+			"Calling hydration 're-rendering everything'.",
+			"Not recognizing localStorage reads during render as a cause."
+		],
+		"relatedQuestions": ["rct-007", "nxt-003", "nxt-013"]
+	},
+	{
+		"id": "nxt-005",
+		"category": "nextjs",
+		"topic": "fundamentals",
+		"question": "How does data fetching work in the App Router? What are the fetch cache options?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Server Components call fetch directly (or query DBs/ORMs). fetch gains cache options: cache: 'force-cache' pins snapshots, 'no-store' opts out, next.revalidate sets TTL refresh, next.tags enable targeted invalidation via revalidateTag().",
+		"explanation": "App Router collapses data-layer complexity into plain async code: await fetch() or ORM calls right inside Server Components — no effect lifecycle, no loading prop plumbing. Caching rides on fetch itself: cached GET responses serve instantly; revalidate: 60 serves snapshots up to 60 seconds then refreshes in the background (ISR semantics); tags label entries so mutations elsewhere call revalidateTag('products') to purge precisely. Non-fetch data participates via route segment config (revalidate, dynamic exports) or the unstable_cache wrapper. Reading request-time data — cookies(), headers() — automatically flips routes dynamic. Client-side fetching remains normal React patterns via SWR/TanStack Query hitting Route Handlers. Recent versions flipped the default toward no-store, requiring explicit opt-in for caching — knowing which default your version uses is a strong currency signal in interviews.",
+		"example": "// Cached 60s, tagged for targeted invalidation:\nconst res = await fetch(`${API}/products`, {\n  next: { revalidate: 60, tags: ['products'] },\n});\n\n// Somewhere handling a mutation:\nimport { revalidateTag } from 'next/cache';\nrevalidateTag('products'); // only product queries refetch",
+		"exampleLanguage": "ts",
+		"interviewTip": "Walk one realistic flow: cached fetch with tag → mutation → revalidateTag. That demonstrates the whole mental model in three lines.",
+		"commonMistakes": [
+			"Assuming every fetch is cached by default regardless of version.",
+			"Forgetting cookies()/headers() usage makes routes dynamic automatically."
+		],
+		"relatedQuestions": ["nxt-001", "nxt-011", "nxt-003"]
+	},
+	{
+		"id": "nxt-006",
+		"category": "nextjs",
+		"topic": "fundamentals",
+		"question": "What does the 'use client' directive actually do?",
+		"difficulty": "beginner",
+		"shortAnswer": "It marks the module — and everything it imports — as part of the client bundle, enabling hooks, events and browser APIs. It does NOT mean 'render only in the browser': client components still render on the server for initial HTML.",
+		"explanation": "'use client' draws the server/client boundary at the file level. Everything above the directive stays server code; everything imported below joins the client graph. Consequences: files without it can't use useState/useEffect/event handlers; files with it lose direct server access (DB, fs, secrets) — fetch data in server parents and pass down props instead. Placement matters economically: marking a whole page 'use client' ships its entire subtree to the browser, so keep directives on small interactive leaves. The dual render nuance trips people: client components SSR on initial load (that's why hydration exists), they merely *hydrate* afterward. Related directives: 'use server' marks server actions. When you see hydration errors from event handlers missing, someone usually forgot the directive.",
+		"example": "// components/LikeButton.tsx\n'use client';\nimport { useState } from 'react';\n\nexport function LikeButton({ count }: { count: number }) {\n  const [likes, setLikes] = useState(count);\n  return <button onClick={() => setLikes(likes + 1)}>♥ {likes}</button>; // needs client\n}\n\n// app/post/page.tsx — stays server:\n// <article><LikeButton count={post.likes} /></article>",
+		"exampleLanguage": "tsx",
+		"interviewTip": "Correct the misconception head-on — 'use client' ≠ client-only rendering — then show the leaf-component placement strategy with bundle-size reasoning.",
+		"commonMistakes": [
+			"Saying 'use client' disables server rendering for that component.",
+			"Adding 'use client' to entire pages instead of interactive leaves."
+		],
+		"relatedQuestions": ["nxt-003", "rct-009", "nxt-007"]
+	},
+	{
+		"id": "nxt-007",
+		"category": "nextjs",
+		"topic": "fundamentals",
+		"question": "How do you handle SEO metadata in Next.js?",
+		"difficulty": "beginner",
+		"shortAnswer": "App Router uses static metadata exports or generateMetadata functions per route — title, description, openGraph, canonical, robots. Pages Router used <Head> component per page. Dynamic routes generate metadata from fetched data.",
+		"explanation": "Metadata determines how pages appear in search results and social cards. In the App Router you export a metadata object for static values, or generateMetadata({ params }) for dynamic ones — fetch the same data the page uses, return title/description/openGraph images. The framework deduplicates tags, resolves relative canonical URLs against your site config, and streams meta into HTML head. Layouts provide defaults (title.template composes '%s · Site Name'); pages override. For special cases: sitemap.ts generates sitemaps programmatically, robots.ts emits rules, opengraph-image.tsx renders OG images dynamically with edge-ready templating, jsonLd goes in script tags manually. Pages Router equivalents were next/head with manual tags. Interview angle: mention title templates, canonical handling on paginated/duplicate content, and structured data — these separate checklist-followers from practitioners.",
+		"example": "// app/products/[slug]/page.tsx\nexport async function generateMetadata({ params }) {\n  const product = await getProduct(params.slug);\n  return {\n    title: `${product.name} — Specs & Reviews`,\n    description: product.excerpt,\n    alternates: { canonical: `/products/${product.slug}` },\n    openGraph: {\n      title: product.name,\n      images: [product.image],\n      type: 'website',\n    },\n  };\n}",
+		"exampleLanguage": "tsx",
+		"interviewTip": "Show generateMetadata pulling real data, then name the extras (sitemap.ts, robots.ts, OG image generation) — breadth here is cheap to demonstrate and memorable.",
+		"commonMistakes": [
+			"Duplicating titles manually instead of using title.template.",
+			"Forgetting canonical URLs on filtered/paginated listings."
+		],
+		"relatedQuestions": ["nxt-010", "hcs-001", "nxt-002"]
+	},
+	{
+		"id": "nxt-008",
+		"category": "nextjs",
+		"topic": "fundamentals",
+		"question": "How do environment variables work in Next.js?",
+		"difficulty": "beginner",
+		"shortAnswer": "NEXT_PUBLIC_* variables inline into the client bundle and are readable in the browser. All others stay server-only — accessible in Server Components, Route Handlers, middleware. Load from .env files per environment; never expose secrets via NEXT_PUBLIC_.",
+		"explanation": "Next.js loads .env.local (gitignored, highest priority outside CI), .env.development/.env.production per NODE_ENV, and .env for shared defaults. Prefixing with NEXT_PUBLIC_ makes a variable available client-side by string-replacing it at build time — meaning it becomes permanently visible in shipped JS: safe for public API base URLs and analytics IDs, catastrophic for keys. Server-only variables read via process.env.FOO work anywhere server code runs: Server Components, route handlers, server actions, getServerSideProps. Runtime vs build time matters for deployments: NEXT_PUBLIC_ vars bake in during build (changing them requires rebuild), while server vars on platforms like Vercel can change per deployment without rebuild. Best practices: validate required env at startup (zod schema), keep .env.example committed with placeholders, rotate any secret that ever touched NEXT_PUBLIC_.",
+		"example": "# .env.local\nDATABASE_URL=postgres://...     # server-only ✅\nSTRIPE_SECRET_KEY=sk_...        # server-only ✅\nNEXT_PUBLIC_API_BASE=/api/v1    # exposed to browser — public info only\n\n# Server Component / route handler:\nconst db = connect(process.env.DATABASE_URL);",
+		"exampleLanguage": "bash",
+		"interviewTip": "Hammer the build-time inlining of NEXT_PUBLIC_ and the leaked-secret consequence. Then mention runtime-vs-build-time difference on hosting platforms.",
+		"commonMistakes": [
+			"Putting secrets behind NEXT_PUBLIC_ thinking it's 'protected'.",
+			"Expecting NEXT_PUBLIC_ changes to apply without rebuilding."
+		],
+		"relatedQuestions": ["nde-005", "nxt-011", "nxt-006"]
+	}
+]

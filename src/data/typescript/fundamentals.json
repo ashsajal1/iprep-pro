@@ -1,0 +1,138 @@
+[
+	{
+		"id": "ts-001",
+		"category": "typescript",
+		"topic": "fundamentals",
+		"question": "What's the difference between any, unknown and never?",
+		"difficulty": "beginner",
+		"shortAnswer": "any disables type checking entirely; unknown is a safe top type that requires narrowing before use; never is the bottom type — a value that can never occur, used for impossible states and exhaustive checks.",
+		"explanation": "any opts out of TypeScript: everything is assignable to it and it propagates silently through your code, defeating the compiler. It exists for gradual migration and legacy interop. unknown is the type-safe counterpart — any value fits into unknown, but you can't *use* an unknown without narrowing first (typeof checks, instanceof, or assertion), so errors surface at compile time instead of runtime. Prefer unknown for external input: parsed JSON, event payloads, API responses. never occupies the opposite end: no value has that type. Functions that always throw or infinite-loop return never. Its killer feature is exhaustiveness: in a switch over a union, a default case assigning the value to never fails to compile if any variant wasn't handled — the compiler proves your handling is complete.",
+		"example": "function parse(input: string): unknown {\n  return JSON.parse(input); // don't trust it\n}\nconst data = parse(raw);\n// data.name  ❌ error — narrow first:\nif (typeof data === 'object' && data !== null && 'name' in data) {\n  console.log((data as { name: string }).name);\n}\n\n// Exhaustiveness with never:\ntype Shape =\n  | { kind: 'circle'; r: number }\n  | { kind: 'square'; s: number };\n\nfunction area(shape: Shape): number {\n  switch (shape.kind) {\n    case 'circle': return Math.PI * shape.r ** 2;\n    case 'square': return shape.s ** 2;\n    default: {\n      const _exhaustive: never = shape; // compile error if a kind is missed\n      throw new Error(`Unhandled: ${_exhaustive}`);\n    }\n  }\n}",
+		"exampleLanguage": "typescript",
+		"interviewTip": "Frame them on an axis — any abandons safety, unknown defers trust, never proves impossibility. The exhaustive-switch trick is the detail interviewers wait for.",
+		"commonMistakes": [
+			"Reaching for any when unknown works fine.",
+			"Saying never means undefined or null."
+		],
+		"relatedQuestions": ["ts-004", "ts-002", "ts-013"]
+	},
+	{
+		"id": "ts-002",
+		"category": "typescript",
+		"topic": "fundamentals",
+		"question": "When do you choose interface vs type alias?",
+		"difficulty": "beginner",
+		"shortAnswer": "Both describe object shapes and are mostly interchangeable. Interfaces support declaration merging and are ideal for public object contracts/classes; types are required for unions, intersections, mapped/conditional types and primitives.",
+		"explanation": "interface defines object contracts: implementable by classes, extendable via extends, and open to declaration merging — two interfaces with the same name merge their members, which is how libraries augment globals like Window. type creates an alias for any type expression: unions ('a' | 'b'), tuples, function signatures, conditional and mapped types, primitives — things interfaces simply can't express. Intersections (&) work with both but behave subtly differently from extends during conflict resolution: intersection members conflicting become never rather than raising an error. Performance-wise differences are negligible today. Team consistency matters more than dogma: many style guides say 'use interface for objects others may extend or merge, type for everything else' — being able to articulate both sides beats picking one blindly.",
+		"example": "// Declaration merging — interfaces only:\ninterface Window { analytics?: Tracker }\ndeclare global { interface Window { __DEV__?: boolean } }\n\n// Unions & mapped types — types only:\ntype Status = 'idle' | 'loading' | 'error';\ntype Nullable<T> = T | null;\ntype Handlers = { [K in `on${Capitalize<Status>}`]?: () => void };",
+		"exampleLanguage": "typescript",
+		"interviewTip": "Lead with 'mostly interchangeable', then name the two hard differentiators: merging (interfaces) and unions/mapped types (types). That structure reads as considered judgment.",
+		"commonMistakes": [
+			"Claiming one performs better than the other.",
+			"Not knowing declaration merging exists."
+		],
+		"relatedQuestions": ["ts-003", "ts-007", "ts-014"]
+	},
+	{
+		"id": "ts-003",
+		"category": "typescript",
+		"topic": "fundamentals",
+		"question": "Explain union (|) and intersection (&) types.",
+		"difficulty": "beginner",
+		"shortAnswer": "A union accepts a value of any listed type — 'this OR that'. An intersection combines multiple types into one — 'all of these at once'. Unions model alternatives; intersections compose capabilities.",
+		"explanation": "Unions express finite alternatives: type Result = Ok | Err, string | number parameters, literal unions for statuses. To *use* a union safely you narrow it (typeof, in, discriminant checks) until TypeScript knows which member you hold. Literal subsets are assignable upward (a 'pending' literal fits into Status) but not downward. Intersections merge requirements: type Admin = User & { permissions: Permission[] } needs every member's properties satisfied. They're how mixins and capability composition work, and they power utility patterns like Pick combined with generics. A subtle consequence: overlapping unions intersect to their shared members, and incompatible property types inside an intersection collapse to never — which is why A & B sometimes yields unusable objects if members conflict. Discriminated unions (shared literal tag field + narrowing) remain the single most valuable pattern here.",
+		"example": "type Id = string | number;\nfunction find(id: Id) {\n  if (typeof id === 'string') return db.bySlug(id); // narrowed\n  return db.byId(id);\n}\n\ntype Serializable = { toJSON(): string };\ntype Named = { name: string };\ntype Entity = Named & Serializable; // must have both",
+		"exampleLanguage": "typescript",
+		"interviewTip": "Use plain English — OR vs AND — then jump straight to discriminated unions as the practical payoff; it's where this question is really heading.",
+		"commonMistakes": [
+			"Forgetting unions require narrowing before property access.",
+			"Expecting & to create a union-like choice instead of a merged requirement."
+		],
+		"relatedQuestions": ["ts-004", "ts-002", "ts-015"]
+	},
+	{
+		"id": "ts-004",
+		"category": "typescript",
+		"topic": "fundamentals",
+		"question": "How does type narrowing work in TypeScript?",
+		"difficulty": "intermediate",
+		"shortAnswer": "TypeScript narrows union types automatically through control-flow analysis: typeof checks, truthiness, instanceof, the in operator, equality checks against literals, and user-defined type guards (is) all refine types within branches.",
+		"explanation": "Narrowing is TypeScript inferring a more specific type from runtime checks. typeof x === 'string' refines to string inside the branch (with caveats for null and functions); truthiness drops falsy members; instanceof uses constructor classes; `'prop' in obj` distinguishes union members structurally; comparing against literal values pins discriminated-union tags. The else branch gets the complement — exclusivity flows both ways. For logic TS can't infer — Array.isArray-style checks, parsing results — write user-defined guards: `function isError(e: unknown): e is ApiError { ... }` returns a boolean while teaching the compiler the refined type. Assertion functions (`asserts x is T`) throw instead of returning. Discriminated unions with a kind/tag literal plus switch statements produce the cleanest narrowing flow and are the recommended modeling approach for complex state.",
+		"example": "type ApiResponse =\n  | { status: 'success'; data: string[] }\n  | { status: 'error'; message: string };\n\nfunction handle(res: ApiResponse) {\n  switch (res.status) {           // discriminant narrows both branches\n    case 'success':\n      console.log(res.data.length); // res is success variant\n      break;\n    case 'error':\n      console.error(res.message);   // res is error variant\n      break;\n  }\n}\n\nconst isStringArray = (v: unknown): v is string[] =>\n  Array.isArray(v) && v.every(x => typeof x === 'string');",
+		"exampleLanguage": "typescript",
+		"interviewTip": "Walk one discriminated union through a switch end-to-end, then define custom guards (e/is) — that covers the entire narrowing toolbox concisely.",
+		"commonMistakes": [
+			"Casting with as everywhere instead of writing proper guards.",
+			"Not knowing `in` narrows based on property presence."
+		],
+		"relatedQuestions": ["ts-003", "ts-001", "ts-012"]
+	},
+	{
+		"id": "ts-005",
+		"category": "typescript",
+		"topic": "fundamentals",
+		"question": "What are generics and why are they useful?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Generics parameterize types: <T> lets functions, classes and interfaces work with many types while preserving exact relationships between inputs and outputs. They give reuse without losing inference or safety.",
+		"explanation": "Without generics you'd choose between any (no safety) and duplicated overloads per type. Generics let callers decide the type while the definition constrains relationships: function identity<T>(x: T): T guarantees output type equals input type; useState<string> ties the setter to string. Constraints (T extends Shape) require capabilities while keeping specificity: function pluck<T, K extends keyof T>(items: T[], key: K) ensures keys actually exist on T. Multiple parameters express correlations — Map<K, V>, Record<K, V>. Defaults (<T = string>) ease call sites. Generic classes (Repository<T>) and generic constraints on utility types form the backbone of library APIs — React components typed as Props, fetch wrappers returning Promise<T>. The skill interviewers probe: reading unfamiliar generic signatures and knowing when inference removes the need to annotate explicitly.",
+		"example": "function groupBy<T, K extends keyof T>(items: T[], key: K) {\n  return items.reduce<Record<string, T[]>>((acc, item) => {\n    const group = String(item[key]);\n    (acc[group] ??= []).push(item);\n    return acc;\n  }, {});\n}\n\nconst users = [{ role: 'admin' }, { role: 'dev' }];\ngroupBy(users, 'role');   // ✅ key checked against T\ngroupBy(users, 'age');    // ❌ compile error",
+		"exampleLanguage": "typescript",
+		"interviewTip": "Say 'reuse without losing inference' up front, then demo a constrained generic (keyof) — showing the compiler reject a bad key makes generics click.",
+		"commonMistakes": [
+			"Defaulting to any instead of generics in reusable helpers.",
+			"Not knowing what `extends` constraints do inside generic clauses."
+		],
+		"relatedQuestions": ["ts-006", "ts-010", "ts-013"]
+	},
+	{
+		"id": "ts-006",
+		"category": "typescript",
+		"topic": "fundamentals",
+		"question": "What do the typeof and keyof operators do in the type system?",
+		"difficulty": "advanced",
+		"shortAnswer": "typeof converts a *value* (variable/function) into its type at the type level. keyof produces a union of an object type's keys. Combined they let you derive precise types from existing code instead of duplicating definitions.",
+		"explanation": "In type positions, typeof config gives you the type of the config value — perfect when implementation already encodes the shape: export type Config = typeof DEFAULT_CONFIG keeps types in lockstep with reality. typeof also captures overloaded function signatures. keyof User resolves to 'id' | 'name' | 'email' — the set of valid keys — enabling type-safe property access: function get<T, K extends keyof T>(obj: T, key: K): T[K]. Note T[K] — indexed access — pairs naturally with keyof to express 'the type of that specific property.' Chaining these powers real utilities: Pick<T, keyof T> is identity; omitting keys becomes Omit; event maps map handler names via template literals over keyof. The distinction trips people because typeof exists at runtime too — in type annotations it's purely compile-time and erased afterward.",
+		"example": "const ROLES = { admin: 1, editor: 2, viewer: 3 } as const;\ntype RoleName = keyof typeof ROLES;        // 'admin' | 'editor' | 'viewer'\ntype RoleValue = (typeof ROLES)[RoleName]; // 1 | 2 | 3\n\nfunction get<T, K extends keyof T>(obj: T, key: K): T[K] {\n  return obj[key];\n}\nconst user = { id: 1, name: 'Ada' };\nget(user, 'name'); // string — precisely inferred",
+		"exampleLanguage": "typescript",
+		"interviewTip": "Emphasize directionality — typeof lifts values into types, keyof extracts keys from types — then show the as-const + keyof typeof idiom, beloved in interviews.",
+		"commonMistakes": [
+			"Confusing type-level typeof with runtime typeof.",
+			"Forgetting `as const` when deriving literal unions from objects."
+		],
+		"relatedQuestions": ["ts-007", "ts-010", "ts-005"]
+	},
+	{
+		"id": "ts-007",
+		"category": "typescript",
+		"topic": "fundamentals",
+		"question": "What are enums, and why do many teams prefer const objects with as const instead?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Enums define named constant sets. But regular enums generate runtime JavaScript objects with quirks (reverse mapping for numeric enums, heterogeneous pitfalls), so many teams prefer `as const` objects + derived union types — zero runtime cost, tree-shakeable, consistent with JS.",
+		"explanation": "Enum options: numeric enums auto-increment and allow reverse lookups (Direction.Up → 0, Direction[0] → 'Up'), string enums are safer and self-describing, const enums inline away but carry isolation-mode gotchas. Criticisms: enums emit code unlike anything vanilla JS produces, complicate bundler interop, permit assignments outside their members under some settings, and behave inconsistently between numeric/string variants. The modern alternative: freeze intent at the type level instead — `const STATUSES = { Active: 'active', Archived: 'archived' } as const;` plus `type Status = (typeof STATUSES)[keyof typeof STATUSES];` gives the same named membership as a string enum with plain-object semantics. Union types alone suffice for closed sets without a namespace. Enums aren't wrong — plenty of codebases use them happily — but be ready to discuss tradeoffs rather than recite syntax.",
+		"example": "// Enum version:\nenum Direction { Up, Down }\n// Compiles to a live object with reverse mapping.\n\n// Const-object version:\nconst Direction2 = { Up: 'up', Down: 'down' } as const;\ntype Direction2 = (typeof Direction2)[keyof typeof Direction2];\n// 'up' | 'down' — no runtime artifact beyond the object itself",
+		"exampleLanguage": "typescript",
+		"interviewTip": "Show both versions side by side and mention reverse-mapping as the numeric-enum quirk. Saying 'it depends on team conventions' is a mature close.",
+		"commonMistakes": [
+			"Ignoring that numeric enums allow any number assignment historically.",
+			"Claiming const objects replace enums only partially — they cover the main cases."
+		],
+		"relatedQuestions": ["ts-002", "ts-006", "ts-003"]
+	},
+	{
+		"id": "ts-008",
+		"category": "typescript",
+		"topic": "fundamentals",
+		"question": "What does readonly do in TypeScript? How far does immutability go?",
+		"difficulty": "beginner",
+		"shortAnswer": "readonly prevents reassignment of properties at compile time — readonly props can't be written, arrays become read-only (push/splice blocked). It's a compile-time contract only: nothing changes at runtime, and casting can bypass it.",
+		"explanation": "readonly marks properties as non-writable after initialization: interface Point { readonly x: number }. ReadonlyArray<T>/readonly T[] strips mutating methods from the type, and ReadonlyMap/ReadonlySet similarly. Object.freeze pairs it at runtime if enforcement matters. Key limits: readonly is shallow — nested objects stay mutable unless each level declares it; it's erased in emitted JS; and type assertions (as mutable) defeat it deliberately, useful at boundaries. Where it earns its keep: freezing configuration passed into libraries, marking function parameters as non-mutating promises (fn(data: readonly T[]) documents 'I won't touch your array'), and tuple types ([...as const]). Related utilities: Readonly<T>, Immutable patterns via mapped-type recursion. Interview angle: know that readonly protects against accidental writes, not hostile ones — it's documentation the compiler enforces.",
+		"example": "interface Config { readonly port: number; tags: readonly string[] }\n\nfunction audit(config: Config) {\n  // config.port = 8080;     ❌ cannot assign\n  // config.tags.push('x');  ❌ push doesn't exist on readonly array\n  console.log(config.tags.join(',')); // reading fine\n}\n\nconst frozen = Object.freeze({ a: 1 }) as Readonly<{ a: number }>;",
+		"exampleLanguage": "typescript",
+		"interviewTip": "State the boundary immediately — 'compile-time only, shallow' — then sell the documentation value of readonly parameters. Precision beats breadth here.",
+		"commonMistakes": [
+			"Believing readonly deep-freezes nested structures.",
+			"Thinking readonly affects the emitted JavaScript."
+		],
+		"relatedQuestions": ["ts-009", "ts-003", "rct-014"]
+	}
+]
