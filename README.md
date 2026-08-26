@@ -4,6 +4,8 @@ A fast, private interview-prep platform built with Astro. Browse real interview
 questions, follow guided learning roadmaps, practice in three modes, and track
 progress — all without an account. Everything is stored locally in the browser.
 
+![iPrep Pro](public/screenshots/home.png)
+
 ## Getting started
 
 ```sh
