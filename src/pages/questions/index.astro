@@ -28,45 +28,51 @@ for (const cat of categories) {
 		</header>
 
 		<!-- Filter bar -->
-		<div class="card sticky top-16 z-20 mb-6 flex flex-wrap items-center gap-2 p-3 backdrop-blur-md" role="search" aria-label="Filter questions">
-			<div class="relative min-w-[180px] flex-1">
-				<Icon name="search" class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-ink-muted" />
-				<input
-					id="filter-q"
-					type="search"
-					placeholder="Search this list…"
-					class="input !pl-9"
-					autocomplete="off"
-				/>
+		<div class="card sticky top-16 z-20 mb-6 p-3 backdrop-blur-md" role="search" aria-label="Filter questions">
+			<div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
+				<div class="relative min-w-0 flex-1">
+					<Icon name="search" class="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-ink-muted" />
+					<input
+						id="filter-q"
+						type="search"
+						placeholder="Search this list…"
+						class="input !pl-9"
+						autocomplete="off"
+					/>
+				</div>
+
+				<div
+					class="scroll-thin -mx-3 flex gap-2 overflow-x-auto px-3 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:flex-wrap sm:p-0 sm:overflow-visible"
+				>
+					<select id="filter-category" class="input w-auto min-w-[130px] shrink-0" aria-label="Filter by category">
+						<option value="">All categories</option>
+						{categories.map((c) => <option value={c.id}>{c.name}</option>)}
+					</select>
+
+					<select id="filter-topic" class="input w-auto min-w-[140px] shrink-0" aria-label="Filter by topic">
+						<option value="">All topics</option>
+						{[...topicOptions.entries()].map(([id, label]) => <option value={id}>{label}</option>)}
+					</select>
+
+					<select id="filter-difficulty" class="input w-auto min-w-[120px] shrink-0" aria-label="Filter by difficulty">
+						<option value="">Any difficulty</option>
+						<option value="beginner">Beginner</option>
+						<option value="intermediate">Intermediate</option>
+						<option value="advanced">Advanced</option>
+					</select>
+
+					<select id="filter-sort" class="input w-auto min-w-[130px] shrink-0" aria-label="Sort questions">
+						<option value="newest">Newest</option>
+						<option value="difficulty">Difficulty</option>
+						<option value="alphabetical">A → Z</option>
+						<option value="progress">Progress first</option>
+					</select>
+
+					<button id="filter-clear" type="button" class="btn btn-ghost hidden shrink-0 px-3 text-xs" aria-label="Clear all filters">
+						Clear ✕
+					</button>
+				</div>
 			</div>
-
-			<select id="filter-category" class="input w-auto min-w-[130px]" aria-label="Filter by category">
-				<option value="">All categories</option>
-				{categories.map((c) => <option value={c.id}>{c.name}</option>)}
-			</select>
-
-			<select id="filter-topic" class="input w-auto min-w-[140px]" aria-label="Filter by topic">
-				<option value="">All topics</option>
-				{[...topicOptions.entries()].map(([id, label]) => <option value={id}>{label}</option>)}
-			</select>
-
-			<select id="filter-difficulty" class="input w-auto min-w-[120px]" aria-label="Filter by difficulty">
-				<option value="">Any difficulty</option>
-				<option value="beginner">Beginner</option>
-				<option value="intermediate">Intermediate</option>
-				<option value="advanced">Advanced</option>
-			</select>
-
-			<select id="filter-sort" class="input w-auto min-w-[130px]" aria-label="Sort questions">
-				<option value="newest">Newest</option>
-				<option value="difficulty">Difficulty</option>
-				<option value="alphabetical">A → Z</option>
-				<option value="progress">Progress first</option>
-			</select>
-
-			<button id="filter-clear" type="button" class="btn btn-ghost hidden px-3 text-xs" aria-label="Clear all filters">
-				Clear ✕
-			</button>
 		</div>
 
 		<p id="results-count" class="mb-4 text-sm font-medium text-ink-secondary tabular-nums" aria-live="polite"></p>
