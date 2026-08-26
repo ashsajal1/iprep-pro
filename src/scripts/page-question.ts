@@ -19,6 +19,7 @@ if (qid) {
 		thinkArea?.classList.add('hidden');
 		revealBtn?.classList.add('hidden');
 		assessActions?.classList.remove('hidden');
+		assessActions?.classList.add('flex');
 		// scroll the answer into view comfortably
 		setTimeout(() => answerSection.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50);
 	}
