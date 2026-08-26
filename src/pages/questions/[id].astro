@@ -32,26 +32,28 @@ const exampleHtml = q.example ? await highlight(q.example, q.exampleLanguage ?? 
 	description={q.shortAnswer}
 	ogType="article"
 >
-	<section class="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-		<nav class="mb-6 flex items-center gap-1.5 text-xs text-ink-muted" aria-label="Breadcrumb">
-			<a href="/questions" class="hover:text-indigo-600">Questions</a>
+	<section class="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8">
+		<nav class="mb-6 flex min-w-0 items-center gap-1.5 overflow-hidden text-xs text-ink-muted" aria-label="Breadcrumb">
+			<a href="/questions" class="shrink-0 hover:text-indigo-600">Questions</a>
 			<Icon name="chevron-right" class="h-3 w-3" />
-			<a href={`/${q.category}`} class="hover:text-indigo-600">{category.name}</a>
+			<a href={`/${q.category}`} class="shrink-0 hover:text-indigo-600">{category.name}</a>
 			<Icon name="chevron-right" class="h-3 w-3" />
-			<span class="truncate text-ink-secondary">{q.topicName}</span>
+			<span class="min-w-0 truncate text-ink-secondary">{q.topicName}</span>
 		</nav>
 
-		<div class="grid gap-10 lg:grid-cols-[minmax(0,1fr)_300px]">
+		<div class="grid grid-cols-[minmax(0,1fr)] gap-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-10">
 			<!-- Main column -->
-			<div>
-				<article data-question-page data-qid={q.id}>
-					<div class="flex flex-wrap items-center gap-2">
-						<DifficultyBadge difficulty={q.difficulty} size="md" />
-						<a href={`/${q.category}`} class="chip bg-surface-raised text-ink-secondary hover:bg-zinc-200 dark:hover:bg-zinc-800">
-							{category.name}
-						</a>
-						<span class="chip bg-surface-raised text-ink-muted">{q.topicName}</span>
-						<FavoriteButton id={q.id} class="ml-auto" />
+			<div class="min-w-0">
+				<article class="min-w-0" data-question-page data-qid={q.id}>
+					<div class="flex min-w-0 items-start gap-2">
+						<div class="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+							<DifficultyBadge difficulty={q.difficulty} size="md" />
+							<a href={`/${q.category}`} class="chip bg-surface-raised text-ink-secondary hover:bg-zinc-200 dark:hover:bg-zinc-800">
+								{category.name}
+							</a>
+							<span class="chip max-w-full truncate bg-surface-raised text-ink-muted">{q.topicName}</span>
+						</div>
+						<FavoriteButton id={q.id} />
 					</div>
 
 					<h1 class="mt-4 text-xl leading-snug font-semibold tracking-tight text-balance sm:text-2xl">
@@ -59,7 +61,7 @@ const exampleHtml = q.example ? await highlight(q.example, q.exampleLanguage ?? 
 					</h1>
 
 					<!-- Think area -->
-					<div id="think-area" class="mt-6 rounded-2xl border-2 border-dashed border-line p-8 text-center">
+					<div id="think-area" class="mt-6 rounded-2xl border-2 border-dashed border-line p-5 text-center sm:p-8">
 						<p class="text-sm font-medium text-ink-secondary">Take a moment.</p>
 						<p class="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-ink-muted">
 							Say your answer out loud or write it down first — retrieval is what makes it stick.
@@ -69,16 +71,16 @@ const exampleHtml = q.example ? await highlight(q.example, q.exampleLanguage ?? 
 
 					<!-- Actions -->
 					<div class="mt-5 flex flex-wrap items-center gap-2.5">
-						<button type="button" id="reveal-btn" class="btn btn-primary px-5 py-2.5">
+						<button type="button" id="reveal-btn" class="btn btn-primary w-full px-5 py-2.5 sm:w-auto">
 							<Icon name="eye" class="h-4 w-4" />
 							Show Answer
 						</button>
-						<div id="assess-actions" class="hidden flex-wrap items-center gap-2.5">
-							<button type="button" id="know-btn" class="btn btn-success px-4 py-2.5">
+						<div id="assess-actions" class="hidden w-full flex-col gap-2.5 sm:w-auto sm:flex-row">
+							<button type="button" id="know-btn" class="btn btn-success w-full px-4 py-2.5 sm:w-auto">
 								<Icon name="check" class="h-4 w-4" strokeWidth={2.4} />
 								I Know This
 							</button>
-							<button type="button" id="review-btn" class="btn btn-danger-soft px-4 py-2.5">
+							<button type="button" id="review-btn" class="btn btn-danger-soft w-full px-4 py-2.5 sm:w-auto">
 								<Icon name="refresh-cw" class="h-4 w-4" />
 								Need to Learn
 							</button>
@@ -89,7 +91,7 @@ const exampleHtml = q.example ? await highlight(q.example, q.exampleLanguage ?? 
 
 					<!-- Answer -->
 					<noscript><style> #answer-section { display: block !important; }</style></noscript>
-					<div id="answer-section" hidden class="mt-10">
+					<div id="answer-section" hidden class="mt-10 min-w-0 scroll-mt-20 [&_.shiki]:max-w-full [&_.shiki]:overflow-x-auto">
 						<AnswerSection question={q} exampleHtml={exampleHtml} />
 					</div>
 				</article>
@@ -106,7 +108,7 @@ const exampleHtml = q.example ? await highlight(q.example, q.exampleLanguage ?? 
 			</div>
 
 			<!-- Sidebar -->
-			<aside class="space-y-5 lg:sticky lg:top-24 lg:self-start">
+			<aside class="min-w-0 space-y-5 lg:sticky lg:top-24 lg:self-start">
 				<div class="card p-5">
 					<h2 class="text-sm font-semibold">Your status</h2>
 					<p id="status-pill" class="mt-3 inline-flex items-center gap-1.5 rounded-full bg-surface-raised px-3 py-1.5 text-xs font-medium text-ink-secondary">
