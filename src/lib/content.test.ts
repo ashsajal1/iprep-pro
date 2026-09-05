@@ -23,7 +23,7 @@ const EXPECTED_COUNTS: Record<string, number> = {
 	nextjs: 15,
 	nodejs: 10,
 	'html-css': 10,
-	'git-github': 10,
+	'git-github': 20,
 	behavioral: 10,
 };
 
