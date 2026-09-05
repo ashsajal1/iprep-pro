@@ -1,0 +1,90 @@
+[
+	{
+		"id": "db-006",
+		"category": "database",
+		"topic": "transactions",
+		"question": "What does ACID mean in databases?",
+		"difficulty": "beginner",
+		"shortAnswer": "ACID is the contract for reliable transactions: Atomicity (all-or-nothing), Consistency (rules never violated), Isolation (concurrent transactions don't see each other's partial work), Durability (committed data survives crashes). It is why a payment and its ledger entry can never half-exist.",
+		"explanation": "A transaction groups statements into one unit the database executes reliably. Atomicity means the group commits entirely or rolls back entirely — a transfer debiting Alice and crediting Bob never leaves money debited but uncredited; on any error the engine undoes the partial work. Consistency means each transaction moves the database from one valid state to another: constraints, foreign keys, and checks hold before and after; a transaction that would violate them aborts instead of corrupting data. Isolation means concurrent transactions behave as if serialized — one transaction's uncommitted writes are invisible to others (the exact strength is tuned by the isolation level). Durability means once COMMIT returns, the data survives power loss and crashes, implemented with a write-ahead log flushed to disk before acknowledging. Together they let application code treat a multi-statement update as a single trustworthy step. Classic use: order placement decrementing stock, charging payment, and creating the shipment row in one transaction — any failure rolls everything back and the customer can safely retry.",
+		"example": "-- Money transfer: both legs or neither\nBEGIN;\nUPDATE accounts SET balance = balance - 100 WHERE id = 'alice';\nUPDATE accounts SET balance = balance + 100 WHERE id = 'bob';\nCOMMIT; -- crash before this line? Engine rolls back; no money is lost or created\n\n-- On error, abort explicitly:\n-- BEGIN; ... ; ROLLBACK;",
+		"exampleLanguage": "sql",
+		"interviewTip": "Expand each letter with a one-line money-transfer illustration. The detail that impresses is naming the write-ahead log as the durability mechanism.",
+		"commonMistakes": [
+			"Confusing Consistency (constraint preservation) with general 'correctness'.",
+			"Assuming durability without knowing the write-ahead log exists."
+		],
+		"relatedQuestions": ["db-007", "db-008", "db-005"]
+	},
+	{
+		"id": "db-007",
+		"category": "database",
+		"topic": "transactions",
+		"question": "What are transaction isolation levels and which anomalies do they prevent?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Isolation levels trade correctness for concurrency: Read Uncommitted (sees dirty reads), Read Committed (no dirty reads), Repeatable Read (no non-repeatable reads), Serializable (also no phantoms — fully correct, slowest). PostgreSQL defaults to Read Committed; use stronger levels only for transactions that truly need them.",
+		"explanation": "Three classic anomalies define the ladder. A dirty read sees another transaction's uncommitted change that later rolls back — acting on data that never officially existed. A non-repeatable read re-reads the same row in one transaction and gets a different value because a concurrent transaction committed an update in between. A phantom read re-runs a range query (e.g., 'all orders over $100') and finds new rows a concurrent insert added. The SQL levels: Read Uncommitted allows everything including dirty reads (rarely used; in PostgreSQL it behaves as Read Committed). Read Committed takes a fresh snapshot per statement — no dirty reads, but the same row can change between two statements in one transaction. Repeatable Read takes one snapshot per transaction — re-reads are stable, but new rows matching a range can still appear (phantoms). Serializable executes transactions as if strictly ordered — no anomalies at all — but conflicting transactions abort with serialization errors the app must retry. Stronger levels hold more locks or cause more retries, reducing throughput. Practical guidance: stay at the default Read Committed; escalate single critical transactions (balance transfers, inventory decrements) to Repeatable Read or Serializable; and always code retry loops for serialization failures rather than surfacing them to users.",
+		"example": "-- Two concurrent sessions at READ COMMITTED:\n-- Session A: BEGIN; SELECT balance FROM accounts WHERE id='alice'; -- 500\n-- Session B: BEGIN; UPDATE accounts SET balance=400 WHERE id='alice'; COMMIT;\n-- Session A: SELECT balance FROM accounts WHERE id='alice'; -- now 400 (non-repeatable)\n-- At REPEATABLE READ, session A would still see 500 in the second SELECT.\n\n-- Critical section at the strongest level:\n-- BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;\n-- UPDATE inventory SET stock = stock - 1 WHERE product_id = 42 AND stock > 0;\n-- COMMIT; -- may raise a serialization error under contention: retry the txn",
+		"exampleLanguage": "sql",
+		"interviewTip": "Name the three anomalies in escalating order with a one-line example each, then give the rule: default level everywhere, stronger level plus retry loop for the critical few transactions.",
+		"commonMistakes": [
+			"Listing the levels without the anomalies they prevent.",
+			"Running everything at Serializable and wondering why throughput collapsed.",
+			"Not retrying transactions that abort with serialization errors."
+		],
+		"relatedQuestions": ["db-006", "db-008", "db-010"]
+	},
+	{
+		"id": "db-008",
+		"category": "database",
+		"topic": "transactions",
+		"question": "What's the difference between optimistic and pessimistic locking?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Pessimistic locking takes a lock before touching data (SELECT … FOR UPDATE) — safe under contention but blocks others. Optimistic locking lets everyone proceed and checks at commit time (usually a version column) — lock-free and fast when conflicts are rare, but losers must retry.",
+		"explanation": "Both solve the lost-update problem: two sessions read stock=1, both sell, both write stock=0 — one sale silently lost. Pessimistic locking assumes conflict: SELECT … FOR UPDATE locks the rows up front, so the second session waits until the first commits or rolls back. Simple to reason about and correct under heavy contention, but lock waits serialize work, idle transactions hold locks hostage, and lock ordering mistakes cause deadlocks. Optimistic locking assumes conflicts are rare: each row carries a version (or updated_at); the writer reads version 5, and commits with UPDATE … WHERE id = ? AND version = 5, incrementing the version. If another writer committed first, the predicate matches zero rows — the app detects this and retries (re-read, re-apply, re-commit). No blocking, great throughput for low-contention data like user profiles; painful under hot contention where most attempts retry (a seat-map for a popular concert wants pessimistic locks instead). Choice rule: conflict probability low → optimistic with a retry loop; a known hot row or a multi-step business invariant → pessimistic with short transactions and consistent lock ordering.",
+		"example": "-- Pessimistic: lock the row first, others wait\nBEGIN;\nSELECT stock FROM inventory WHERE product_id = 42 FOR UPDATE;\n-- ... decide, then:\nUPDATE inventory SET stock = stock - 1 WHERE product_id = 42;\nCOMMIT; -- keep it short: locks are held until here\n\n-- Optimistic: check the version at write time\n-- UPDATE inventory SET stock = stock - 1, version = version + 1\n-- WHERE product_id = 42 AND version = 5;\n-- matched 0 rows? Someone else won — re-read and retry.",
+		"exampleLanguage": "sql",
+		"interviewTip": "Lead with the lost-update story both solve, then state the choice rule (rare conflicts → optimistic + retry; hot rows → pessimistic + short transactions). Naming SELECT … FOR UPDATE shows hands-on knowledge.",
+		"commonMistakes": [
+			"Using optimistic locking without a retry loop, silently dropping updates.",
+			"Holding pessimistic locks across network calls or user think-time."
+		],
+		"relatedQuestions": ["db-006", "db-007", "db-010"]
+	},
+	{
+		"id": "db-009",
+		"category": "database",
+		"topic": "transactions",
+		"question": "What is MVCC and how does it let readers and writers coexist?",
+		"difficulty": "advanced",
+		"shortAnswer": "MVCC (multi-version concurrency control) keeps multiple versions of each row so readers see a consistent snapshot without blocking writers, and writers create new versions instead of overwriting in place. It is why PostgreSQL reads never wait for writes — at the cost of dead row versions that VACUUM must clean up.",
+		"explanation": "Lock-everything concurrency would serialize the database: every report blocks every order update. MVCC avoids this by versioning. In PostgreSQL, an UPDATE doesn't overwrite the row — it inserts a new row version stamped with the updater's transaction id and marks the old version as expired for future transactions. Each transaction gets a snapshot (a list of which concurrent transactions are invisible), so a long-running SELECT sees exactly the data committed before it started, even while writers commit new versions mid-query. Readers never block writers and writers never block readers; only concurrent writers to the same row block (or abort). Consequences operators must know: dead (superseded) row versions accumulate and must be reclaimed by VACUUM/autovacuum — neglected tables bloat, and long-open transactions pin old versions, delaying cleanup and risking transaction-id wraparound. Snapshot isolation also explains write skew: two transactions each read a constraint-satisfying snapshot and commit changes that together violate it (two doctors both going on call) — prevented only by Serializable isolation or explicit locking. MySQL's InnoDB implements the same idea with undo logs instead of in-table versions, with analogous purge mechanics.",
+		"example": "-- Session A starts a long report:\n-- BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ;\n-- SELECT sum(total_cents) FROM orders;  -- snapshot fixed here\n\n-- Session B concurrently:\n-- INSERT INTO orders ... ; COMMIT;  -- creates new row versions, never blocked\n\n-- Session A re-runs the same SELECT: identical result (stable snapshot).\n-- Dead versions from B's old updates linger until VACUUM reclaims them.",
+		"exampleLanguage": "sql",
+		"interviewTip": "Explain it as snapshots plus version chains in two sentences, then name the operational cost (VACUUM/bloat) and the correctness caveat (write skew). Operators and seniors are judged on those two follow-ups.",
+		"commonMistakes": [
+			"Believing MVCC eliminates all locking — concurrent writers to one row still conflict.",
+			"Leaving transactions idle in open state, pinning bloat and stalling VACUUM.",
+			"Missing that snapshot isolation still permits write skew."
+		],
+		"relatedQuestions": ["db-007", "db-008", "db-010"]
+	},
+	{
+		"id": "db-010",
+		"category": "database",
+		"topic": "transactions",
+		"question": "What causes deadlocks and how do you prevent and handle them?",
+		"difficulty": "intermediate",
+		"shortAnswer": "A deadlock is a lock cycle: transaction A holds row 1 and waits for row 2 while B holds row 2 and waits for row 1 — neither can proceed, so the database aborts one (the victim) and the app must retry it. Prevent with short transactions, consistent lock order, and low isolation; handle by catching the deadlock error and retrying the whole transaction.",
+		"explanation": "Locks serialize access to rows, and any multi-row transaction acquires them one at a time. When two transactions acquire the same locks in opposite order, each ends up waiting on the other forever — a cycle the database's deadlock detector spots (typically within a second in PostgreSQL) and breaks by killing one participant with a deadlock error. The victim loses all its work; retrying it usually succeeds because timing differs. Prevention is mostly discipline: keep transactions short so locks are held briefly (never wait on network calls or user input inside a transaction); always lock rows in a consistent order (ORDER BY id when selecting multiple rows FOR UPDATE); touch the fewest rows possible and prefer row locks over escalating to page/table locks; use the weakest isolation level that is correct; and design hot paths (queues, counters) to avoid contended single rows. Detection and handling: log deadlock errors with both queries involved, fix recurring pairs by reordering, and wrap every transaction in retry logic for deadlock/serialization errors with bounded backoff. Foreign keys and their supporting indexes matter too — an unindexed foreign key can force table-level locks on the child during parent updates, manufacturing deadlocks that an index eliminates.",
+		"example": "-- Classic cycle: opposite lock order\n-- Txn A: UPDATE accounts SET balance = balance - 10 WHERE id = 1;\n--        UPDATE accounts SET balance = balance + 10 WHERE id = 2;\n-- Txn B (concurrent): UPDATE accounts SET balance = balance - 10 WHERE id = 2;\n--                     UPDATE accounts SET balance = balance + 10 WHERE id = 1;\n-- → deadlock: each waits on the other's row. Engine aborts one; retry it.\n\n-- Fix: consistent ordering in both code paths\n-- SELECT * FROM accounts WHERE id IN (1, 2) ORDER BY id FOR UPDATE;",
+		"exampleLanguage": "sql",
+		"interviewTip": "Sketch the two-transaction cycle in one breath, then give the two-part answer: prevent with short transactions plus consistent lock order, handle with whole-transaction retry. Mentioning unindexed foreign keys as a deadlock source shows depth.",
+		"commonMistakes": [
+			"Retrying only the failed statement instead of the whole transaction.",
+			"Doing I/O or RPCs while holding open transactions.",
+			"Locking rows in different orders across code paths."
+		],
+		"relatedQuestions": ["db-006", "db-007", "db-008"]
+	}
+]

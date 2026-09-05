@@ -1,0 +1,92 @@
+[
+	{
+		"id": "db-011",
+		"category": "database",
+		"topic": "performance",
+		"question": "How do database indexes work and what are their trade-offs?",
+		"difficulty": "intermediate",
+		"shortAnswer": "An index is a sorted auxiliary structure (usually a B-tree) mapping column values to row locations, turning O(n) full scans into O(log n) lookups. Indexes accelerate WHERE, JOIN, and ORDER BY but tax every write and consume storage — index the columns you filter and join on, drop the ones you don't use.",
+		"explanation": "Without an index the engine scans every row (sequential scan, O(n)). A B-tree index keeps entries sorted and balanced so equality and range queries descend to matches in O(log n), and can return rows pre-sorted for ORDER BY without a separate sort step. Composite indexes on (a, b) follow the leftmost-prefix rule: they serve queries on a alone and on a+b, but not on b alone — column order should follow query patterns (equality columns first, then range). Covering indexes go further by INCLUDE-ing selected columns so the query is answered from the index without touching the table (index-only scan). Costs are real: each INSERT/UPDATE/DELETE must maintain every index on the table (write amplification and lock contention), indexes consume disk and precious buffer-pool memory, and the planner may ignore them for low-selectivity predicates where a scan is genuinely cheaper. Practice: index foreign keys and JOIN columns, WHERE predicates, and sort keys; EXPLAIN to confirm usage; audit with pg_stat_user_indexes for zero-scan indexes and drop them; and on write-heavy tables prefer fewer, narrower indexes.",
+		"example": "-- O(log n) lookup instead of scanning 10M rows\nCREATE INDEX idx_orders_customer ON orders(customer_id);\n\n-- Composite: serves (last_name) and (last_name, first_name), NOT (first_name) alone\nCREATE INDEX idx_users_name ON users(last_name, first_name);\n\n-- Covering: answers the query from the index alone\nCREATE INDEX idx_orders_cover\n  ON orders(customer_id) INCLUDE (total_cents, placed_at);\n-- SELECT total_cents FROM orders WHERE customer_id = 7; -- index-only scan",
+		"exampleLanguage": "sql",
+		"interviewTip": "State the mechanism (B-tree, O(log n)), the trade-off (faster reads, slower writes + storage), and one pro detail — leftmost-prefix or covering indexes. That trio is the complete interview answer.",
+		"commonMistakes": [
+			"Indexing everything and wondering why writes slowed down.",
+			"Building (a, b) and expecting it to speed up queries on b alone.",
+			"Never verifying with EXPLAIN whether the index is actually used."
+		],
+		"relatedQuestions": ["db-002", "db-012", "db-013"]
+	},
+	{
+		"id": "db-012",
+		"category": "database",
+		"topic": "performance",
+		"question": "How do you diagnose and fix a slow SQL query?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Reproduce with EXPLAIN (ANALYZE, BUFFERS) to see the plan the engine actually ran — look for sequential scans on big tables, wrong row estimates, and spill-to-disk sorts. Fix by adding or correcting indexes, rewriting the query (avoid SELECT *, functions on indexed columns, leading wildcards), and rechecking the plan. Measure before and after.",
+		"explanation": "Start by capturing the real query and its parameters, then EXPLAIN (ANALYZE, BUFFERS) it: ANALYZE executes and shows actual vs estimated rows per node, BUFFERS shows cache hits vs disk reads. Read the plan for the usual culprits: Seq Scan on a large table where an index should apply (missing index, or a function wrapping the column like WHERE lower(email) = … defeating it — use a functional index instead); Nested Loop joining millions of rows where a Hash Join fits better (often stale statistics — run ANALYZE on the table); Sort spilling to disk (work_mem too small or an unindexed ORDER BY over huge input); and wildly wrong row estimates (rows=10 vs actual 2M), which poison every downstream plan choice and point at stale stats or correlated columns. Fixes in order: update statistics (ANALYZE), add the missing index (or fix selectivity — a leading-wildcard LIKE '%x%' can't use a B-tree; use trigram/pg_trgm or full-text search), rewrite (select only needed columns, push filters into subqueries, replace N+1 loops with one JOIN, paginate with keyset instead of OFFSET), and only then consider denormalization, materialized views, or caching. Verify with the plan and wall-clock time on production-like data — 'feels faster locally' is not evidence. Keep pg_stat_statements enabled so the next slow query finds you instead of a user report.",
+		"example": "-- Diagnose: actual plan, timings, buffer usage\nEXPLAIN (ANALYZE, BUFFERS)\nSELECT id, total_cents FROM orders\nWHERE customer_id = 7 ORDER BY placed_at DESC LIMIT 20;\n\n-- Bad: function on indexed column defeats the index\n-- WHERE lower(email) = 'a@x.com'\n-- Fix: functional index\nCREATE INDEX idx_users_email_lower ON users(lower(email));\n\n-- Bad: huge OFFSET re-scans everything\n-- ... ORDER BY id LIMIT 20 OFFSET 200000\n-- Fix: keyset pagination (stable + O(log n))\n-- ... WHERE id > 200000 ORDER BY id LIMIT 20;",
+		"exampleLanguage": "sql",
+		"interviewTip": "Walk the loop out loud: reproduce → EXPLAIN ANALYZE → name the node (seq scan, bad estimate, disk sort) → fix → re-measure. Interviewers hire the loop, not any single trick.",
+		"commonMistakes": [
+			"Adding indexes blindly without reading the plan first.",
+			"Using SELECT * and OFFSET pagination on large tables.",
+			"Wrapping indexed columns in functions or leading-wildcard LIKEs."
+		],
+		"relatedQuestions": ["db-011", "db-004", "db-013"]
+	},
+	{
+		"id": "db-013",
+		"category": "database",
+		"topic": "performance",
+		"question": "What is the N+1 query problem and how do you fix it?",
+		"difficulty": "intermediate",
+		"shortAnswer": "N+1 happens when code runs 1 query for a list plus N extra queries — one per item — to fetch related rows (classic ORM lazy loading). It turns one fast page into hundreds of round trips. Fix by eager-loading the relation in a single JOIN or batched IN query (includes/preload/select_related) or projecting exactly what you need.",
+		"explanation": "Typical shape: SELECT * FROM orders (1 query returning 100 rows), then inside a loop, SELECT * FROM customers WHERE id = ? executed 100 times — 101 round trips where 1–2 suffice. Latency multiplies: each trip pays network + parse + plan overhead, so a 5ms query becomes a 500ms page, and it degrades linearly as lists grow. ORMs make it invisible because accessing order.customer lazily fires SQL from innocent-looking property reads. Detection: query logging in development (Rails Bullet, Django django-debug-toolbar / n+1 sniffers, or pg_stat_statements showing the same statement with different ids), and tests asserting query counts. Fixes: eager load with a JOIN (or two queries: one for parents, one WHERE parent_id IN (…) for children — often faster than a JOIN fan-out); select only needed columns instead of full models; add DataLoader-style batching in GraphQL resolvers so per-field resolvers collapse into one batched query; cache genuinely static relations. Counterpoint: eager loading everything always is also wrong — a giant JOIN fetching columns no one renders wastes memory and bandwidth. Load what the view needs, verify query counts in tests, and keep an eye on list sizes (paginate) so even the fixed version stays bounded.",
+		"example": "-- N+1: 1 + 100 queries (ORM lazy default)\n-- SELECT * FROM orders LIMIT 100;            -- 1 query\n-- SELECT * FROM customers WHERE id = 7; ...  -- ×100 in a loop\n\n-- Fix: one JOIN (or one batched IN query)\nSELECT o.id, o.total_cents, c.email\nFROM orders o\nJOIN customers c ON c.id = o.customer_id\nLIMIT 100;\n\n-- ORM equivalents: Rails Order.includes(:customer),\n-- Django Order.objects.select_related('customer'),\n-- SQLAlchemy joinedload(Order.customer)",
+		"exampleLanguage": "sql",
+		"interviewTip": "Quantify it — '101 round trips instead of 1' — then name the ORM loader for your stack (includes, select_related, DataLoader). Mentioning a query-count test shows you prevent regressions, not just fix incidents.",
+		"commonMistakes": [
+			"Eager-loading every association unconditionally, trading N+1 for massive over-fetching.",
+			"Missing N+1 inside GraphQL resolvers where each field hides a query.",
+			"Fixing it only in development volumes while production lists are 100x larger."
+		],
+		"relatedQuestions": ["db-003", "db-011", "db-012"]
+	},
+	{
+		"id": "db-014",
+		"category": "database",
+		"topic": "performance",
+		"question": "What is connection pooling and why does it matter?",
+		"difficulty": "beginner",
+		"shortAnswer": "Opening a database connection is expensive (TCP + TLS + auth + backend process), so a pool keeps a set of warm, reusable connections that app threads borrow and return. It caps concurrent backends to what the database can handle, queues the overflow, and prevents connection storms from toppling the database.",
+		"explanation": "Each new PostgreSQL connection forks a backend process (~several MB plus setup handshakes) — at hundreds of app instances × dozens of threads, direct connections exhaust memory, CPU, and the max_connections limit, and new clients get refused. A pooler (PgBouncer, RDS Proxy, or in-process pools like HikariCP/pg-pool) holds N established connections and multiplexes app requests over them: a request borrows a connection, runs its queries, returns it. Sizing follows Little's Law thinking: pool_size ≈ (threads × avg_query_time) / tolerated_wait — small pools with short queries beat huge pools; oversized pools just move the queue into the database where every backend fights for CPU. Modes matter in PgBouncer: session pooling (one server connection per client connection — safe, least sharing), transaction pooling (server connection reassigned per transaction — efficient, but breaks session-level features like prepared statements, advisory locks, LISTEN/NOTIFY), statement pooling (per statement — rarely usable). Operational essentials: set statement timeouts so one bad query can't pin the pool, monitor wait queues and checkout latency (the pool is full long before the database is slow), and keep transactions short — an idle-in-transaction connection is a pooled slot doing nothing while others queue.",
+		"example": "-- PgBouncer in front of PostgreSQL (transaction pooling)\n-- app → PgBouncer (port 6432, pool_size=25) → PostgreSQL (max_connections=200)\n-- 500 app workers share 25 server connections; overflow waits in the pool queue.\n\n-- App-side pool (Node pg): borrow and always release\n-- const client = await pool.connect();\n-- try { await client.query('SELECT ...'); }\n-- finally { client.release(); }  -- leaked clients starve the pool",
+		"exampleLanguage": "text",
+		"interviewTip": "Explain the cost being amortized (connection setup) and the failure being prevented (connection storm past max_connections). Naming transaction vs session pooling mode is the senior-level detail.",
+		"commonMistakes": [
+			"Sizing pools by guesswork (huge numbers) instead of from query latency and concurrency.",
+			"Using transaction pooling with features that need session affinity.",
+			"Leaking checked-out connections so the pool drains under load."
+		],
+		"relatedQuestions": ["db-012", "db-015", "db-007"]
+	},
+	{
+		"id": "db-015",
+		"category": "database",
+		"topic": "performance",
+		"question": "How do you cache database reads and handle invalidation?",
+		"difficulty": "advanced",
+		"shortAnswer": "Cache hot, slow-to-compute reads in Redis/Memcached keyed by query parameters with a TTL, using cache-aside (app checks cache, falls back to DB, populates cache). Invalidation is the hard part: expire by TTL for tolerant data, delete or update keys on write for fresh data, and version keys when schemas change. Cache only what profiling proves is hot.",
+		"explanation": "Database CPU is usually the scarcest resource, and most workloads are skewed — a small fraction of rows serve most reads. Cache-aside (lazy loading) is the default: read-through path checks the cache first; on miss, query the DB and store the result with a TTL. Writes then choose: invalidate (delete the key so the next read repopulates — simple, brief extra load on miss) or update the cache inline (write-through, fresher but couples write path to cache availability). TTL bounds staleness: seconds for prices, minutes for profiles, hours for reference data — pick from product tolerance, not habit. Stampede protection matters: when a hot key expires, hundreds of requests can thunder onto the DB simultaneously — mitigate with probabilistic early refresh, request coalescing (single-flight), or a short stale-while-revalidate window serving slightly old data while one worker refreshes. Consistency limits: caches are eventually consistent by nature — never cache data the business needs strictly fresh (balances mid-transfer); keep transactional reads on the database. Failure mode: the cache is a performance layer, not storage — every read path must survive a total cache outage by falling back to the DB (possibly slower, never wrong). Key design (e.g., product:42:summary:v3) with versioning lets you roll formats without flush-all outages.",
+		"example": "-- Cache-aside pseudocode with stampede guard\n-- key = f\"product:{id}:summary:v2\"\n-- value = redis.get(key)\n-- if value: return value\n-- value = db.query(\"SELECT ... FROM products WHERE id = ?\", id)  -- single-flight this\n-- redis.setex(key, ttl_seconds=300, value)\n-- return value\n\n-- On write: invalidate so the next read repopulates\n-- UPDATE products SET price_cents = ... WHERE id = 42;\n-- redis.delete(f\"product:42:summary:v2\")",
+		"exampleLanguage": "text",
+		"interviewTip": "Name cache-aside first, then go straight to invalidation (TTL vs delete-on-write) and the thundering-herd guard. Closing with 'the app must survive total cache loss' shows you design for failure.",
+		"commonMistakes": [
+			"Caching everything instead of the proven-hot subset, adding complexity for no gain.",
+			"Caching data that must be strictly consistent, like balances mid-transaction.",
+			"Having no stampede protection, so one expiry DDoSes the database."
+		],
+		"relatedQuestions": ["db-011", "db-012", "db-005"]
+	}
+]

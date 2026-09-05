@@ -108,8 +108,11 @@
 		"icon": "database",
 		"accent": "teal",
 		"description": "SQL vs NoSQL, indexing, transactions and query optimization.",
-		"soon": true,
-		"topics": []
+		"topics": [
+			{ "id": "fundamentals", "name": "SQL Fundamentals", "file": "fundamentals", "blurb": "Relational model, keys, joins and normalization." },
+			{ "id": "transactions", "name": "Transactions", "file": "transactions", "blurb": "ACID, isolation levels, locking and deadlocks." },
+			{ "id": "performance", "name": "Performance", "file": "performance", "blurb": "Indexing, slow-query diagnosis, N+1 and caching." }
+		]
 	},
 	{
 		"id": "web-dev",
