@@ -24,7 +24,7 @@ test.describe('progress dashboard & roadmap', () => {
 
 	test('dashboard reflects seeded progress', async ({ page }) => {
 		await page.goto('/progress');
-		await expect(page.locator('#overall-pct')).toHaveText('2%'); // 2 / 105
+		await expect(page.locator('#overall-pct')).toHaveText('1%'); // 2 / 161
 		await expect(page.locator('#stat-streak')).toHaveText('4');
 		await expect(page.locator('#stat-favorites')).toHaveText('1');
 		await expect(page.locator('#stat-review')).toHaveText('1');

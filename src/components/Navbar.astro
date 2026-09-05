@@ -54,6 +54,24 @@ const isActive = (match: string) =>
 		</div>
 
 		<div class="ml-auto flex items-center gap-1.5">
+			<a
+				href="/progress"
+				data-streak-pill
+				aria-current={isActive('/progress') ? 'page' : undefined}
+				aria-label="View your learning streak"
+				title="Learning streak"
+				class:list={[
+					'flex items-center gap-1 rounded-xl border border-line bg-surface px-2.5 py-2 text-sm font-semibold tabular-nums transition-colors hover:border-orange-300 hover:text-orange-600 dark:hover:border-orange-800 dark:hover:text-orange-400',
+					isActive('/progress')
+						? 'border-orange-300 text-orange-600 dark:border-orange-800 dark:text-orange-400'
+						: 'text-ink-secondary',
+				]}
+			>
+				<Icon name="flame" class="h-4 w-4 text-orange-500" />
+				<span data-streak-count>0</span>
+				<span data-streak-label class="hidden font-normal text-ink-muted sm:inline">days</span>
+			</a>
+
 			<button
 				type="button"
 				data-search-open
@@ -109,6 +127,14 @@ const isActive = (match: string) =>
 			}
 			<a href="/favorites" class="block rounded-lg px-3 py-2.5 text-sm font-medium text-ink-secondary hover:bg-surface-raised hover:text-ink">
 				Favorites
+			</a>
+			<a
+				href="/progress"
+				data-streak-menu-link
+				class="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-ink-secondary hover:bg-surface-raised hover:text-ink"
+			>
+				<Icon name="flame" class="h-4 w-4 text-orange-500" />
+				<span><span data-streak-count class="font-semibold tabular-nums">0</span> <span data-streak-label>days</span> streak</span>
 			</a>
 		</div>
 	</div>
