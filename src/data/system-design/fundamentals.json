@@ -1,0 +1,110 @@
+[
+	{
+		"id": "sd-001",
+		"category": "system-design",
+		"topic": "fundamentals",
+		"question": "What is the difference between horizontal and vertical scaling, and when do you choose each?",
+		"difficulty": "beginner",
+		"shortAnswer": "Vertical scaling (scale up) adds more CPU/RAM/disk to an existing server — simple but hits a hardware ceiling and has a single point of failure. Horizontal scaling (scale out) adds more machines behind a load balancer — nearly limitless but requires distributed-systems thinking. Start vertical for early simplicity; go horizontal when you outgrow a single box or need fault tolerance.",
+		"explanation": "Vertical scaling means upgrading the same machine: more cores, more memory, bigger disk. Pros: no code changes, no data-partitioning complexity, works with any architecture. Cons: hard physical/disk ceiling, downtime to upgrade, and that one server remains a single point of failure — if it dies, the service dies. Cloud instances cap out (e.g., 128 vCPUs), so growth stalls abruptly. Horizontal scaling means adding commodity machines behind a load balancer and treating them as a pool. Pros: near-linear growth, no theoretical ceiling, built-in redundancy (lose a node, traffic reroutes). Cons: requires stateless or externally-stored state, introduces network latency, needs service discovery and load balancing, and forces you to solve data partitioning, consistency, and distributed coordination. Decision framework: go vertical while traffic fits one box and simplicity wins; switch to horizontal when (a) you approach the largest instance size, (b) you need high availability beyond a single machine, or (c) cost-per-request favors many small boxes. Most production web apps are designed horizontal-first because re-architecting a vertical monolith later is painful. Databases often stay vertical longer (or use managed horizontal solutions) because stateful horizontal scaling is harder.",
+		"example": "Vertical: upgrading an EC2 t3.medium (2 vCPU, 4 GB) to an r6g.2xlarge (8 vCPU, 64 GB) to handle more traffic on the same app server.\n\nHorizontal: moving from one app server to an Auto Scaling group of 4 t3.medium instances behind an Application Load Balancer, with session state moved to Redis so any node can serve any request.",
+		"exampleLanguage": "text",
+		"interviewTip": "Frame it as a trade-off between simplicity and ceiling. Then name the trigger that forces the switch: hitting the largest instance size or needing fault tolerance. That decision framework is what interviewers listen for.",
+		"commonMistakes": [
+			"Saying horizontal scaling is always better.",
+			"Not mentioning that stateful horizontal scaling is hard.",
+			"Forgetting the single-point-of-failure argument against vertical scaling."
+		],
+		"relatedQuestions": ["sd-002", "sd-003", "sd-004"]
+	},
+	{
+		"id": "sd-002",
+		"category": "system-design",
+		"topic": "fundamentals",
+		"question": "What is a load balancer and how does it distribute traffic across servers?",
+		"difficulty": "beginner",
+		"shortAnswer": "A load balancer is a traffic dispatcher sitting in front of a pool of servers. It spreads requests using algorithms (round-robin, least connections, IP hash), hides server failures with health checks, and provides a single entry point. Layer 4 (transport) balances by IP/port; Layer 7 (application) can route by URL, headers, or cookies for smarter distribution.",
+		"explanation": "A load balancer (LB) is the single public IP clients hit; behind it sits a target group of interchangeable servers. Core job: distribute work so no single server drowns while others idle. Algorithms matter: round-robin cycles through servers evenly (great for equal-capacity, short-lived requests); least-connections sends to the fewest active requests (better for mixed workloads); IP-hash sticks a client to one server (preserves local session caches, useful before you externalize state); weighted variants account for unequal server capacity. Health checks are essential — the LB pings each target periodically and stops routing to any that fail, providing failover transparently. Layer 4 LBs (e.g., NLB, HAProxy in TCP mode) forward by source/destination IP and port — fast, cheap, but blind to content. Layer 7 LBs (e.g., ALB, NGINX, HAProxy in HTTP mode) inspect the HTTP layer and can route /api/* to one pool and /static/* to another, terminate SSL, inject headers, and cache responses. In the cloud, managed LBs (AWS ALB/NLB, GCP CLB) auto-scale themselves and integrate with auto-scaling groups. Global load balancing adds DNS-level or anycast routing to direct users to the nearest regional cluster. Watch for: the LB itself becoming a bottleneck (managed LBs solve this) and the thundering-herd effect when a recovered server is suddenly flooded.",
+		"example": "Client → DNS (api.example.com → 203.0.113.10)\n            ↓\n    AWS Application Load Balancer (Layer 7)\n    ├─ /api/users/*  → Target group: user-service (3 instances)\n    ├─ /api/orders/* → Target group: order-service (5 instances)\n    └─ /static/*     → S3 / CDN\n    Health check: GET /health every 30s on each target.",
+		"exampleLanguage": "text",
+		"interviewTip": "Name one Layer 4 and one Layer 7 example with a concrete reason to choose each. Then mention health checks — that is the detail that separates a surface answer from one that has actually operated a system.",
+		"commonMistakes": [
+			"Forgetting health checks, which are what make failover automatic.",
+			"Not distinguishing Layer 4 from Layer 7.",
+			"Treating the load balancer as invisible — it needs redundancy too (managed LBs handle this)."
+		],
+		"relatedQuestions": ["sd-001", "sd-003", "sd-005"]
+	},
+	{
+		"id": "sd-003",
+		"category": "system-design",
+		"topic": "fundamentals",
+		"question": "What is caching and where does it fit in a typical system architecture?",
+		"difficulty": "beginner",
+		"shortAnswer": "A cache is a fast, small storage layer that stores copies of expensive-to-compute or slow-to-fetch data so future requests serve faster. Place it between your app and the data source (browser cache → CDN → reverse proxy cache → app cache → database cache). The closer to the user, the bigger the latency win and the less origin load.",
+		"explanation": "Caching exploits temporal locality — data requested once is likely requested again soon. Layers, from user inward: (1) Browser cache (Cache-Control, ETag) avoids the network entirely. (2) CDN caches static and even dynamic content at edge PoPs close to users. (3) Reverse-proxy / edge cache (Varnish, NGINX, Cloudflare Workers) serves full pages or API responses before hitting your origin. (4) Application cache (in-process or external like Redis/Memcached) stores computed results, session data, or hot database rows. (5) Database cache (query cache, buffer pool) is managed by the DB itself. Cache patterns: cache-aside (app checks cache, falls back to DB, writes to cache) is the workhorse; write-through (writes go to cache and DB together) keeps cache fresh but adds write latency; write-behind (writes go to cache, async to DB) is fastest but risks data loss. Expiration strategies: TTL (time-to-live), LRU/LFU eviction when the cache is full, and explicit invalidation when source data changes. The hard part is cache invalidation — staleness versus freshness. Biggest pitfalls: thundering herd (cache expiry triggers a flood of DB reads — mitigate with request coalescing or early recomputation), cold starts, and caching user-specific data without proper key namespacing. Measure hit ratio; a good cache layer often exceeds 90%.",
+		"example": "Request flow with cache:\n1. Browser checks local cache → HIT → done (0 ms)\n2. MISS → CDN edge checks → HIT → serve (10 ms)\n3. MISS → reverse proxy (Varnish) checks → HIT (12 ms)\n4. MISS → app checks Redis for product:123 → HIT (14 ms)\n5. MISS → app queries DB, stores result in Redis with TTL 300s (80 ms)",
+		"exampleLanguage": "text",
+		"interviewTip": "Walk the layers from browser inward and name a technology for each. Then land on cache invalidation as the hardest part and mention TTL plus cache-aside. That layered answer plus the invalidation caveat is what senior candidates give.",
+		"commonMistakes": [
+			"Describing only one cache layer instead of the full stack.",
+			"Not mentioning cache invalidation or staleness.",
+			"Forgetting thundering herd when a hot key expires."
+		],
+		"relatedQuestions": ["sd-006", "sd-005", "sd-004"]
+	},
+	{
+		"id": "sd-004",
+		"category": "system-design",
+		"topic": "fundamentals",
+		"question": "Explain the CAP theorem. What does it force you to choose between?",
+		"difficulty": "intermediate",
+		"shortAnswer": "The CAP theorem says a distributed data store can guarantee at most two of three properties during a network partition: Consistency (every read gets the latest write), Availability (every request gets a response), and Partition tolerance (the system survives network breaks). Since partitions are inevitable in distributed systems, the real choice is CP (consistent + partitioned-tolerant, sacrifice availability) versus AP (available + partitioned-tolerant, sacrifice strong consistency).",
+		"explanation": "Eric Brewer's CAP theorem, proved by Gilbert and Lynch, defines three properties: Consistency means all nodes see the same data at the same time. Availability means every request receives a (non-error) response, without guarantee it is the latest. Partition tolerance means the system continues operating despite arbitrary network messages being dropped or delayed between nodes. The theorem: when a network partition occurs, you must choose between consistency and availability. A CP system (e.g., HBase, MongoDB with strong consistency, etcd) refuses operations that cannot be confirmed consistent during a partition — it returns errors to preserve correctness. An AP system (e.g., Cassandra, DynamoDB in eventual-consistency mode, Couchbase) keeps accepting reads and writes on whichever side of the partition is reachable, reconciling conflicts later. CA systems exist only in theory (or single-node databases) because a distributed system cannot avoid partitions. In practice, the choice is rarely binary — most systems tune where they sit on the spectrum per operation (e.g., DynamoDB offers both eventually-consistent and strongly-consistent reads). PACELC extends CAP to add latency-versus-consistency trade-offs even when the network is healthy. The practical takeaway: design for partition tolerance, then consciously pick your consistency-availability trade-off per feature.",
+		"example": "CP choice (banking ledger): during a partition, the account service rejects transfers rather than risk a double-spend — consistency over availability.\n\nAP choice (social media feed): during a partition, users keep seeing and posting to their local region's view; likes and comments reconcile when the partition heals — availability over immediate consistency.",
+		"exampleLanguage": "text",
+		"interviewTip": "State the theorem crisply, then immediately say 'in practice the choice is CP vs AP because partitions are unavoidable.' Give one concrete CP and one AP example. Naming PACELC as the extension signals depth without derailing the answer.",
+		"commonMistakes": [
+			"Saying a system can be all three — it cannot during a partition.",
+			"Treating CAP as a binary all-or-nothing choice rather than a spectrum.",
+			"Forgetting that partition tolerance is not optional in distributed systems."
+		],
+		"relatedQuestions": ["sd-005", "sd-007", "sd-003"]
+	},
+	{
+		"id": "sd-005",
+		"category": "system-design",
+		"topic": "fundamentals",
+		"question": "What is consistent hashing and why does it matter for distributed systems?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Consistent hashing maps both data keys and server nodes onto the same hash ring. A key is stored on the first node encountered clockwise from its hash. When a node is added or removed, only the keys adjacent to it remap — the rest stay put. This minimizes data movement during scaling, which is why distributed caches and databases use it.",
+		"explanation": "Naive hashing (hash(key) mod N) breaks when N changes: adding or removing a server remaps nearly every key, forcing a massive data migration and cache stampede. Consistent hashing (Karger et al., 1997) solves this. Build a hash ring covering the hash space. Place each node at one or more positions on the ring (via hashing the node ID, often with virtual nodes for even spread). Hash each key; walk clockwise to the first node — that node owns the key. When a node joins, it takes ownership of keys between its position and the next node clockwise; only those keys move. When a node leaves, its keys shift to the next clockwise node; again, only a fraction moves. Virtual nodes (vnodes) — each physical node gets many positions on the ring — smooth out uneven distributions and ensure balanced load. The technique underpins Dynamo, Cassandra, Riak, and distributed caches like Memcached. Related idea: rendezvous hashing (highest random weight) picks the node with the highest hash(key + node) and has similar minimal-remapping properties with simpler implementation. The practical benefit: you can add capacity without rehashing the entire dataset, and failures cause graceful degradation rather than global reshuffling.",
+		"example": "Ring with nodes A, B, C at positions 100, 200, 300:\n- Key hash 150 → walks clockwise to B (owns it)\n- Key hash 350 → wraps to A\n\nAdd node D at position 250:\n- Only keys between 200–250 move from B to D. Everything else stays.\n\nRemove node B:\n- Keys B owned move to C. A and D unaffected.",
+		"exampleLanguage": "text",
+		"interviewTip": "Explain the clockwise-walk rule and state the payoff: only K/N keys move when a node changes. Naming one real system (Cassandra or DynamoDB) that uses it grounds the answer.",
+		"commonMistakes": [
+			"Confusing consistent hashing with simple modulo hashing.",
+			"Not mentioning virtual nodes, which balance load.",
+			"Forgetting the actual benefit: minimal key remapping on resize."
+		],
+		"relatedQuestions": ["sd-006", "sd-004", "sd-001"]
+	},
+	{
+		"id": "sd-006",
+		"category": "system-design",
+		"topic": "fundamentals",
+		"question": "What is rate limiting and what algorithms are used to implement it?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Rate limiting caps how many requests a client can make in a window to protect services from abuse, fair-share resources, and control costs. Common algorithms: token bucket (allows bursts up to a cap while refilling steadily), leaky bucket (smooths traffic to a fixed rate), fixed window (simple counter per block, but allows boundary bursts), and sliding window log or counter (accurate but more memory). Pick based on whether you need to allow bursts and how much boundary accuracy matters.",
+		"explanation": "Rate limiting sits at the edge — API gateway, load balancer, or middleware — and decides whether to allow, delay, or reject a request. Token bucket: a bucket holds tokens; each request consumes one; tokens refill at a steady rate up to a max. Allows bursts up to the bucket size while enforcing a long-term average — good for APIs that permit occasional spikes. Leaky bucket: requests enter a queue and leave at a fixed rate — smooths bursty traffic into a constant flow, useful for downstream systems that cannot handle spikes. Fixed window: count requests per fixed interval (e.g., per minute). Simple and memory-efficient but a client can send 2x the limit by bursting at the window boundary. Sliding window: tracks timestamps of recent requests (log) or uses weighted overlapping windows (counter) — accurate, no boundary burst, but uses more memory. State must be shared across servers for a distributed system — typically stored in Redis with atomic INCR + EXPIRE, or a dedicated rate-limit service. Return 429 Too Many Requests with a Retry-After header. Apply per-user, per-IP, per-API-key, or per-tenant depending on the fairness model.",
+		"example": "Token bucket for an API:\n- Capacity: 100 tokens, refill 10/second\n- A burst of 80 requests succeeds immediately\n- Sustained traffic capped at ~10 req/s long-term\n\nRedis-backed fixed window:\nINCR rate_limit:user_123:minute_14:05\nEXPIRE rate_limit:user_123:minute_14:05 60\n→ reject if count > 100",
+		"exampleLanguage": "text",
+		"interviewTip": "Name two algorithms (token bucket and sliding window) and the trade-off each optimizes — burst tolerance versus accuracy. Then mention Redis as the shared store for distributed counting.",
+		"commonMistakes": [
+			"Only naming one algorithm without comparing trade-offs.",
+			"Forgetting that distributed rate limiting needs shared state (Redis).",
+			"Not mentioning the 429 status and Retry-After header."
+		],
+		"relatedQuestions": ["sd-002", "sd-003", "sd-001"]
+	}
+]

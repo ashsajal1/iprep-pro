@@ -1,0 +1,74 @@
+[
+	{
+		"id": "web-001",
+		"category": "web-dev",
+		"topic": "http",
+		"question": "GET vs POST vs PUT vs PATCH vs DELETE — how do you choose?",
+		"difficulty": "beginner",
+		"shortAnswer": "GET reads data (safe, cacheable, no body semantics). POST creates or triggers actions (neither safe nor idempotent). PUT replaces a whole resource, PATCH applies a partial update (both idempotent), DELETE removes one (idempotent). Choose by the operation's semantics, not just CRUD habit.",
+		"explanation": "HTTP methods carry meaning that caches, browsers, and APIs all rely on. Safe methods (GET, HEAD) must not change server state — that's why browsers freely retry, prefetch, and cache them, and why a GET must never perform a delete or charge. Idempotent methods (GET, PUT, DELETE) produce the same server state whether sent once or five times, so clients and proxies can safely retry them after network failures; POST and PATCH are generally not idempotent (posting twice creates two orders — unless the API adds idempotency keys). Conventions: GET /users/7 reads one user; POST /users creates (server assigns the id, returns 201 + Location header); PUT /users/7 replaces the entire record (client supplies the id, missing fields reset); PATCH /users/7 updates only the sent fields; DELETE /users/7 removes it. Status codes pair with the choice: 200 for success with a body, 201 for creation, 204 for success with no body, 400 for bad input, 404 for unknown ids, 409 for conflicts. Getting this right makes retries safe, caching automatic, and APIs predictable.",
+		"example": "GET    /users/7          # read (safe, retryable, cacheable)\nPOST   /users            # create → 201 Created, Location: /users/8\nPUT    /users/8          # replace whole record (idempotent)\nPATCH  /users/8          # { \"email\": \"b@x.com\" } — partial update\nDELETE /users/8          # remove (idempotent: deleting twice = same state)\n\n# Retry-safe only with idempotency:\n# POST /charges { amount: 100 } twice → charged twice!\n# Fix: POST /charges with Idempotency-Key: abc-123 → second send returns the original",
+		"exampleLanguage": "text",
+		"interviewTip": "Lead with the two words — safe and idempotent — and which methods have each property. The double-charge POST example proves you think about real failure modes.",
+		"commonMistakes": [
+			"Using GET for state-changing actions because it is convenient.",
+			"Calling POST idempotent or forgetting PUT/PATCH/DELETE are retry-safe.",
+			"Returning 200 for everything instead of 201/204/400/404."
+		],
+		"relatedQuestions": ["web-002", "web-003", "web-004"]
+	},
+	{
+		"id": "web-002",
+		"category": "web-dev",
+		"topic": "http",
+		"question": "What do the HTTP status code classes mean? Name the key codes.",
+		"difficulty": "beginner",
+		"shortAnswer": "1xx informational, 2xx success (200 OK, 201 Created, 204 No Content), 3xx redirection (301 permanent, 302 temporary, 304 Not Modified), 4xx client error (400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 429 Too Many Requests), 5xx server error (500, 502 Bad Gateway, 503 Service Unavailable). The class tells who must act: client fixes 4xx, server owner fixes 5xx.",
+		"explanation": "The first digit is the contract. 2xx means the server did what was asked: 200 with a body, 201 when something was created (include a Location header), 204 when there is nothing to return. 3xx means go look elsewhere: 301/308 are permanent (browsers and SEO update bookmarks), 302/307 temporary; 304 is special — the cached copy is still fresh, send nothing (the backbone of conditional caching). 4xx blames the request: 400 malformed input, 401 missing/invalid authentication (despite the name, it means unauthenticated), 403 valid auth but forbidden, 404 unknown resource, 409 conflict with current state, 429 rate-limited (honor Retry-After). Clients must not blindly retry 4xx — the request itself is wrong. 5xx blames the server: 500 unhandled crash, 502 upstream/gateway failure, 503 temporarily overloaded (also sends Retry-After). Clients may retry 5xx with backoff, and 503 is the correct code for deploys and maintenance windows. Practical discipline: APIs should return the most specific code available, keep error bodies in one consistent shape (code, message, details), and never leak stack traces in 500s.",
+		"example": "# Creating a user — full status-code conversation\n# → POST /users { \"email\": \"a@x.com\" }\n# ← 201 Created, Location: /users/8\n\n# → GET /users/999\n# ← 404 Not Found { \"code\": \"user_not_found\", \"message\": \"No user with id 999\" }\n\n# → GET /users/8  (with If-None-Match: \"v3\")\n# ← 304 Not Modified  (use your cached copy, zero bytes transferred)",
+		"exampleLanguage": "text",
+		"interviewTip": "Recite the five classes in one breath, then nail the pairs people confuse: 401 vs 403, 301 vs 302, 400 vs 404. That precision is what interviewers score.",
+		"commonMistakes": [
+			"Mixing up 401 (unauthenticated) and 403 (forbidden).",
+			"Retrying 4xx errors that will never succeed without changing the request.",
+			"Returning 200 with an error body instead of the proper 4xx/5xx."
+		],
+		"relatedQuestions": ["web-001", "web-004", "web-011"]
+	},
+	{
+		"id": "web-003",
+		"category": "web-dev",
+		"topic": "http",
+		"question": "How do cookies work for sessions, and what do HttpOnly, Secure, and SameSite do?",
+		"difficulty": "intermediate",
+		"shortAnswer": "The server sets a session id via Set-Cookie; the browser stores it and automatically attaches it to matching requests, so stateless HTTP gains memory. HttpOnly hides the cookie from JavaScript (XSS defense), Secure restricts it to HTTPS, and SameSite controls cross-site sending (Lax default, Strict tightest, None for embedded flows) — the primary CSRF defense.",
+		"explanation": "HTTP is stateless, so login state needs a carrier. On successful login the server creates a session record (in memory, Redis, or a signed token) and returns Set-Cookie: sessionId=abc; Path=/; HttpOnly; Secure; SameSite=Lax. The browser files it in the cookie jar keyed by domain and path, then attaches Cookie: sessionId=abc to every subsequent matching request automatically — including images and fetch calls, which is both the convenience and the danger. Lookup on the server restores who you are. The flags each close a hole: HttpOnly removes document.cookie access, so an injected XSS script cannot steal the session (it can still act as you while the page lives, but the token never leaks). Secure forbids sending over plain HTTP, killing network sniffing. SameSite governs cross-site attachment: Strict never sends on cross-site navigation (safest, but breaks login-via-SSO return flows); Lax (the modern default) sends on top-level GET navigation but not on POSTs or subresource loads — blocking classic CSRF while keeping links working; None allows cross-site sending but requires Secure, used by embedded widgets and third-party flows. Session expiry is two clocks: Max-Age/Expires for the browser copy, and server-side TTL — log out must destroy the server record, not just delete the cookie. Alternatives worth naming: bearer tokens in Authorization headers (no auto-attach, immune to CSRF, but XSS-stealable from storage) and the modern split — HttpOnly refresh cookie plus short-lived in-memory access token.",
+		"example": "# Login response sets the session cookie\nHTTP/1.1 200 OK\nSet-Cookie: sessionId=abc123; Path=/; Max-Age=86400; HttpOnly; Secure; SameSite=Lax\n\n# Every later request carries it automatically — even ones the page didn't intend:\nGET /account HTTP/1.1\nCookie: sessionId=abc123\n\n# An evil-site form POST to your bank sends cookies too → that's CSRF,\n# which is exactly what SameSite=Lax blocks for non-GET requests.",
+		"exampleLanguage": "text",
+		"interviewTip": "Explain the auto-attach behavior first — it motivates every flag. Then map each flag to its attack: HttpOnly→XSS theft, Secure→sniffing, SameSite→CSRF. That mapping is the whole answer.",
+		"commonMistakes": [
+			"Storing JWTs in localStorage while calling it safe from CSRF but ignoring XSS theft.",
+			"Logging out by deleting the cookie client-side while the server session stays valid.",
+			"Using SameSite=None without Secure, which modern browsers reject."
+		],
+		"relatedQuestions": ["web-001", "web-009", "web-010"]
+	},
+	{
+		"id": "web-004",
+		"category": "web-dev",
+		"topic": "http",
+		"question": "How does HTTP caching work with Cache-Control, ETag, and conditional requests?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Cache-Control tells browsers and CDNs how long a response is fresh (max-age) and who may store it (public/private, immutable). Validators (ETag/Last-Modified) let caches revalidate stale copies with conditional requests (If-None-Match) — a match returns 304 with zero body. Strategy: immutable hashed assets cache for a year; HTML stays short-lived or uncached so deploys take effect.",
+		"explanation": "Every cache decision answers two questions: may I store this, and for how long is it fresh? Cache-Control encodes both: max-age=31536000 allows a year of reuse with zero requests; no-store forbids all storage (personal data, checkout responses); private allows only the browser, not shared CDNs (per-user content); public allows CDNs (marketing assets); immutable tells the browser a fingerprinted URL will never change content, so even reload skips revalidation. When freshness expires, the cache revalidates instead of re-downloading: it sends If-None-Match with the stored ETag (a content hash) or If-Modified-Since with the stored date. If the origin's current ETag matches, it answers 304 Not Modified — headers only, no body — and the cache extends freshness. Mismatch returns the new 200 with a new ETag. The production pattern this enables: filenames with content hashes (app.a3f9c1.js) served immutable for a year, while index.html ships no-cache (always revalidate) so each deploy points at new hashes — users get instant updates plus near-100% cache hits. Invalidation falls out naturally: changed content gets a new filename, so there is nothing to purge. Watch for: caching authenticated responses publicly (leaking one user's data to everyone — use private or Vary: Cookie), and heuristic caching of responses with no explicit headers, which intermediaries may store unexpectedly.",
+		"example": "# Fingerprinted asset: cache aggressively, purge never needed\n# GET /static/app.a3f9c1.js\n# → 200 OK\n#   Cache-Control: public, max-age=31536000, immutable\n#   ETag: \"a3f9c1\"\n\n# Entry HTML: always revalidate so deploys land immediately\n# GET /index.html\n# → 200 OK\n#   Cache-Control: no-cache\n#   ETag: \"v42\"\n# Next visit → If-None-Match: \"v42\" → 304 Not Modified (0 bytes)",
+		"exampleLanguage": "text",
+		"interviewTip": "State the two-question model (may I store, how long fresh), then give the fingerprint-plus-no-cache-HTML pattern with its headers. That deploy-safe strategy is the production answer.",
+		"commonMistakes": [
+			"Caching HTML for a year so users never receive deploys.",
+			"Serving per-user content as public, leaking data across users.",
+			"Changing file contents without changing the fingerprinted filename."
+		],
+		"relatedQuestions": ["web-001", "web-002", "web-015"]
+	}
+]

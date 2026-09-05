@@ -131,5 +131,5 @@ src/
 ## Conventions
 
 - Question ids: `<prefix>-<number>` — `js`, `rct`, `ts`, `nxt`, `nde`, `hcs`,
-  `git`, `beh`. The prefix maps questions to categories for progress math.
+  `git`, `beh`, `sd`, `db`, `web`. The prefix maps questions to categories for progress math.
 - Progress keys in localStorage: `iprep.progress.v1`, theme: `iprep.theme`.

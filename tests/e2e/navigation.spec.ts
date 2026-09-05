@@ -5,7 +5,7 @@ test.describe('navigation & static pages', () => {
 		await page.goto('/');
 		await expect(page).toHaveTitle(/iPrep Pro/);
 		await expect(page.getByRole('heading', { name: /Master Your Next/i })).toBeVisible();
-		await expect(page.locator('[data-category-card]')).toHaveCount(11); // 8 live + 3 coming soon
+		await expect(page.locator('[data-category-card]')).toHaveCount(11); // 11 live categories
 		await expect(page.locator('#continue-section')).toBeHidden();
 	});
 

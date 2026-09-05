@@ -1,0 +1,88 @@
+[
+	{
+		"id": "db-001",
+		"category": "database",
+		"topic": "fundamentals",
+		"question": "What is a relational database and how does it organize data?",
+		"difficulty": "beginner",
+		"shortAnswer": "A relational database stores data in tables (rows and columns) with a fixed schema, where rows relate to each other through keys. You query and manipulate it with SQL, and the engine enforces structure, types, and relationships so data stays consistent.",
+		"explanation": "The relational model organizes data into tables: each table has named columns with fixed types (INTEGER, TEXT, TIMESTAMP) and rows holding one record each. A schema declares the tables, columns, constraints, and relationships up front, so every write is validated. Tables connect through keys: a primary key uniquely identifies each row, and a foreign key in one table points at a primary key in another, letting you JOIN related rows at query time instead of duplicating data. SQL is the standard language for all of it — SELECT to read, INSERT/UPDATE/DELETE to write, CREATE TABLE/ALTER TABLE to evolve the schema. The engine guarantees durability (data survives crashes via write-ahead logging) and lets many clients query concurrently. Classic examples are PostgreSQL, MySQL, and SQLite. The model's strength is structured data with clear relationships and a need for correct, queryable records — orders linked to customers, posts linked to authors.",
+		"example": "-- Two related tables linked by a foreign key\nCREATE TABLE customers (\n  id SERIAL PRIMARY KEY,\n  email TEXT UNIQUE NOT NULL\n);\n\nCREATE TABLE orders (\n  id SERIAL PRIMARY KEY,\n  customer_id INTEGER NOT NULL REFERENCES customers(id),\n  total_cents INTEGER NOT NULL,\n  placed_at TIMESTAMPTZ DEFAULT now()\n);\n\n-- Reassemble the relationship at query time\nSELECT c.email, o.total_cents\nFROM orders o\nJOIN customers c ON c.id = o.customer_id;",
+		"exampleLanguage": "sql",
+		"interviewTip": "Name the three building blocks — tables, keys, SQL — then give one concrete two-table example. Mentioning that joins reassemble relationships at query time shows you think relationally.",
+		"commonMistakes": [
+			"Describing tables without mentioning keys and relationships.",
+			"Forgetting that the schema is enforced on every write."
+		],
+		"relatedQuestions": ["db-002", "db-003", "db-005"]
+	},
+	{
+		"id": "db-002",
+		"category": "database",
+		"topic": "fundamentals",
+		"question": "What's the difference between a primary key, foreign key, unique constraint, and index?",
+		"difficulty": "beginner",
+		"shortAnswer": "A primary key uniquely identifies each row (one per table, never NULL). A foreign key links a column to another table's primary key to enforce referential integrity. A unique constraint forbids duplicates but isn't the row's identity. An index is a performance structure that speeds up lookups — keys usually get one automatically, but indexes alone enforce nothing.",
+		"explanation": "Primary key: the table's identity — exactly one per table, values unique and NOT NULL. The database typically builds a B-tree index behind it so lookups by id are O(log n). Foreign key: a column (or columns) whose values must match an existing primary key in the referenced table — it prevents orphan rows (you can't insert an order for customer 999 if that customer doesn't exist) and can cascade actions (ON DELETE CASCADE removes child rows automatically). Unique constraint: guarantees no two rows share a value (emails, usernames) and usually creates an index too, but unlike a primary key a table can have many, and (in most databases) they may allow one NULL. Index: purely about speed — an auxiliary sorted structure mapping column values to row locations. You can index any frequently-queried column with no uniqueness meaning at all. Rule of thumb: constraints protect correctness (primary/foreign/unique), indexes buy speed; the database happens to implement most constraints with an index under the hood.",
+		"example": "CREATE TABLE users (\n  id SERIAL PRIMARY KEY,          -- identity, indexed automatically\n  email TEXT UNIQUE NOT NULL,     -- no duplicates, indexed automatically\n  team_id INTEGER REFERENCES teams(id) ON DELETE SET NULL -- must exist in teams\n);\n\n-- A non-unique performance index: correctness unchanged, reads faster\nCREATE INDEX idx_users_team ON users(team_id);",
+		"exampleLanguage": "sql",
+		"interviewTip": "Frame it as correctness vs speed: keys and unique constraints protect data, indexes buy performance. The follow-up interviewers love is what ON DELETE CASCADE does.",
+		"commonMistakes": [
+			"Saying an index enforces uniqueness — only a unique index does.",
+			"Not knowing a table has exactly one primary key but many unique constraints."
+		],
+		"relatedQuestions": ["db-001", "db-004", "db-011"]
+	},
+	{
+		"id": "db-003",
+		"category": "database",
+		"topic": "fundamentals",
+		"question": "How do INNER JOIN, LEFT JOIN, RIGHT JOIN, and FULL JOIN differ?",
+		"difficulty": "intermediate",
+		"shortAnswer": "INNER JOIN keeps only rows with a match on both sides. LEFT JOIN keeps every left row, filling NULLs where nothing matches. RIGHT JOIN is the mirror image. FULL JOIN keeps everything from both sides with NULLs for non-matches. Default to INNER; reach for LEFT when the right side is optional.",
+		"explanation": "JOINs combine rows from two tables on a condition, usually equality of keys. INNER JOIN returns the intersection: a customer appears only if they have a matching order, an order only if its customer exists — orphans on either side vanish. LEFT JOIN preserves the entire left table: every customer appears at least once, with order columns NULL when they have no orders — the standard way to answer 'all X, plus their Y if any'. RIGHT JOIN is symmetric (preserve the right table); most teams rewrite it as a LEFT JOIN with the tables flipped for readability. FULL JOIN preserves both sides — mismatches from either table appear with NULLs — useful for reconciliation reports ('customers without orders AND orders without valid customers'). Practical notes: joining multiplies rows when the key isn't unique on one side (a fan-out that silently inflates COUNTs); filter placement matters (a WHERE on the right table after a LEFT JOIN effectively turns it back into an INNER JOIN — put such filters in the ON clause to keep the outer semantics); and CROSS JOIN (no condition) produces the cartesian product, occasionally intended, usually a missing ON clause bug.",
+		"example": "-- Customers and their orders, including customers with none\nSELECT c.email, o.total_cents\nFROM customers c\nLEFT JOIN orders o ON o.customer_id = c.id;\n\n-- Only customers that actually ordered (intersection)\nSELECT c.email, o.total_cents\nFROM customers c\nINNER JOIN orders o ON o.customer_id = c.id;\n\n-- ⚠️ WHERE on the nullable side kills the outer join:\n-- This returns INNER JOIN results, not 'all customers':\n-- ... LEFT JOIN orders o ON ... WHERE o.total_cents > 1000\n-- Keep the filter in ON instead:\n-- ... LEFT JOIN orders o ON o.customer_id = c.id AND o.total_cents > 1000",
+		"exampleLanguage": "sql",
+		"interviewTip": "Draw the Venn diagram verbally — intersection vs preserve-left — then volunteer the WHERE-vs-ON trap. That pitfall answer is what separates memorized definitions from real SQL experience.",
+		"commonMistakes": [
+			"Filtering the nullable side in WHERE and accidentally converting a LEFT JOIN to an INNER JOIN.",
+			"Not realizing duplicate join keys fan out and inflate counts."
+		],
+		"relatedQuestions": ["db-001", "db-002", "db-013"]
+	},
+	{
+		"id": "db-004",
+		"category": "database",
+		"topic": "fundamentals",
+		"question": "What is normalization (1NF, 2NF, 3NF) and when would you denormalize?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Normalization removes redundancy by splitting data into focused tables: 1NF requires atomic values and no repeating groups, 2NF removes partial dependencies on part of a key, 3NF removes transitive dependencies on non-key columns. It keeps writes consistent but costs JOINs at read time — so you denormalize (duplicate or precompute data) when reads dominate and the JOIN cost hurts.",
+		"explanation": "Unnormalized data repeats itself: an orders row storing the customer's name, email, and address on every order means a name change requires updating thousands of rows — and partial updates cause anomalies. 1NF fixes the shape: each cell holds one atomic value, each row is unique — no comma-separated tags columns, no 'address1, address2, address3' groups; repeating things move to child tables. 2NF fixes partial dependence: in a table with a composite key (order_id, product_id), every non-key column must depend on the whole key — product_name depends only on product_id, so it moves to a products table. 3NF fixes transitive dependence: non-key columns must depend only on the key — a zip_code determining city means city depends on zip, not the order key, so cities move out. The result: each fact lives in exactly one place, writes are anomaly-free. The price is read complexity — reassembling an order needs several JOINs. Denormalization deliberately reintroduces redundancy for read speed: store the customer's name on the order, keep a orders_count counter on users, precompute daily aggregates. It is justified when the workload is read-heavy, the JOIN path is measurably slow, and you can tolerate the write-side cost (keeping copies in sync via transactions, triggers, or background jobs). Most production schemas are normalized first, then selectively denormalized where profiling proves it pays.",
+		"example": "-- 3NF: each fact lives once\nCREATE TABLE customers (id SERIAL PRIMARY KEY, email TEXT UNIQUE);\nCREATE TABLE products  (id SERIAL PRIMARY KEY, name TEXT, price_cents INT);\nCREATE TABLE orders (\n  id SERIAL PRIMARY KEY,\n  customer_id INT REFERENCES customers(id),\n  product_id INT REFERENCES products(id),\n  qty INT NOT NULL\n);\n\n-- Denormalized for read speed: precomputed total avoids a JOIN + math per read\n-- ALTER TABLE orders ADD COLUMN line_total_cents INT;\n-- (kept in sync by the app or a trigger; stale if the writer forgets)",
+		"exampleLanguage": "sql",
+		"interviewTip": "State each normal form as the anomaly it kills — repeating groups, partial dependency, transitive dependency — then give one concrete denormalization (a counter cache) with its sync cost.",
+		"commonMistakes": [
+			"Reciting the normal forms without explaining the anomaly each prevents.",
+			"Denormalizing by default instead of normalizing first and optimizing proven hot paths."
+		],
+		"relatedQuestions": ["db-001", "db-002", "db-012"]
+	},
+	{
+		"id": "db-005",
+		"category": "database",
+		"topic": "fundamentals",
+		"question": "When do you choose SQL vs NoSQL?",
+		"difficulty": "beginner",
+		"shortAnswer": "Choose SQL (PostgreSQL, MySQL) when data is relational, schemas are stable, and you need JOINs and ACID transactions. Choose NoSQL — document (MongoDB), key-value (Redis, DynamoDB), wide-column (Cassandra), or graph (Neo4j) — for flexible schemas, massive horizontal scale, or access patterns a relational model fights. Many systems use both.",
+		"explanation": "SQL databases enforce a schema, model relationships with foreign keys, and answer ad-hoc queries with JOINs plus ACID transactions — the right default for orders, payments, inventory, anything where a half-written update is corruption. NoSQL is four families solving different pains: document stores (MongoDB) hold semi-structured JSON per record, ideal for catalogs where each item has different attributes; key-value stores (Redis, DynamoDB) are giant hash maps with single-digit-millisecond primary-key lookups, ideal for sessions, carts, and feature flags; wide-column stores (Cassandra) partition huge write volumes across nodes, ideal for time-series and event streams; graph databases (Neo4j) traverse relationships natively, ideal for social and recommendation data. NoSQL buys horizontal scale and schema flexibility at a cost: usually no JOINs, often eventual consistency rather than ACID, and queries limited to designed access patterns. Decision rule: need transactions, complex queries, or strong integrity? SQL. Single-aggregate reads, key-only access at huge scale, extreme write throughput, or relationship traversal? The matching NoSQL family. In practice teams use polyglot persistence — PostgreSQL for the transactional core, Redis for sessions and rate limits, Elasticsearch for search — each store doing what it is best at.",
+		"example": "-- SQL: transactional order + payment update atomically\nBEGIN;\nUPDATE inventory SET stock = stock - 1 WHERE product_id = 42;\nINSERT INTO orders (customer_id, product_id) VALUES (7, 42);\nCOMMIT;\n\n-- NoSQL document: varying attributes, no joins, read by key\n-- db.products.findOne({ _id: 'laptop-9' })\n-- { _id: 'laptop-9', ram_gb: 32, cpu: 'M3' }  vs  { _id: 'shirt-3', size: 'M' }",
+		"exampleLanguage": "sql",
+		"interviewTip": "Name all four NoSQL families with one example each, then state the decision rule (transactions and joins → SQL; scale or shape → NoSQL). Mentioning polyglot persistence signals production experience.",
+		"commonMistakes": [
+			"Claiming NoSQL is always faster or more scalable without naming the trade-offs.",
+			"Not knowing the four NoSQL families.",
+			"Forgetting NoSQL usually sacrifices JOINs and strong consistency."
+		],
+		"relatedQuestions": ["db-001", "db-006", "db-015"]
+	}
+]

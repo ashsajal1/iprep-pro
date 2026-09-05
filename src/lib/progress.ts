@@ -217,6 +217,9 @@ export const CATEGORY_PREFIXES: Record<string, string> = {
 	hcs: 'html-css',
 	git: 'git-github',
 	beh: 'behavioral',
+	sd: 'system-design',
+	db: 'database',
+	web: 'web-dev',
 };
 
 export function categoryOf(id: string): string | undefined {

@@ -1,0 +1,74 @@
+[
+	{
+		"id": "web-005",
+		"category": "web-dev",
+		"topic": "browsers",
+		"question": "What is the critical rendering path?",
+		"difficulty": "intermediate",
+		"shortAnswer": "The steps from bytes to pixels: parse HTML into the DOM, parse CSS into the CSSOM, combine them into the render tree, lay out geometry, then paint and composite layers. Anything blocking those steps — synchronous scripts, slow stylesheets — delays first paint, so the whole performance playbook is about unblocking this path.",
+		"explanation": "When navigation commits, the browser streams HTML and tokenizes it into the DOM incrementally — but a classic <script> pauses parsing until the script downloads and executes (it might document.write), and stylesheets block rendering until the CSSOM is built (painting unstyled content would flash). So the path is: DOM construction and CSSOM construction (parallel, except scripts wait for pending CSS), then the render tree (visible DOM nodes + their computed styles — display:none subtrees are excluded), then layout (also called reflow: each node's exact position and size, relative to the viewport), then paint (fill pixels into layers: text, colors, images, shadows), then compositing (the GPU combines layers, applying transforms and opacity cheaply). DevTools' Performance panel shows exactly these phases per frame. Optimization follows the structure: minimize bytes (minify, compress with Brotli/Gzip), shorten the chain (inline critical CSS, defer non-critical CSS/JS, async or defer scripts), avoid render-blocking surprises (preconnect to origins, preload the hero font/image), and keep runtime updates on the compositor (animate transform/opacity, never width/top). The business metric tied to this path is LCP — when the largest contentful element finishes this journey.",
+		"example": "<!-- Unblock the path -->\n<head>\n  <style>/* critical above-the-fold CSS inlined */</style>\n  <link rel=\"preload\" href=\"/hero.avif\" as=\"image\" />\n  <link rel=\"preconnect\" href=\"https://fonts.gstatic.com\" crossorigin />\n  <!-- non-critical CSS loads without blocking -->\n  <link rel=\"stylesheet\" href=\"/app.css\" media=\"print\" onload=\"this.media='all'\" />\n</head>\n<body>\n  <!-- ... -->\n  <!-- deferred scripts never pause parsing -->\n  <script src=\"/app.js\" defer></script>\n</body>",
+		"exampleLanguage": "html",
+		"interviewTip": "Recite the five stages in order (DOM → CSSOM → render tree → layout → paint/composite), then name what blocks each. One concrete unblocking fix proves it is operational knowledge, not vocabulary.",
+		"commonMistakes": [
+			"Forgetting stylesheets block rendering while scripts block parsing.",
+			"Putting synchronous third-party scripts in <head>.",
+			"Animating layout properties like width instead of transform."
+		],
+		"relatedQuestions": ["web-008", "web-013", "web-015"]
+	},
+	{
+		"id": "web-006",
+		"category": "web-dev",
+		"topic": "browsers",
+		"question": "localStorage vs sessionStorage vs cookies vs IndexedDB — when do you use each?",
+		"difficulty": "beginner",
+		"shortAnswer": "Cookies (~4KB) auto-attach to requests — use for session ids with HttpOnly/Secure/SameSite. localStorage (~5MB, string key-value, persists) suits UI prefs and caches. sessionStorage is the same but dies with the tab — good for per-tab flow state. IndexedDB is the async NoSQL store for large structured offline data.",
+		"explanation": "All four live in the browser but serve different jobs. Cookies are tiny and unique in one way: they ride along on HTTP requests automatically, which makes them the session mechanism — and a CSRF vector, hence the flags. Never store large or XSS-sensitive secrets in the other three, because any injected script reads them freely (HttpOnly cookies being the exception). localStorage persists across restarts on the same origin, synchronous API, roughly 5MB — fine for theme, drafts, and cached API blobs; its sync reads block the main thread, so keep values small. sessionStorage shares the API but is scoped to the tab lifetime — ideal for multi-step form state that shouldn't leak between tabs. IndexedDB is the heavyweight: asynchronous, transactional, stores megabytes-to-gigabytes of structured records with indexes — the database behind offline-first apps (email clients, editors), usually wrapped by libraries like Dexie or idb. Eviction reality: browsers may clear site storage under disk pressure (Safari aggressively), so treat client storage as cache, not source of truth, and always handle missing data gracefully.",
+		"example": "// UI prefs: small, non-sensitive → localStorage\nlocalStorage.setItem('theme', 'dark');\n\n// Per-tab wizard state → sessionStorage (dies with the tab)\nsessionStorage.setItem('checkout-step', '2');\n\n// ❌ Never: session tokens readable by any XSS payload\n// localStorage.setItem('token', jwt);  // stealable via document access\n// ✅ Instead: HttpOnly + Secure + SameSite cookie set by the server\n\n// Large offline dataset → IndexedDB (async, indexed)\n// const db = await openDB('mail', 1, { upgrade(d) { d.createObjectStore('threads'); } });",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Organize by the decision: needs server round-trip → cookies; small UI state → web storage; big structured offline data → IndexedDB. The JWT-in-localStorage trap is the expected follow-up — answer with HttpOnly cookies.",
+		"commonMistakes": [
+			"Keeping auth tokens in localStorage where XSS can steal them.",
+			"Treating client storage as durable — browsers can evict it.",
+			"Blocking the main thread with huge localStorage reads."
+		],
+		"relatedQuestions": ["web-003", "web-007", "web-009"]
+	},
+	{
+		"id": "web-007",
+		"category": "web-dev",
+		"topic": "browsers",
+		"question": "What is a service worker and what can it do?",
+		"difficulty": "intermediate",
+		"shortAnswer": "A service worker is a background script the browser runs independently of pages, acting as a programmable network proxy: it intercepts fetches to serve cached responses offline, pushes notifications, and syncs in the background. It requires HTTPS, has no DOM access, and updates through a strict install → activate lifecycle.",
+		"explanation": "Once registered, a service worker sits between your pages and the network for its scope. Its superpower is the fetch handler: decide per request whether to answer from the Cache API, go to network, or combine strategies — cache-first for versioned assets, network-first for HTML/API data, stale-while-revalidate for feeds that tolerate slight age. That plus precached app shells gives offline-capable apps: the page loads from cache with zero network. Beyond caching: Push API wakes it for notifications even with no tab open, and Background Sync retries failed submissions when connectivity returns. Constraints define correct usage: HTTPS only (localhost exempt), no DOM or synchronous storage access (it runs off-main-thread and may be killed anytime — keep handlers event-driven and fast), and the update model is explicit — a new worker installs alongside the old, waits until all tabs close (or skipWaiting), then activates and typically purges old caches. Debugging lives in DevTools' Application panel (inspect workers, simulate offline, clear storage). Cost to name: cache versioning bugs serve stale app shells — always version caches and clean up in activate.",
+		"example": "// Register once from your page\nif ('serviceWorker' in navigator) {\n  navigator.serviceWorker.register('/sw.js');\n}\n\n// sw.js — stale-while-revalidate for images\nself.addEventListener('fetch', (event) => {\n  if (event.request.destination === 'image') {\n    event.respondWith(\n      caches.open('img-v1').then(async (cache) => {\n        const cached = await cache.match(event.request);\n        const network = fetch(event.request).then((res) => {\n          cache.put(event.request, res.clone());\n          return res;\n        });\n        return cached ?? network; // instant paint, refresh behind the scenes\n      }),\n    );\n  }\n});",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Frame it as a programmable proxy first, then name the three cache strategies with what each suits. Mentioning the waiting-lifecycle gotcha shows you have shipped one, not just read about them.",
+		"commonMistakes": [
+			"Expecting DOM access or persistent global state inside the worker.",
+			"Shipping unversioned caches that trap users on stale app shells.",
+			"Forgetting HTTPS is required in production."
+		],
+		"relatedQuestions": ["web-004", "web-006", "web-015"]
+	},
+	{
+		"id": "web-008",
+		"category": "web-dev",
+		"topic": "browsers",
+		"question": "What causes reflow and repaint, and how do you keep animations at 60fps?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Reflow recalculates geometry (layout) when sizes or positions change; repaint redraws pixels without moving anything. Both are expensive on the main thread. Smooth animation stays on the compositor — animate transform and opacity only, batch DOM reads/writes, and promote animated elements to their own layer.",
+		"explanation": "Changing width, height, margin, font-size, or reading layout (offsetHeight, getComputedStyle) after a write forces synchronous reflow: the browser must recompute geometry for the element and potentially its whole subtree before continuing — and interleaved read/write loops (layout thrashing) repeat that cost per iteration. Repaint (color, background, visibility, box-shadow) skips geometry but still rasterizes pixels on the CPU. The compositor shortcut avoids both: properties like transform and opacity can be applied by the GPU to an already-painted layer, so frames stay at 16ms even on weak devices — DevTools' Layers panel shows which elements got promoted. The 60fps recipe: animate transform/opacity exclusively (translate instead of top/left, scale instead of width/height); batch reads then writes (or use requestAnimationFrame, and FastDOM-style separation) to avoid thrashing; contain damage with CSS containment (contain: layout paint) so changes don't invalidate the whole tree; prefer will-change sparingly to hint layer promotion (overuse exhausts GPU memory); and keep main-thread tasks under ~50ms so the event loop can still deliver input and frames — split long work with yielding or move it to a Web Worker. Measure with the Performance panel and the FPS meter, not by feel.",
+		"example": "/* ❌ layout + paint every frame (janky) */\n.drawer { transition: width 0.3s, left 0.3s; }\n\n/* ✅ compositor-only (smooth) */\n.drawer {\n  transition: transform 0.3s, opacity 0.3s;\n  will-change: transform;\n}\n.drawer[hidden] { transform: translateX(-100%); opacity: 0; }\n\n// ❌ layout thrashing: read after every write\n// items.forEach((el) => { el.style.width = '100px'; sum += el.offsetWidth; });\n// ✅ batch: write all, then read all\n// items.forEach((el) => { el.style.width = '100px'; });\n// const sum = items.reduce((a, el) => a + el.offsetWidth, 0);",
+		"exampleLanguage": "css",
+		"interviewTip": "Define the three stages (layout → paint → composite) and which properties skip to the last one. The translate-instead-of-left swap is the one-line proof you apply it.",
+		"commonMistakes": [
+			"Animating width, height, top, or left and wondering why it janks.",
+			"Reading layout inside a write loop, causing layout thrashing.",
+			"Spraying will-change everywhere and exhausting GPU memory."
+		],
+		"relatedQuestions": ["web-005", "web-013", "web-014"]
+	}
+]

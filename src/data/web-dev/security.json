@@ -1,0 +1,74 @@
+[
+	{
+		"id": "web-009",
+		"category": "web-dev",
+		"topic": "security",
+		"question": "What is XSS and how do you prevent it?",
+		"difficulty": "intermediate",
+		"shortAnswer": "XSS injects attacker JavaScript into your pages: stored (saved in your DB, served to everyone), reflected (bounced off a URL param), or DOM-based (client-side code writing attacker data into the page). Prevent by escaping output in the right context, avoiding dangerous sinks (innerHTML, eval), and layering a Content Security Policy plus HttpOnly cookies.",
+		"explanation": "XSS runs with your origin's full privileges: reading tokens from storage, acting as the user, defacing content. Stored XSS is the worst — a comment containing <script> saved once executes for every future visitor. Reflected XSS hides in links (search?q=<script>…) and fires for whoever clicks. DOM-based XSS never touches the server: client code like element.innerHTML = location.hash writes attacker input straight into the DOM. Prevention is layered. First, framework defaults: React/Vue/Angular escape interpolations automatically — the bugs appear where you bypass them (dangerouslySetInnerHTML, v-html) or concatenate HTML strings. Second, context-aware output encoding: HTML-escape text nodes, attribute-escape attribute values, and never place untrusted data in script contexts or javascript: URLs. Third, kill the dangerous sinks: prefer textContent over innerHTML, JSON.parse over eval, and sanitize any rich HTML with a allowlist sanitizer (DOMPurify) on input. Fourth, blast-radius reduction: Content-Security-Policy headers (script-src 'self', no inline scripts) make injected scripts refuse to execute even if one slips through; HttpOnly cookies keep session ids out of document.cookie; and Trusted Types (modern Chrome) can enforce that only sanitized values reach sinks. Validate on input for business rules, encode on output for safety — the two are different jobs.",
+		"example": "// ❌ DOM-based XSS: hash content becomes live markup\n// el.innerHTML = location.hash.slice(1);\n\n// ✅ text stays text\nel.textContent = location.hash.slice(1);\n\n// Rich text you must keep? Sanitize with an allowlist:\n// import DOMPurify from 'dompurify';\n// el.innerHTML = DOMPurify.sanitize(userHtml);\n\n// Defense in depth via headers (server or CDN):\n// Content-Security-Policy: default-src 'self'; script-src 'self'; object-src 'none'\n// Set-Cookie: sessionId=…; HttpOnly; Secure; SameSite=Lax",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Name all three types with a one-line example each, then give the layered defense (encode → avoid sinks → CSP → HttpOnly). Saying 'validate on input, encode on output' closes it cleanly.",
+		"commonMistakes": [
+			"Believing HTTPS or input validation alone stops XSS.",
+			"Using innerHTML/v-html with unsanitized data.",
+			"Skipping CSP because 'we escape everything' — one miss is total compromise."
+		],
+		"relatedQuestions": ["web-003", "web-010", "web-012"]
+	},
+	{
+		"id": "web-010",
+		"category": "web-dev",
+		"topic": "security",
+		"question": "What is CSRF and how do you defend against it?",
+		"difficulty": "intermediate",
+		"shortAnswer": "CSRF tricks a logged-in user's browser into issuing an unwanted state-changing request (a hidden form POST to your bank) riding their real cookies. Defend with SameSite cookies (Lax/Strict) as the baseline, anti-CSRF tokens for cookie-authenticated mutations, and Origin/Referer checks — plus requiring non-GET methods for anything that changes state.",
+		"explanation": "The attack exploits cookie auto-attach: while you are logged into bank.com, evil.com serves <form action=\"https://bank.com/transfer\" method=\"POST\"> auto-submitted on load — your browser happily attaches your session cookie, and the bank sees a legitimate authenticated transfer. GET-based actions are even easier (an <img src=\"…/delete?id=7\"> fires on page view, which is why state changes must never be GET). Defenses stack. SameSite=Lax (now the browser default) blocks cookie sending on cross-site POSTs and subresource loads — killing classic CSRF with zero code — but top-level GET navigation still sends, so Lax alone leaves GET endpoints exposed (don't have any). Anti-CSRF tokens close the rest: the server embeds an unguessable per-session token in forms (or a double-submit cookie), and the attacker, unable to read your pages cross-origin, cannot include it — the request fails validation. Custom headers (X-Requested-With) or fetch with same-origin mode work the same way for APIs: simple cross-site forms cannot set them, triggering a CORS preflight the attacker's origin fails. Server-side Origin/Referer allowlisting adds a cheap extra check. Note the complement: token-in-header auth (Authorization: Bearer) is inherently CSRF-proof since browsers never auto-attach it — CSRF is specifically a cookie-authentication problem, which is why SameSite exists.",
+		"example": "<!-- The attack: invisible auto-submitted form on evil.com -->\n<form action=\"https://bank.com/transfer\" method=\"POST\" id=\"x\">\n  <input type=\"hidden\" name=\"to\" value=\"attacker\" />\n  <input type=\"hidden\" name=\"amount\" value=\"1000\" />\n</form>\n<script>document.getElementById('x').submit();</script>\n\n// Defense layers (server side):\n// 1. Set-Cookie: sessionId=…; SameSite=Lax   ← blocks this POST's cookies\n// 2. Require a per-session token the attacker can't read:\n//    if (req.body.csrfToken !== req.session.csrfToken) return 403;\n// 3. Never mutate state on GET.",
+		"exampleLanguage": "html",
+		"interviewTip": "Walk the bank-transfer story in two sentences, then stack the defenses (SameSite → tokens → no-GET-mutations). Noting that bearer-token APIs are inherently immune shows you see the whole auth picture.",
+		"commonMistakes": [
+			"Relying only on checking Referer, which browsers and extensions can suppress.",
+			"Putting state-changing actions behind GET routes.",
+			"Assuming CORS alone prevents CSRF — simple form POSTs never preflight."
+		],
+		"relatedQuestions": ["web-003", "web-009", "web-011"]
+	},
+	{
+		"id": "web-011",
+		"category": "web-dev",
+		"topic": "security",
+		"question": "How does CORS work and when does the browser send a preflight?",
+		"difficulty": "intermediate",
+		"shortAnswer": "CORS is the browser's way of asking a server whether cross-origin JavaScript may read its responses. Simple GET/POST requests go through and the browser checks Access-Control-Allow-Origin on the way back; riskier requests (other methods, custom headers, JSON bodies) first send an OPTIONS preflight asking permission. Servers opt in with ACAO/ACAM/ACAH headers — CORS never protects the server, only the user's data from other origins.",
+		"explanation": "The same-origin policy blocks page scripts from reading responses cross-origin by default — without it, any site you visit could fetch your webmail. CORS is the controlled exception. Simple requests (GET/HEAD/POST with form-compatible content types and no custom headers) are sent immediately; the browser then permits your script to read the response only if it carries Access-Control-Allow-Origin matching your origin (or * for public data — never * with credentials). Everything else triggers a preflight: an OPTIONS request describing the real one (Access-Control-Request-Method: PUT, Access-Control-Request-Headers: X-Custom), to which the server replies with what it allows (Allow-Methods, Allow-Headers, Max-Age to cache the verdict). Only then does the browser send the real request. Credentials mode is the sharp edge: fetch with credentials: 'include' sends cookies cross-origin, and the server must echo the exact origin (no *) plus Access-Control-Allow-Credentials: true. Key mental model: CORS headers don't block attackers from reaching your server — curl ignores them entirely. They stop the victim's browser from handing another origin's data to malicious script. So server auth and rate limits still apply; misconfigurations like reflecting any Origin with credentials enabled punch a hole through the whole model.",
+		"example": "// App at app.example.com calling api.example.com\n// PUT + custom header → preflight first:\n// OPTIONS /profile\n// Origin: https://app.example.com\n// Access-Control-Request-Method: PUT\n// Access-Control-Request-Headers: X-Csrf-Token\n//\n// ← 204 No Content\n//   Access-Control-Allow-Origin: https://app.example.com\n//   Access-Control-Allow-Methods: PUT\n//   Access-Control-Allow-Headers: X-Csrf-Token\n//   Access-Control-Max-Age: 86400\n// Then the real PUT goes out.\n\n// Public read-only data: simplest valid config\n// Access-Control-Allow-Origin: *",
+		"exampleLanguage": "text",
+		"interviewTip": "State the mental model first (CORS protects users' data from other origins, not your server from attackers), then describe the preflight trigger and the credentials sharp edge. That ordering answers most follow-ups before they're asked.",
+		"commonMistakes": [
+			"Echoing any request Origin with Allow-Credentials — handing data to everyone.",
+			"Using ACAO: * together with credentials, which browsers reject.",
+			"Thinking CORS errors mean the server is broken — the request often succeeded, the browser just hid the response."
+		],
+		"relatedQuestions": ["web-002", "web-009", "web-010"]
+	},
+	{
+		"id": "web-012",
+		"category": "web-dev",
+		"topic": "security",
+		"question": "How does HTTPS/TLS protect traffic, and what is HSTS?",
+		"difficulty": "intermediate",
+		"shortAnswer": "TLS negotiates a cipher suite, authenticates the server via its certificate chain, then encrypts everything (headers, body, cookies) so intermediaries see only domains, not content. HSTS (Strict-Transport-Security) tells browsers to use HTTPS exclusively for your domain going forward — closing SSL-stripping downgrade attacks.",
+		"explanation": "The handshake (1-RTT in TLS 1.3) does three jobs: the client and server agree on a cipher suite and exchange key material (ephemeral Diffie-Hellman gives forward secrecy — a later key theft can't decrypt recorded traffic); the server presents its certificate, which the browser validates against trusted CAs, hostname, and expiry (this authentication is what defeats impersonation — encryption without identity is useless); then all HTTP bytes flow inside the encrypted channel, hiding paths, query strings, headers, and bodies from Wi-Fi snoopers and middleboxes. What TLS doesn't hide: the destination IP and (usually) the domain via SNI — privacy needs more than TLS. HSTS fixes the first-visit problem: without it, a user typing example.com or clicking an http:// link starts in plaintext, and an active attacker can strip the redirect to HTTPS (SSL stripping). With Strict-Transport-Security: max-age=31536000; includeSubDomains (ideally preload-listed), the browser internally upgrades every request before any packet leaves — no plaintext window exists. Operational notes: mixed content (an https page loading http subresources) gets blocked and breaks features — serve everything over HTTPS; certificates expire, so automate renewal (ACME/Let's Encrypt) and monitor; and prefer TLS 1.2+ only, disabling legacy protocols and weak ciphers.",
+		"example": "# Inspect a site's TLS posture in seconds\n# openssl s_client -connect example.com:443 -tls1_3\n# → Protocol: TLSv1.3, Verify return code: 0 (ok), chain depth + expiry\n\n# HSTS header your server (or CDN) should send on every HTTPS response:\n# Strict-Transport-Security: max-age=31536000; includeSubDomains; preload\n\n# Mixed content that browsers will block on your https page:\n# <script src=\"http://cdn.example.com/lib.js\"></script>  <!-- blocked -->\n# <script src=\"https://cdn.example.com/lib.js\"></script> <!-- fine -->",
+		"exampleLanguage": "text",
+		"interviewTip": "Name the handshake's three jobs (negotiate, authenticate, encrypt), then explain which attack HSTS kills (SSL stripping on first contact). Mentioning forward secrecy signals depth.",
+		"commonMistakes": [
+			"Believing encryption alone is enough — without certificate authentication there is no identity.",
+			"Deploying HSTS with a short max-age or forgetting subdomains.",
+			"Leaving http:// subresources that mixed-content blocking then breaks."
+		],
+		"relatedQuestions": ["web-003", "web-009", "web-011"]
+	}
+]

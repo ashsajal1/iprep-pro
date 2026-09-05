@@ -96,8 +96,11 @@
 		"icon": "server",
 		"accent": "cyan",
 		"description": "Scaling, caching, queues and trade-off discussions for senior loops.",
-		"soon": true,
-		"topics": []
+		"topics": [
+			{ "id": "fundamentals", "name": "Fundamentals", "file": "fundamentals", "blurb": "Scaling, load balancing, caching and the CAP theorem." },
+			{ "id": "data-layer", "name": "Data Layer", "file": "data-layer", "blurb": "Databases, sharding, replication and message queues." },
+			{ "id": "design-patterns", "name": "Design Patterns", "file": "design-patterns", "blurb": "Microservices, unique IDs, crawlers and distributed consensus." }
+		]
 	},
 	{
 		"id": "database",
@@ -105,8 +108,11 @@
 		"icon": "database",
 		"accent": "teal",
 		"description": "SQL vs NoSQL, indexing, transactions and query optimization.",
-		"soon": true,
-		"topics": []
+		"topics": [
+			{ "id": "fundamentals", "name": "SQL Fundamentals", "file": "fundamentals", "blurb": "Relational model, keys, joins and normalization." },
+			{ "id": "transactions", "name": "Transactions", "file": "transactions", "blurb": "ACID, isolation levels, locking and deadlocks." },
+			{ "id": "performance", "name": "Performance", "file": "performance", "blurb": "Indexing, slow-query diagnosis, N+1 and caching." }
+		]
 	},
 	{
 		"id": "web-dev",
@@ -114,7 +120,11 @@
 		"icon": "globe",
 		"accent": "fuchsia",
 		"description": "HTTP, browsers, security and performance across the whole stack.",
-		"soon": true,
-		"topics": []
+		"topics": [
+			{ "id": "http", "name": "HTTP Essentials", "file": "http", "blurb": "Methods, status codes, cookies and caching." },
+			{ "id": "browsers", "name": "Browsers & Rendering", "file": "browsers", "blurb": "Rendering pipeline, storage and service workers." },
+			{ "id": "security", "name": "Web Security", "file": "security", "blurb": "XSS, CSRF, CORS and HTTPS." },
+			{ "id": "performance", "name": "Web Performance", "file": "performance", "blurb": "Core Web Vitals, code splitting and optimization." }
+		]
 	}
 ]
