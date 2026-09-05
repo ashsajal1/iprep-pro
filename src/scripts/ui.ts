@@ -1,5 +1,5 @@
 import '../styles/global.css';
-import { toggleFavorite } from '../lib/progress';
+import { CATEGORY_PREFIXES, displayStreak, loadProgress, onProgressChange, toggleFavorite } from '../lib/progress';
 
 /* ---- theme ------------------------------------------------------------ */
 
@@ -229,6 +229,18 @@ function bindSearch(): void {
 	});
 }
 
+/* ---- navbar streak -------------------------------------------------------- */
+
+function paintStreak(): void {
+	const n = displayStreak(loadProgress());
+	document.querySelectorAll<HTMLElement>('[data-streak-count]').forEach((el) => {
+		el.textContent = String(n);
+	});
+	document.querySelectorAll<HTMLElement>('[data-streak-label]').forEach((el) => {
+		el.textContent = n === 1 ? 'day' : 'days';
+	});
+}
+
 /* ---- localStorage progress UI sync ------------------------------------- */
 
 interface ProgressSnapshot {
@@ -308,11 +320,7 @@ function syncProgressUI(): void {
 			total = card ? Number(card.dataset.total) : NaN;
 		}
 		const done = Object.keys(state.completed).filter((id) => {
-			const prefixMap: Record<string, string> = {
-				js: 'javascript', rct: 'react', ts: 'typescript', nxt: 'nextjs',
-				nde: 'nodejs', hcs: 'html-css', git: 'git-github', beh: 'behavioral',
-			};
-			return prefixMap[id.split('-')[0]] === catId;
+			return CATEGORY_PREFIXES[id.split('-')[0]] === catId;
 		}).length;
 		const pct = total ? Math.round((done / total) * 100) : 0;
 
@@ -326,7 +334,9 @@ function syncProgressUI(): void {
 }
 
 document.addEventListener('iprep:progress-changed', syncProgressUI);
+document.addEventListener('iprep:progress-changed', paintStreak);
 window.addEventListener('storage', syncProgressUI);
+window.addEventListener('storage', paintStreak);
 
 /* Favorite buttons toggle */
 document.addEventListener('click', (e) => {
@@ -340,6 +350,7 @@ document.addEventListener('click', (e) => {
 });
 
 syncProgressUI();
+onProgressChange(paintStreak);
 
 bindTheme();
 bindMobileMenu();
