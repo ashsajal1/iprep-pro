@@ -1,0 +1,92 @@
+[
+	{
+		"id": "sd-007",
+		"category": "system-design",
+		"topic": "data-layer",
+		"question": "What is the difference between SQL and NoSQL databases, and when do you choose each?",
+		"difficulty": "beginner",
+		"shortAnswer": "SQL databases (PostgreSQL, MySQL) use structured schemas, relational tables, and ACID transactions — ideal for complex queries and data integrity. NoSQL databases (MongoDB, Cassandra, Redis, DynamoDB) trade strict schemas for flexibility, horizontal scale, and specific access patterns: document, key-value, wide-column, or graph. Choose SQL when data relationships and transactions matter; choose NoSQL when you need massive scale, flexible schemas, or a specific access pattern that a relational model fights against.",
+		"explanation": "SQL databases store data in rigid tables with predefined schemas and relationships enforced by foreign keys. They excel at complex JOINs, ad-hoc queries, and ACID transactions (Atomicity, Consistency, Isolation, Durability) — critical for banking, inventory, any domain where an incomplete write causes corruption. Scaling is typically vertical or via read replicas; sharding is possible but manual and painful. NoSQL is an umbrella of four families: document (MongoDB, Couchbase) stores semi-structured JSON, great for catalogs and content with varying fields; key-value (Redis, DynamoDB) is a giant hash map with single-digit-millisecond lookups by primary key; wide-column (Cassandra, HBase) organizes data by column families and partitions, built for huge write throughput and time-series; graph (Neo4j) models relationships natively for social networks and recommendations. NoSQL trades JOINs and often strong consistency for horizontal scale and schema flexibility. The decision: reach for SQL by default when you need transactions and complex querying; reach for NoSQL when one of these holds — your data is naturally a single aggregate with no joins (document), you only access by primary key at huge scale (key-value), you write massive volumes across partitions (wide-column), or your domain is relationship-heavy (graph). Many systems use both (polyglot persistence): PostgreSQL for orders, Redis for sessions, Elasticsearch for search.",
+		"example": "SQL choice (e-commerce orders): orders, payments, inventory must stay transactional — a payment and its order status update atomically or not at all. PostgreSQL with foreign keys.\n\nNoSQL choice (product catalog): each product has different attributes (a laptop has RAM; a shirt has size), read-heavy, no transactions. MongoDB document store.",
+		"exampleLanguage": "text",
+		"interviewTip": "Give the four NoSQL families with one example each, then give a concrete decision rule. Mentioning polyglot persistence (using both SQL and NoSQL in one system) signals real architectural experience.",
+		"commonMistakes": [
+			"Saying NoSQL always scales better without qualifying the trade-offs.",
+			"Not knowing the four NoSQL categories.",
+			"Forgetting that NoSQL often sacrifices joins and strong consistency."
+		],
+		"relatedQuestions": ["sd-008", "sd-009", "sd-004"]
+	},
+	{
+		"id": "sd-008",
+		"category": "system-design",
+		"topic": "data-layer",
+		"question": "What is database sharding and what strategies are used to partition data?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Sharding splits a database into smaller partitions (shards) distributed across multiple servers so no single machine holds all the data. Strategies: range-based (contiguous key ranges), hash-based (hash the shard key for even distribution), and directory-based (a lookup table maps keys to shards). Sharding trades single-server simplicity for horizontal scale, at the cost of cross-shard queries, rebalancing, and operational complexity.",
+		"explanation": "When a single database server hits its storage or throughput ceiling, you shard — splitting rows across servers so each holds a subset. The shard key determines which row goes where. Range-based sharding assigns contiguous ranges of the shard key (e.g., user IDs 1–1M on shard A, 1M–2M on shard B). Simple but risks hot shards if access is skewed toward one range. Hash-based sharding applies a hash function to the shard key and maps the result to a server. Distributes evenly but makes range queries hard and adding servers requires rehashing (consistent hashing helps). Directory-based sharding uses a lookup table that maps each key to its shard; flexible but adds a single point of failure and an extra hop. Cross-shard operations are the real pain: a query that spans shards must fan out, merge, and deduplicate results (scatter-gather); transactions across shards need distributed coordination (2PC or sagas). Joins across shards are impractical, so you denormalize or redesign access patterns. Rebalancing (adding/removing shards) is disruptive without consistent hashing. In practice, many teams avoid application-level sharding by using managed solutions: Vitess for MySQL, Citus for PostgreSQL, or cloud-native sharded stores like DynamoDB and Spanner that hide the mechanics.",
+		"example": "A messaging app shards conversations by conversation_id using hash-based sharding:\nhash(conversation_id) % num_shards → shard number.\nAll messages for one conversation live on one shard, so fetching a chat history is a single-shard query.\n\nA time-series metrics DB shards by time range: 2024-Q1 on shard-1, 2024-Q2 on shard-2. (Risk: latest shard is hottest.)",
+		"exampleLanguage": "text",
+		"interviewTip": "Name all three strategies and the trade-off each optimizes. Then name the real cost: cross-shard queries and transactions. Mentioning a managed sharding solution (Vitess, DynamoDB) shows you know when to avoid building it yourself.",
+		"commonMistakes": [
+			"Describing sharding without choosing a shard key.",
+			"Not mentioning cross-shard query difficulty.",
+			"Forgetting that adding shards requires rebalancing."
+		],
+		"relatedQuestions": ["sd-005", "sd-007", "sd-009"]
+	},
+	{
+		"id": "sd-009",
+		"category": "system-design",
+		"topic": "data-layer",
+		"question": "What is database replication and what are the common replication topologies?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Replication copies data across multiple servers so reads scale and the system survives failures. Topologies: single-leader (one primary handles writes, replicas serve reads — simple, but the leader is a bottleneck and SPOF), multi-leader (multiple nodes accept writes — good for multi-region but conflicts arise), and leaderless (any node accepts reads/writes with quorum consistency — highest availability but complex). Choose based on whether you prioritize write simplicity, multi-region writes, or maximum availability.",
+		"explanation": "Replication keeps copies of data on separate machines. Single-leader (primary-replica): one node is the leader that processes all writes and ships a write-ahead log or change stream to follower replicas. Replicas serve read queries, scaling read throughput. Pros: simple, no write conflicts. Cons: leader is a write bottleneck and single point of failure (failover promotes a replica, with potential brief downtime or data loss); replication can be synchronous (strong consistency, higher write latency) or asynchronous (fast writes, but replicas lag and may lose recent writes on failover). Multi-leader: multiple nodes accept writes and replicate to each other. Useful for multi-region deployments (each region has a local leader for low-latency writes) but introduces write-write conflicts that need resolution (last-write-wins, CRDTs, or application-level merge). Leaderless (Dynamo-style): any node can accept reads and writes; the client coordinates with multiple nodes and uses quorum (W + R > N) to guarantee consistency. Highest availability — no single point of failure — but requires conflict resolution (vector clocks, read repair) and tunable consistency.",
+		"example": "Single-leader (typical web app):\n- Primary PostgreSQL in us-east-1 handles all writes.\n- Two read replicas serve dashboard queries.\n- Synchronous replication to one replica for zero data loss on failover.\n\nLeaderless (DynamoDB-style):\n- N=3 replicas, W=2 write quorum, R=2 read quorum.\n- Any node accepts writes; client reads from 2 and takes the latest.",
+		"exampleLanguage": "text",
+		"interviewTip": "Name all three topologies and the trade-off each optimizes. Then distinguish synchronous versus asynchronous replication within single-leader — that detail shows operational depth.",
+		"commonMistakes": [
+			"Only describing single-leader and missing multi-leader and leaderless.",
+			"Not distinguishing synchronous from asynchronous replication.",
+			"Forgetting that single-leader replication does not scale writes."
+		],
+		"relatedQuestions": ["sd-007", "sd-008", "sd-004"]
+	},
+	{
+		"id": "sd-010",
+		"category": "system-design",
+		"topic": "data-layer",
+		"question": "What is a message queue and when would you use asynchronous messaging?",
+		"difficulty": "intermediate",
+		"shortAnswer": "A message queue (RabbitMQ, Kafka, SQS) is a buffer that lets services communicate asynchronously: a producer publishes a message, a consumer processes it later. Use it to decouple services, smooth traffic spikes, handle failures gracefully, and order events. Trade-offs: you gain resilience and scalability at the cost of eventual consistency, added infrastructure, and the complexity of handling duplicates (idempotency) and ordering.",
+		"explanation": "Message queues invert direct service-to-service calls. Instead of Service A calling Service B synchronously (and failing if B is down or slow), A publishes a message to a queue and continues; B consumes when ready. Core benefits: decoupling (producers and consumers evolve independently), resilience (if a consumer crashes, messages wait in the queue rather than being lost), load leveling (a burst of messages is absorbed and drained at the consumers pace), and ordering (queues preserve FIFO within a partition). Two models: point-to-point (RabbitMQ, SQS) — each message consumed by exactly one worker, good for task distribution; publish-subscribe (Kafka, SNS+SQS) — each message broadcast to multiple consumers, good for event streaming. Key concerns: at-least-once delivery means consumers must be idempotent; ordering is typically per-partition, not global; dead-letter queues capture messages that fail repeatedly; and back-pressure is needed when consumers fall behind. When to use: order processing, log aggregation, and any workflow where the caller should not block on slow downstream work. When NOT to use: when you need an immediate synchronous response or when the complexity outweighs the benefit.",
+		"example": "E-commerce order flow with a queue:\n1. Order service writes 'order_placed' event to Kafka.\n2. Three consumers process independently:\n   - Email service sends confirmation.\n   - Inventory service decrements stock.\n   - Analytics service updates dashboards.\n\nIf the email service is down, orders still succeed; email catches up when it recovers.",
+		"exampleLanguage": "text",
+		"interviewTip": "Give the decoupling and resilience benefits first, then name the two models (point-to-point vs pub-sub) with an example each. Landing on idempotency as the key consumer concern shows you have operated these systems.",
+		"commonMistakes": [
+			"Not mentioning idempotency for at-least-once delivery.",
+			"Treating queues as only for decoupling and missing load leveling.",
+			"Forgetting that queues introduce eventual consistency."
+		],
+		"relatedQuestions": ["sd-007", "sd-009", "sd-011"]
+	},
+	{
+		"id": "sd-011",
+		"category": "system-design",
+		"topic": "data-layer",
+		"question": "How do database indexes work and what are the trade-offs of adding them?",
+		"difficulty": "intermediate",
+		"shortAnswer": "An index is a data structure (typically a B-tree or LSM-tree) that maps column values to row locations, turning O(n) full-table scans into O(log n) lookups. Indexes speed up reads and WHERE/JOIN/ORDER BY operations but slow down writes (every insert/update must maintain the index) and consume storage. Add indexes for frequently queried columns; remove unused ones that only tax writes.",
+		"explanation": "Without an index, a database scans every row to satisfy a query (full table scan, O(n)). An index creates a sorted auxiliary structure — most relational databases use B-trees (or B+ trees), LSM-trees in systems like Cassandra and RocksDB — that lets the engine jump directly to matching rows. A B-tree index keeps data balanced and sorted, supporting equality and range queries in O(log n). Composite indexes (multiple columns) follow leftmost-prefix rules: an index on (last_name, first_name) supports queries on last_name alone but not first_name alone. Indexes accelerate SELECT, JOIN, ORDER BY, and GROUP BY. Costs: every INSERT, UPDATE, and DELETE must update every affected index, adding write latency and lock contention; indexes consume disk and memory (the buffer pool holds index pages); and too many indexes on a write-heavy table creates a bottleneck. The query planner chooses whether to use an index (a scan may still win for high-selectivity queries). Maintenance matters: fragmented indexes need REINDEX/REBUILD; stale statistics lead to bad plan choices. Best practice: index columns in WHERE clauses, JOIN conditions, and sort orders; use covering indexes (include all selected columns) to avoid table lookups; and audit periodically to drop unused indexes. The core trade-off is read speed versus write cost and storage.",
+		"example": "A users table with 10M rows:\n- Query: SELECT email FROM users WHERE last_name = 'Chen'\n- Without index: full scan of 10M rows.\n- With B-tree index on last_name: O(log n) traversal to find 'Chen' entries.\n\nComposite index (last_name, first_name):\n- Speeds up WHERE last_name = 'Chen'\n- Also speeds up WHERE last_name = 'Chen' AND first_name = 'Wei'\n- Does NOT speed up WHERE first_name = 'Wei' (not leftmost).",
+		"exampleLanguage": "text",
+		"interviewTip": "Explain what an index does (avoid full scans), name the structure (B-tree), and immediately state the trade-off: faster reads, slower writes and extra storage. Mentioning the leftmost-prefix rule for composite indexes is the detail that elevates the answer.",
+		"commonMistakes": [
+			"Saying indexes always help — they slow writes and consume space.",
+			"Not knowing the read-versus-write trade-off.",
+			"Forgetting the leftmost-prefix rule for composite indexes."
+		],
+		"relatedQuestions": ["sd-007", "sd-008", "sd-010"]
+	}
+]

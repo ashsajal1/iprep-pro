@@ -1,0 +1,74 @@
+[
+	{
+		"id": "sd-012",
+		"category": "system-design",
+		"topic": "design-patterns",
+		"question": "How would you generate unique IDs in a distributed system?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Options: UUID/GUID (random 128-bit, no coordination but large and unordered), database auto-increment (simple but a bottleneck and SPOF), and Snowflake-style IDs (timestamp + worker ID + sequence, roughly ordered and coordination-free). For most distributed systems, a Snowflake-style ID (or a ULID) gives you uniqueness, rough time-ordering, and no central coordinator.",
+		"explanation": "Unique IDs at scale must be unique across many machines without coordination. UUID v4: 122 random bits, virtually zero collision risk, no coordination needed. Downsides: 128 bits (large index), not time-ordered (bad for B-tree insert locality), and unreadable. UUID v7 and ULID fix ordering by prefixing a timestamp. Database auto-increment: simple and ordered, but the single DB is a write bottleneck and single point of failure; composite (shard_id, local_increment) works but is fiddly. Snowflake (Twitter, 64 bits): 41 bits timestamp (milliseconds since epoch, good for ~70 years), 10 bits worker ID (up to 1024 machines), 12 bits sequence number (4096 IDs per millisecond per worker). Roughly time-ordered, fits in a bigint, coordination-free after worker-ID assignment. Worker IDs can be assigned via ZooKeeper, a config service, or (simplastically) from a machine's IP hash. Variants: Discord's Snowflake, Sony's Sonyflake, Instagram's ID scheme. The choice depends on whether you need ordering (Snowflake/ULID) versus pure simplicity (UUID v4) versus strict sequential (auto-increment).",
+		"example": "Snowflake 64-bit layout:\n| 1 bit unused | 41 bits timestamp | 10 bits worker ID | 12 bits sequence |\n\nExample ID: 138726354944\n- Timestamp: 2024-01-15 10:30:00.000 UTC\n- Worker: 42\n- Sequence: 1000 (1000th ID this ms on this worker)\n\nRoughly sortable by creation time, unique across 1024 workers.",
+		"exampleLanguage": "text",
+		"interviewTip": "Name all three approaches (UUID, auto-increment, Snowflake) and the trade-off each optimizes. Then show the Snowflake bit layout — that concrete detail is what interviewers remember.",
+		"commonMistakes": [
+			"Only naming UUID without mentioning ordering trade-offs.",
+			"Not knowing the Snowflake bit layout.",
+			"Forgetting that auto-increment does not scale horizontally."
+		],
+		"relatedQuestions": ["sd-005", "sd-013", "sd-001"]
+	},
+	{
+		"id": "sd-013",
+		"category": "system-design",
+		"topic": "design-patterns",
+		"question": "What are the trade-offs between a monolith and microservices architecture?",
+		"difficulty": "intermediate",
+		"shortAnswer": "A monolith is a single deployable unit — simple to develop, test, and deploy at small scale, but it couples teams, scales as a whole, and accumulates complexity. Microservices split the system into independently deployable services — teams move fast and scale parts independently, but you pay for network complexity, distributed data, observability, and operational overhead. Start monolith; extract services when team size or scaling needs force you to.",
+		"explanation": "Monolith: one codebase, one deployment, in-process calls between modules. Pros: trivial debugging (single process), no network latency between modules, simple transactions (single DB), easy to deploy and test end-to-end. Cons: scaling requires replicating the whole app even if only one feature is hot; a bug in one module can bring down everything; the codebase becomes hard to reason about as it grows; and multiple teams stepping on each other create coordination overhead. Microservices: each service owns its data and logic, communicates over the network (HTTP/gRPC or messaging), and deploys independently. Pros: teams own services end-to-end (Conway's Law alignment); scale only the hot services; choose the right tech per service; isolate failures. Cons: distributed systems are hard — network calls fail, latency adds up, data is split across services (no cross-service JOINs, eventual consistency), debugging requires distributed tracing, and you need CI/CD, service discovery, and observability per service. The pragmatic path: begin with a well-structured monolith (modular boundaries, clear interfaces), then extract services when (a) a module needs independent scaling, (b) a team needs autonomy, or (c) a module needs a different tech stack. Premature microservices is a common anti-pattern — do not distribute what you do not yet understand.",
+		"example": "Monolith (early-stage startup):\n- One Next.js + Express app, one PostgreSQL DB.\n- Three engineers deploy together. Fast iteration.\n\nMicroservices (growth stage, 40 engineers):\n- User service, Order service, Inventory service, Notification service.\n- Each owns its database; communicate via gRPC + events.\n- Order service scales 10x during sales; others stay small.",
+		"exampleLanguage": "text",
+		"interviewTip": "Give the trade-offs honestly (do not pretend microservices are always better). Then state the pragmatic rule: start monolith, extract when scaling or team autonomy demands it. Naming Conway's Law signals architectural maturity.",
+		"commonMistakes": [
+			"Saying microservices are always the right choice.",
+			"Not mentioning the distributed-systems costs (network, data, debugging).",
+			"Forgetting that each service should own its own database."
+		],
+		"relatedQuestions": ["sd-001", "sd-010", "sd-012"]
+	},
+	{
+		"id": "sd-014",
+		"category": "system-design",
+		"topic": "design-patterns",
+		"question": "How would you design a distributed web crawler?",
+		"difficulty": "advanced",
+		"shortAnswer": "A distributed crawler has a URL frontier (priority queue of URLs to visit), fetcher workers that download pages, a deduplication layer (bloom filters or seen-URL store), a parse-and-extract step, and a storage backend. Distribute by partitioning the URL space (hash the domain to a worker), politeness (rate-limit per domain, respect robots.txt), and a scheduler that prioritizes fresh or important pages.",
+		"explanation": "Core components: (1) URL frontier — a priority queue (often sharded) holding URLs to crawl, prioritized by importance, freshness, or crawl depth. (2) DNS resolver and fetcher — workers that download pages, ideally partitioned so each worker owns a set of domains (hash domain → worker) to keep per-domain rate limits local. (3) Deduplication — you will encounter the same URL via many paths; use a Bloom filter for fast probabilistic dedup backed by a persistent seen-set (RocksDB or distributed KV). (4) Politeness layer — per-domain rate limiting and robots.txt compliance to avoid getting banned; maintain a per-domain last-access timestamp. (5) Parser — extract text, links, metadata; normalize discovered URLs (resolve relative paths, drop fragments). (6) Storage — raw pages (object store), parsed content (search index), and a link graph. Scaling dimensions: partition the URL space across workers; scale fetchers horizontally; use a message queue (Kafka) between frontier and fetchers for back-pressure and replay. Hard problems: URL explosion (the web is infinite — scope the crawl), politeness at scale (thousands of domains), content freshness (recrawl scheduling), duplicate near-identical pages, and handling JavaScript-rendered content (may need headless browsers). This question tests how you partition work, handle politeness, deduplicate, and scope an unbounded problem.",
+		"example": "Architecture:\nSeed URLs → Frontier (sharded priority queue by domain hash)\n            ↓\n     Fetcher workers (each owns a partition of domains)\n            ↓\n     Dedup (Bloom filter + RocksDB seen-set)\n            ↓\n     Parser → extract links (back to frontier) + content (to index)\n\nPoliteness: per-domain token bucket, robots.txt cache checked per host.",
+		"exampleLanguage": "text",
+		"interviewTip": "Walk the pipeline (frontier → fetcher → dedup → parser → storage) and name one hard problem (politeness, deduplication, or URL explosion). Mentioning a Bloom filter for dedup shows you think about memory efficiency at scale.",
+		"commonMistakes": [
+			"Not addressing politeness (rate limits, robots.txt).",
+			"Forgetting deduplication — the same URL appears infinitely.",
+			"Treating the web as finite and not scoping the crawl."
+		],
+		"relatedQuestions": ["sd-010", "sd-003", "sd-006"]
+	},
+	{
+		"id": "sd-015",
+		"category": "system-design",
+		"topic": "design-patterns",
+		"question": "What is distributed consensus and how do systems elect a leader or coordinate state?",
+		"difficulty": "advanced",
+		"shortAnswer": "Distributed consensus gets a group of nodes to agree on a value or state despite failures. Protocols: Paxos (theoretical foundation, hard to implement), Raft (understandable consensus — leader election + log replication, used by etcd and Consul), and Zab (ZooKeeper). Use them for leader election, configuration stores, and coordination — not for request-path data. ZooKeeper, etcd, and Consul are the off-the-shelf implementations most teams use.",
+		"explanation": "Many distributed problems reduce to consensus: agreeing on who the leader is, what the current configuration is, or whether a transaction committed. Paxos (Lamport) proves consensus is achievable but is notoriously hard to implement correctly. Raft (Ongaro, 2014) achieves the same result with understandability as a goal: it splits the problem into leader election (a candidate requests votes; first to get a majority wins a term), log replication (leader appends entries, followers acknowledge, committed once a majority replicate), and safety (only the leader with the latest term serves clients). Used by etcd, Consul, TiKV, and CockroachDB. Zab powers ZooKeeper's coordination. Practical guidance: do not implement consensus yourself — use etcd (Kubernetes' backing store), Consul (service discovery + KV), or ZooKeeper (Kafka, Hadoop). They expose a strongly consistent KV lock, leader election primitives, and watch/stream APIs. Trade-offs: consensus groups need an odd number of nodes (3 or 5) to tolerate 1 or 2 failures; writes go through the leader so latency is bounded by the slowest follower; and partitions without a majority halt writes (CP in CAP terms). Use consensus for metadata and coordination, not for high-throughput request data.",
+		"example": "etcd (Raft-based) in Kubernetes:\n- 5-node etcd cluster.\n- Leader handles all writes; followers replicate the log.\n- If the leader fails, remaining nodes elect a new leader in ~1 second.\n- kube-apiserver reads/writes cluster state to etcd.\n\nLeader election pattern:\n1. Services attempt to create an ephemeral key '/leader'.\n2. First creator becomes leader; others watch the key.\n3. If the leader dies, its ephemeral key expires; next watcher takes over.",
+		"exampleLanguage": "text",
+		"interviewTip": "Name Paxos as the theory and Raft as the practical, understandable alternative. Then name one real system (etcd, Consul, or ZooKeeper) and its use case. Saying 'I would not implement this myself' is the correct senior-engineering answer.",
+		"commonMistakes": [
+			"Saying you would implement consensus from scratch.",
+			"Not knowing Raft's leader election plus log replication split.",
+			"Forgetting that consensus groups need an odd node count for majority."
+		],
+		"relatedQuestions": ["sd-009", "sd-004", "sd-013"]
+	}
+]
