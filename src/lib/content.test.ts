@@ -25,6 +25,7 @@ const EXPECTED_COUNTS: Record<string, number> = {
 	'html-css': 10,
 	'git-github': 20,
 	behavioral: 10,
+	'system-design': 15,
 };
 
 describe('question bank integrity', () => {
@@ -54,6 +55,7 @@ describe('question bank integrity', () => {
 			hcs: 'html-css',
 			git: 'git-github',
 			beh: 'behavioral',
+			sd: 'system-design',
 		};
 		for (const q of allQuestions) {
 			const prefix = q.id.split('-')[0];
@@ -150,7 +152,7 @@ describe('lookups', () => {
 		const sum = Object.values(jsCounts).reduce((a, b) => a + b, 0);
 		expect(sum).toBe(EXPECTED_COUNTS.javascript);
 
-		const emptySoon = countByTopic('system-design');
+		const emptySoon = countByTopic('database');
 		expect(emptySoon).toEqual({});
 	});
 });

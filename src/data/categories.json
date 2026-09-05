@@ -96,8 +96,11 @@
 		"icon": "server",
 		"accent": "cyan",
 		"description": "Scaling, caching, queues and trade-off discussions for senior loops.",
-		"soon": true,
-		"topics": []
+		"topics": [
+			{ "id": "fundamentals", "name": "Fundamentals", "file": "fundamentals", "blurb": "Scaling, load balancing, caching and the CAP theorem." },
+			{ "id": "data-layer", "name": "Data Layer", "file": "data-layer", "blurb": "Databases, sharding, replication and message queues." },
+			{ "id": "design-patterns", "name": "Design Patterns", "file": "design-patterns", "blurb": "Microservices, unique IDs, crawlers and distributed consensus." }
+		]
 	},
 	{
 		"id": "database",
