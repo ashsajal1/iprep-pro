@@ -18,6 +18,7 @@ interface RunnerQuestion {
 	exampleHtml?: string;
 	interviewTip?: string;
 	commonMistakes?: string[];
+	source?: { label: string; url: string };
 	categoryName: string;
 	topicName: string;
 }
@@ -82,10 +83,15 @@ if (mountNode) {
 					<h3 class="text-xs font-semibold tracking-wide text-indigo-600 uppercase dark:text-indigo-400">Short answer</h3>
 					<p class="mt-2 text-[15px] leading-relaxed font-medium">${esc(q.shortAnswer)}</p>
 				</section>
-				<section class="rounded-2xl border border-line bg-surface p-5">
-					<h3 class="text-xs font-semibold tracking-wide text-indigo-600 uppercase dark:text-indigo-400">Explanation</h3>
-					<p class="mt-2 text-[15px] leading-relaxed text-[color:var(--ink-secondary)]">${esc(q.explanation)}</p>
-				</section>
+			<section class="rounded-2xl border border-line bg-surface p-5">
+				<h3 class="text-xs font-semibold tracking-wide text-indigo-600 uppercase dark:text-indigo-400">Explanation</h3>
+				<p class="mt-2 text-[15px] leading-relaxed text-[color:var(--ink-secondary)]">${esc(q.explanation)}</p>
+				${q.source ? `
+				<p class="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-line pt-3 text-sm text-[color:var(--ink-secondary)]">
+					<span>Official docs:</span>
+					<a href="${esc(q.source.url)}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">${esc(q.source.label)}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="h-3.5 w-3.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>
+				</p>` : ''}
+			</section>
 				${
 					q.example
 						? q.exampleHtml

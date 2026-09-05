@@ -14,7 +14,8 @@
 			"Saying React re-renders mean the whole DOM is rebuilt.",
 			"Not connecting keys to reconciliation behavior."
 		],
-		"relatedQuestions": ["rct-003", "rct-007", "rct-015"]
+		"relatedQuestions": ["rct-003", "rct-007", "rct-015"],
+		"source": { "label": "React docs: Render and Commit", "url": "https://react.dev/learn/render-and-commit" }
 	},
 	{
 		"id": "rct-002",
@@ -31,7 +32,8 @@
 			"Mutating props or state directly instead of using setters.",
 			"Storing derived values in state, creating sync bugs."
 		],
-		"relatedQuestions": ["rct-005", "rct-009", "rct-008"]
+		"relatedQuestions": ["rct-005", "rct-009", "rct-008"],
+		"source": { "label": "React docs: State: A Component's Memory", "url": "https://react.dev/learn/state-a-components-memory" }
 	},
 	{
 		"id": "rct-003",
@@ -48,7 +50,8 @@
 			"Defaulting to index keys without knowing the tradeoff.",
 			"Suggesting random keys like Math.random() — worse than indices."
 		],
-		"relatedQuestions": ["rct-001", "rct-007", "rct-010"]
+		"relatedQuestions": ["rct-001", "rct-007", "rct-010"],
+		"source": { "label": "React docs: Rendering Lists", "url": "https://react.dev/learn/rendering-lists#keeping-list-items-in-order-with-key" }
 	},
 	{
 		"id": "rct-004",
@@ -65,7 +68,8 @@
 			"Forgetting onChange on a controlled input (value locks it read-only).",
 			"Not knowing file inputs can't be controlled."
 		],
-		"relatedQuestions": ["rct-002", "rct-012", "rct-009"]
+		"relatedQuestions": ["rct-002", "rct-012", "rct-009"],
+		"source": { "label": "React docs: <input>", "url": "https://react.dev/reference/react-dom/components/input" }
 	},
 	{
 		"id": "rct-005",
@@ -82,7 +86,8 @@
 			"Lifting everything to the top-level app 'just in case'.",
 			"Duplicating synced state instead of lifting."
 		],
-		"relatedQuestions": ["rct-002", "rct-008", "rct-013"]
+		"relatedQuestions": ["rct-002", "rct-008", "rct-013"],
+		"source": { "label": "React docs: Sharing State Between Components", "url": "https://react.dev/learn/sharing-state-between-components" }
 	},
 	{
 		"id": "rct-006",
@@ -99,7 +104,8 @@
 			"Using `x && <Y/>` where x can be 0 or NaN.",
 			"Nesting ternaries three levels deep inside JSX."
 		],
-		"relatedQuestions": ["rct-002", "rct-007", "rct-006"]
+		"relatedQuestions": ["rct-002", "rct-007", "rct-006"],
+		"source": { "label": "React docs: Conditional Rendering", "url": "https://react.dev/learn/conditional-rendering" }
 	},
 	{
 		"id": "rct-007",
@@ -116,7 +122,8 @@
 			"Treating useEffect(fn, []) as literally 'didMount' and ignoring cleanup timing.",
 			"Claiming there's a hook equivalent for componentDidCatch."
 		],
-		"relatedQuestions": ["rct-001", "rct-010", "rct-011"]
+		"relatedQuestions": ["rct-001", "rct-010", "rct-011"],
+		"source": { "label": "React docs: Synchronizing with Effects", "url": "https://react.dev/learn/synchronizing-with-effects" }
 	},
 	{
 		"id": "rct-008",
@@ -133,6 +140,7 @@
 			"Using Context for rapidly-changing server data, causing mass re-renders.",
 			"Forgetting to memoize the provider value object."
 		],
-		"relatedQuestions": ["rct-005", "rct-011", "rct-015"]
+		"relatedQuestions": ["rct-005", "rct-011", "rct-015"],
+		"source": { "label": "React docs: Passing Data Deeply with Context", "url": "https://react.dev/learn/passing-data-deeply-with-context" }
 	}
 ]

@@ -98,6 +98,24 @@ describe('question bank integrity', () => {
 			}
 		}
 	});
+
+	it('links sources only to valid https urls with non-empty labels', () => {
+		for (const q of allQuestions) {
+			if (!q.source) continue;
+			expect(q.source.label.trim(), `${q.id} source label`).toBeTruthy();
+			expect(q.source.url.startsWith('https://'), `${q.id} source url`).toBe(true);
+			expect(() => new URL(q.source!.url), `${q.id} source url`).not.toThrow();
+		}
+	});
+
+	it('attaches official react.dev docs to every react question', () => {
+		const react = getQuestionsByCategory('react');
+		expect(react.length).toBeGreaterThan(0);
+		for (const q of react) {
+			expect(q.source, q.id).toBeDefined();
+			expect(q.source!.url, q.id).toContain('react.dev');
+		}
+	});
 });
 
 describe('loader metadata', () => {

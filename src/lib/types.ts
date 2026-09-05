@@ -14,6 +14,11 @@ export interface RawQuestion {
 	interviewTip?: string;
 	commonMistakes?: string[];
 	relatedQuestions?: string[];
+	/** Official-docs reference rendered as a "Further reading" link. */
+	source?: {
+		label: string;
+		url: string;
+	};
 }
 
 /** Question enriched with resolved category/topic metadata + stable ordering. */

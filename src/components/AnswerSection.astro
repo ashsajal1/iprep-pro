@@ -28,6 +28,22 @@ const { question: q, exampleHtml } = Astro.props;
 			Detailed explanation
 		</h2>
 		<p class="mt-3 text-[15px] leading-relaxed text-[color:var(--ink-secondary)]">{q.explanation}</p>
+		{
+			q.source && (
+				<p class="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-line pt-4 text-sm">
+					<span class="text-ink-muted">Official docs:</span>
+					<a
+						href={q.source.url}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-1 font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400"
+					>
+						{q.source.label}
+						<Icon name="external" class="h-3.5 w-3.5" />
+					</a>
+				</p>
+			)
+		}
 	</section>
 
 	{
