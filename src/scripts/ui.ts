@@ -8,6 +8,7 @@ function bindTheme(): void {
 		btn.addEventListener('click', () => {
 			const isDark = document.documentElement.classList.toggle('dark');
 			localStorage.setItem('iprep.theme', isDark ? 'dark' : 'light');
+			window.dispatchEvent(new Event('iprep:theme-changed'));
 		});
 	});
 }
