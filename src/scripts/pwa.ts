@@ -41,6 +41,10 @@ document.addEventListener('iprep:theme-changed', updateThemeColor);
 updateThemeColor();
 
 // ---- Install prompt ----
+// Astro reloads this module on every full-page navigation, which would spawn
+// a fresh install toast per page. Persist the user's choice in sessionStorage
+// (tab-session scoped) so a dismissed prompt stays dismissed across pages.
+const installState = sessionStorage.getItem('iprep.pwa-install');
 let deferredPrompt: any = null;
 let toast: HTMLElement | null = null;
 
@@ -73,30 +77,35 @@ window.addEventListener('beforeinstallprompt', (e: any) => {
 	e.preventDefault();
 	deferredPrompt = e;
 
-	// Show the install toast if not already visible
-	if (!toast) {
-		toast = createInstallToast();
-		document.body.appendChild(toast);
+	// Already dismissed (this session) or visible — do not nag again.
+	if (installState === 'dismissed' || toast) return;
 
-		const installBtn = toast.querySelector('[data-pwa-install]') as HTMLButtonElement;
-		const dismissBtn = toast.querySelector('[data-pwa-dismiss]') as HTMLButtonElement;
+	toast = createInstallToast();
+	document.body.appendChild(toast);
 
-		installBtn.addEventListener('click', async () => {
-			toast?.remove();
-			toast = null;
-			deferredPrompt?.prompt();
-			const { outcome } = await deferredPrompt!.userChoice;
-			deferredPrompt = null;
-			if (outcome === 'accepted') {
-				console.log('PWA installed');
-			}
-		});
+	const installBtn = toast.querySelector('[data-pwa-install]') as HTMLButtonElement;
+	const dismissBtn = toast.querySelector('[data-pwa-dismiss]') as HTMLButtonElement;
 
-		dismissBtn.addEventListener('click', () => {
-			toast?.remove();
-			toast = null;
-		});
-	}
+	installBtn.addEventListener('click', async () => {
+		toast?.remove();
+		toast = null;
+		deferredPrompt?.prompt();
+		const { outcome } = await deferredPrompt!.userChoice;
+		deferredPrompt = null;
+		sessionStorage.setItem(
+			'iprep.pwa-install',
+			outcome === 'accepted' ? 'accepted' : 'dismissed'
+		);
+		if (outcome === 'accepted') {
+			console.log('PWA installed');
+		}
+	});
+
+	dismissBtn.addEventListener('click', () => {
+		toast?.remove();
+		toast = null;
+		sessionStorage.setItem('iprep.pwa-install', 'dismissed');
+	});
 });
 
 // Auto-hide install toast when the app is successfully installed
@@ -106,17 +115,17 @@ window.addEventListener('appinstalled', () => {
 		toast = null;
 	}
 	deferredPrompt = null;
+	sessionStorage.setItem('iprep.pwa-install', 'accepted');
 });
 
 // ---- Update notification ----
-// Only pages that were already controlled by a service worker can genuinely
-// report "a new version arrived". On a first-ever visit, install() calls
-// clients.claim(), which would otherwise fire controllerchange spuriously.
+// Only pages already controlled by a service worker can genuinely report a new
+// version. On first-ever install, clients.claim() would otherwise fire
+// controllerchange spuriously and show a false update toast.
 const hadController = 'serviceWorker' in navigator && Boolean(navigator.serviceWorker.controller);
 
 if ('serviceWorker' in navigator) {
 	navigator.serviceWorker.addEventListener('controllerchange', () => {
-		// On the very first install there is no previous controller — skip the toast.
 		if (!hadController) return;
 
 		const newVersionToast = document.createElement('div');
@@ -129,7 +138,6 @@ if ('serviceWorker' in navigator) {
 			<span>New version available. Refresh to update.</span>
 			<button type="button" class="shrink-0 rounded-lg bg-indigo-600 px-2 py-1 text-xs font-medium text-white hover:bg-indigo-500">Reload</button>
 		`;
-		// Remove any existing version toast
 		const existing = document.querySelector('.pwa-update-toast');
 		existing?.remove();
 		document.body.appendChild(newVersionToast);
