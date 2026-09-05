@@ -83,5 +83,95 @@
 			"Cherry-picking without cleaning up the original commit."
 		],
 		"relatedQuestions": ["git-002", "git-001", "git-009"]
+	},
+	{
+		"id": "git-011",
+		"category": "git-github",
+		"topic": "basics",
+		"question": "When is it safe to force push, and how do you avoid destroying teammates' work?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Never force-push to shared branches (main, develop) that others base work on. On your own feature branch, prefer `git push --force-with-lease` over plain `--force` — it aborts if the remote has commits you haven't fetched, preventing accidental overwrites.",
+		"explanation": "`git push --force` overwrites the remote branch unconditionally — if a teammate pushed while you weren't looking, their commits vanish from the remote and recovery is painful. `--force-with-lease` adds a safety check: it only pushes if the remote ref matches your last-fetched state, so you can't clobber unseen commits. Force-pushing is acceptable only on personal branches where you're the sole contributor. If shared work does get clobbered, teammates recover by force-pushing their local copy (which still has the commits) back up.",
+		"example": "# Safe force push (aborts if remote changed):\ngit push --force-with-lease origin feature/login\n\n# Teammate recovers after an accidental force-push:\ngit fetch origin\ngit push --force-with-lease origin feature/login",
+		"exampleLanguage": "bash",
+		"interviewTip": "Lead with the golden rule — never force-push shared branches — then explain the lease safety net. Mentioning teammate recovery shows real-world ops awareness.",
+		"commonMistakes": [
+			"Using --force as a default instead of a deliberate last resort.",
+			"Force-pushing main or develop without team coordination.",
+			"Not knowing --force-with-lease exists or how it differs."
+		],
+		"relatedQuestions": ["git-001", "git-005", "git-006"]
+	},
+	{
+		"id": "git-012",
+		"category": "git-github",
+		"topic": "basics",
+		"question": "What is the difference between `git fetch` and `git pull`, and when should you use each?",
+		"difficulty": "beginner",
+		"shortAnswer": "Fetch downloads remote refs and objects without changing your working tree — safe, non-destructive inspection. Pull is fetch plus merge (or rebase) in one step — convenient but can surprise you with merge commits or conflicts. Fetch first when you want to review before integrating; pull when you are confident the fast-forward is clean.",
+		"explanation": "`git fetch origin` brings down the remote branch pointers and the objects they need, updating `origin/main` etc., but leaves `main` and your work untouched — you can `git log origin/main` and diff before deciding. `git pull` is shorthand for `git fetch` followed by `git merge` (or `git rebase` if `pull.rebase` is set), which immediately alters your current branch and working tree. The convenience trade-off: a plain pull on a diverged branch creates a merge commit you might not want; a rebase-mode pull can replay your local commits and surprise you mid-demo. Pragmatic split: fetch then merge or rebase explicitly when collaborating (you control the integration point); pull on clean tracking branches when you just want to sync. Configure `pull.rebase = true` if your team avoids merge commits, or `pull.ff = only` to block accidental merge commits.",
+		"example": "# Review before integrating:\ngit fetch origin\ngit log --oneline main..origin/main\ngit diff main origin/main\ngit merge origin/main\n\n# Safe sync on a clean tracking branch:\ngit checkout main\ngit pull --ff-only",
+		"exampleLanguage": "bash",
+		"interviewTip": "Distinguish the two in one sentence, then give the inspect-then-integrate workflow. Naming `pull.ff = only` or `pull.rebase` config shows you have tuned this, not just read it.",
+		"commonMistakes": [
+			"Treating pull as the only way to get updates and never fetching.",
+			"Running pull on a diverged branch and being surprised by a merge commit.",
+			"Not setting pull.rebase or pull.ff and getting inconsistent behavior across machines."
+		],
+		"relatedQuestions": ["git-001", "git-007", "git-013"]
+	},
+	{
+		"id": "git-013",
+		"category": "git-github",
+		"topic": "basics",
+		"question": "How do you squash several messy commits into one before opening a pull request?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Use `git rebase -i HEAD~N` (or rebase onto main) and mark the commits to fold with `squash` (keeps their message) or `fixup` (drops it). Git replays them into a single commit; edit the final combined message. Result: one clean commit per logical change, readable history for reviewers.",
+		"explanation": "Interactive rebase opens an editor listing commits oldest-first with the `pick` command. Change `pick` to `squash` (or `s`) on commits to merge into the preceding one — their changes are combined and their messages concatenated for you to edit. Use `fixup` (or `f`) when you want the change but not the message (typo fixes, nits). Other actions: `reword` to edit a message without changing code, `edit` to pause and amend, `drop` to remove entirely. After saving, Git replays and stops if conflicts arise — resolve and `rebase --continue`. Common entry point: `git rebase -i origin/main` to squash everything ahead of main at once. Pair with `--autosquash`: mark fixups at commit time (`git commit --fixup <sha>`) and run `rebase -i --autosquash` to auto-order them. Squash before merging so `main` history stays linear and each commit is self-contained.",
+		"example": "# Squash last 4 commits into one:\ngit rebase -i HEAD~4\n# editor: pick first, fixup the rest\n\n# Mark fixups as you go, then auto-squash:\ngit commit --fixup=abc1234\ngit rebase -i --autosquash origin/main",
+		"exampleLanguage": "bash",
+		"interviewTip": "Walk through the squash and fixup distinction with a concrete scenario (WIP commits, typo fixes), then mention --autosquash — it signals advanced daily usage.",
+		"commonMistakes": [
+			"Squashing commits that have already been pushed to a shared branch.",
+			"Confusing squash (keeps messages) with fixup (drops them).",
+			"Forgetting to rebase onto the latest main and shipping a conflict."
+		],
+		"relatedQuestions": ["git-001", "git-006", "git-016"]
+	},
+	{
+		"id": "git-014",
+		"category": "git-github",
+		"topic": "basics",
+		"question": "A bug is in production but was not in last weeks release. How do you find the exact commit that introduced it?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Use `git bisect` to binary-search history: mark the current commit bad and an old known-good commit, then Git repeatedly checks out the midpoint. You test each and say good or bad until Git identifies the first bad commit. Automate it with `git bisect run <script>` for an unattended search.",
+		"explanation": "Linearly scanning weeks of commits is slow; bisect turns it into a binary search (log base-2 of N steps). Start with `git bisect start`, mark `git bisect bad` (current) and `git bisect good <old-sha>` (a release tag or commit you trust). Git checks out the midpoint; you run your test, mark it good or bad, and Git halves the range again — repeat until it prints the first bad commit. For speed and repeatability, automate: `git bisect run ./test.sh` exits 0 for good, non-zero for bad, and Git drives the whole search hands-free. Limit the range with `git bisect good <tag> bad <tag>`. Skip commits that cannot be tested (build failures) with `git bisect skip`. Under the hood it is pure binary search on the commit DAG, so merge-heavy histories still resolve correctly.",
+		"example": "git bisect start\ngit bisect bad HEAD\ngit bisect good v1.4.2\ngit bisect run ./scripts/check-bug.sh\n# Git prints: abc1234 is the first bad commit\ngit bisect reset",
+		"exampleLanguage": "bash",
+		"interviewTip": "Say binary search through history first to frame it, then show the manual good/bad flow and the `bisect run` automation. Naming the log base-2 complexity signals depth.",
+		"commonMistakes": [
+			"Linearly reading git log instead of bisecting.",
+			"Not knowing bisect can run unattended with a script.",
+			"Forgetting git bisect reset and leaving the repo in bisect state."
+		],
+		"relatedQuestions": ["git-002", "git-017", "git-019"]
+	},
+	{
+		"id": "git-015",
+		"category": "git-github",
+		"topic": "basics",
+		"question": "You added a `.gitignore` but Git is still tracking files that should be ignored. Why, and how do you fix it?",
+		"difficulty": "beginner",
+		"shortAnswer": "`.gitignore` only affects untracked files — files already committed stay tracked. To stop tracking them, remove them from the index with `git rm --cached <file>` (keeps the file on disk), commit the removal, and then `.gitignore` prevents re-adding. Committed secrets need rotation, not just a gitignore update.",
+		"explanation": "Git ignore rules apply exclusively to untracked paths. Once a file is staged and committed, adding a pattern to `.gitignore` has no effect on it — it is already in the index and history. The fix: `git rm --cached` removes the file from the index without deleting it locally, so your app keeps working while Git forgets about it. Commit that change so the removal propagates; the `.gitignore` pattern then blocks it from being re-added. For directories, `git rm -r --cached <dir>`. Per-developer noise (OS files, editor config) belongs in a global `~/.gitignore` or `.git/info/exclude` rather than the repo `.gitignore`, which is for project-wide ignores. Critical caveat: if the file contained a secret, removing it from Git is not enough — it is still in history. Rotate the secret and consider `git filter-repo` or BFG to purge history entirely.",
+		"example": "# Stop tracking .env (keep locally):\ngit rm --cached .env\ngit commit -m 'chore: stop tracking .env'\n\n# Global ignore for personal noise:\ngit config --global core.excludesfile ~/.gitignore\n# ~/.gitignore:\n.idea/\n.DS_Store\n*.log",
+		"exampleLanguage": "bash",
+		"interviewTip": "State the untracked-only rule crisply, show `rm --cached`, then land on the secrets-in-history caveat — that escalation shows you have felt this pain, not just read the docs.",
+		"commonMistakes": [
+			"Assuming .gitignore retroactively untracks committed files.",
+			"Using `git rm` without --cached and deleting the local file.",
+			"Forgetting to rotate secrets that were committed before being ignored."
+		],
+		"relatedQuestions": ["git-020", "git-010"]
 	}
 ]

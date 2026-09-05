@@ -83,5 +83,95 @@
 			"Forgetting BREAKING CHANGE footers exist alongside the ! shorthand."
 		],
 		"relatedQuestions": ["git-006", "git-001", "nde-005"]
+	},
+	{
+		"id": "git-016",
+		"category": "git-github",
+		"topic": "collaboration",
+		"question": "What are Git hooks and how do teams use them to enforce quality?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Git hooks are scripts Git runs automatically at key points — pre-commit (lint/format before a commit lands), commit-msg (enforce message conventions), pre-push (run tests before sharing). They live in `.git/hooks/` so they are not cloned; teams share them via a hooksPath config or tools like Husky to keep standards consistent across machines.",
+		"explanation": "Hooks are executable scripts named after lifecycle events, stored in `.git/hooks/` — Git runs them when the matching event fires and blocks the action if they exit non-zero. Practical pairings: pre-commit runs linters/formatters (ESLint, Prettier) so bad code never reaches the index; commit-msg validates message format (enforcing Conventional Commits) and rejects malformed ones; pre-push runs the test suite locally before the network round-trip. post-checkout can install dependencies after a branch switch. The catch: `.git/hooks/` is not versioned, so a fresh clone starts empty. Teams solve this three ways — a `core.hooksPath` pointing to a tracked `hooks/` directory, a prepare/install script that copies them, or Husky (which writes a tiny shim per hook and declares hooks in package.json). Combine with CI as the real gatekeeper — hooks are a fast local convenience, not a security boundary, since any developer can `git commit --no-verify`. Use them to save time and catch trivial mistakes, not to replace server-side checks.",
+		"example": "# Husky (declared in package.json) — shared via repo:\n# .husky/pre-commit\n#!/bin/sh\n. \"$(dirname \"$0\")/_/husky.sh\"\nnpx lint-staged\n\n# .husky/commit-msg\n#!/bin/sh\n. \"$(dirname \"$0\")/_/husky.sh\"\nnpx --no -- commitlint --edit ${1}\n\n# Track hooks without Husky (git config):\ngit config core.hooksPath ./hooks",
+		"exampleLanguage": "bash",
+		"interviewTip": "List the three most useful hooks (pre-commit, commit-msg, pre-push) with concrete tools, then address the sharing problem — that is what separates book knowledge from team experience.",
+		"commonMistakes": [
+			"Forgetting hooks are local and not shared on clone.",
+			"Treating hooks as a security boundary instead of a convenience.",
+			"Forgetting developers can bypass with --no-verify."
+		],
+		"relatedQuestions": ["git-010", "git-006", "git-013"]
+	},
+	{
+		"id": "git-017",
+		"category": "git-github",
+		"topic": "collaboration",
+		"question": "What is the difference between a lightweight tag and an annotated tag, and which should you use for releases?",
+		"difficulty": "beginner",
+		"shortAnswer": "A lightweight tag is just a named pointer to a commit — a bookmark. An annotated tag is a full Git object storing a message, the tagger name and email, and the date. Use annotated tags for releases: they are checksummed, carry release notes, can be signed with GPG, and tools like `git describe` and release automation rely on them.",
+		"explanation": "`git tag v1.2.0` creates a lightweight tag — a ref in `refs/tags/` pointing at a commit, with no metadata. `git tag -a v1.2.0 -m 'Release notes'` creates an annotated tag, a real object with author, date, and message. The practical differences: `git show` on an annotated tag displays the message; `git tag -v` can verify a GCP signature (only possible on annotated tags); `git describe` prefers annotated tags when computing version strings; and release tooling (semantic-release, GitHub Release automation) reads annotated tag messages to build changelogs. Lightweight tags suit private bookmarks; annotated tags are the standard for anything published. For releases, go further: sign with `git tag -s` (or `-u <key>`) so consumers can verify provenance, and push tags explicitly (`git push --tags` or better, push the release tag only). Tag the merge commit on main, not a feature-branch commit, so the tag reflects what shipped.",
+		"example": "# Annotated release tag with message:\ngit tag -a v1.2.0 -m 'v1.2.0 — cursor pagination, export CSV'\n\n# Signed tag (verifiable provenance):\ngit tag -s v1.2.0 -m 'v1.2.0 release'\ngit tag -v v1.2.0            # verify signature\n\n# Push the release tag:\ngit push origin v1.2.0\n\n# Release automation reads it:\ngit describe --tags          # => v1.2.0",
+		"exampleLanguage": "bash",
+		"interviewTip": "Give the bookmark-versus-object distinction, then immediately say 'annotated for releases' and list why — message, GPG signing, git describe, and changelog tooling. One line each.",
+		"commonMistakes": [
+			"Using lightweight tags for releases and losing metadata.",
+			"Forgetting to push tags — commits go with `git push`, tags need `git push --tags`.",
+			"Tagging a feature-branch commit instead of the merge commit on main."
+		],
+		"relatedQuestions": ["git-010", "git-019", "git-014"]
+	},
+	{
+		"id": "git-018",
+		"category": "git-github",
+		"topic": "collaboration",
+		"question": "Compare GitFlow, GitHub Flow and trunk-based development. When does each make sense?",
+		"difficulty": "intermediate",
+		"shortAnswer": "GitFlow uses long-lived branches (develop, feature, release, hotfix) with formal merges — structured but heavy, suited to scheduled releases and multiple supported versions. GitHub Flow is minimal: main is always deployable, short-lived feature branches merged via PR — ideal for continuous deployment. Trunk-based goes further: developers integrate into main at least daily via tiny short-lived branches, relying on feature flags instead of long branches.",
+		"explanation": "GitFlow (Vincent Driessen) models the full release lifecycle: `develop` integrates features, `release/*` branches stabilize, `hotfix/*` patches production, all merging back to both `main` and `develop`. It shines when you ship on a cadence and maintain several production versions, but the branch overhead and merge churn are real costs. GitHub Flow strips it down: `main` is sacred and always deployable; every change is a feature branch opened, reviewed via PR, CI-passed, then merged and deployed. Perfect for web apps deploying many times a day. Trunk-based development pushes integration frequency further — developers merge to `main` at least daily, using branches that live hours not days, and hide incomplete work behind feature flags rather than long-lived branches. It minimizes merge debt and suits high-velocity teams with strong CI and flag infrastructure. Choosing: regulated/multi-version software leans GitFlow; most SaaS products fit GitHub Flow; elite-velocity teams with mature CI adopt trunk-based. The common thread — pick the simplest model that matches your release cadence and tooling, then enforce it with branch protection and CI.",
+		"example": "# GitHub Flow (most web apps):\n# main always deployable → feature branch → PR → review → merge → deploy\n\n# Trunk-based (high velocity):\n# branch lives < 1 day → PR → merge to main → feature flag gates the UI\n\n# GitFlow (scheduled releases):\n# develop ← feature/* → release/* → main + hotfix/*",
+		"exampleLanguage": "text",
+		"interviewTip": "Map each model to a release cadence (continuous / daily / scheduled) and name feature flags as the enabler for trunk-based. That decision framework is what interviewers want, not just definitions.",
+		"commonMistakes": [
+			"Adopting GitFlow for a simple web app and drowning in branches.",
+			"Doing trunk-based without feature flags, shipping half-finished work.",
+			"Treating the workflow as dogma instead of matching it to release cadence."
+		],
+		"relatedQuestions": ["git-008", "git-006", "git-001"]
+	},
+	{
+		"id": "git-019",
+		"category": "git-github",
+		"topic": "collaboration",
+		"question": "What are signed commits and why would a team require them?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Signed commits are cryptographically verified with GPG or SSH, proving a trusted author made them. A team requires them so every merged commit is attributable and tamper-evident — GitHub shows a Verified badge and can block unsigned commits via branch protection.",
+		"explanation": "By default a commit's author field is free text — anyone can claim to be `Alice <alice@example.com>`. Signing attaches a cryptographic signature: `git commit -S` signs with a GPG key (or SSH key via `git commit -S` with `gpg.format = ssh`). Git stores the signature in the commit object; anyone with the public key can verify it with `git verify-commit`. GitHub checks signatures and shows Verified/Unverified badges on commits and tags. Why enforce it: it ties every change to a real identity, deterring impersonation and making the audit trail trustworthy — important in regulated or security-sensitive projects. Enforcement options: branch protection rules requiring signed commits (GitHub Enterprise), CI checks that reject unsigned commits, or pre-receive hooks. Practical setup: generate a GPG key (`gpg --full-generate-key`), add it to your GitHub account, tell Git your signing key (`git config user.signingkey`), and enable commit signing globally (`git config commit.gpgsign true`) or per-repo. SSH signing is simpler to onboard (reuses existing SSH keys) and is now a first-class alternative. The trade-off: key management overhead and a harder onboarding for new contributors.",
+		"example": "# Configure GPG signing:\ngpg --full-generate-key\ngpg --list-secret-keys --keyid-format=long\ngit config --global user.signingkey <KEYID>\ngit config --global commit.gpgsign true\n\n# Sign a commit:\ngit commit -S -m 'feat: add export'\n\n# Verify locally:\ngit verify-commit HEAD\n\n# SSH signing (simpler onboarding):\ngit config gpg.format ssh\ngit config user.signingkey ~/.ssh/id_ed25519.pub",
+		"exampleLanguage": "bash",
+		"interviewTip": "Lead with the impersonation problem (author field is free text), then explain GPG/SSH signing and how GitHub surfaces it. Mentioning branch protection enforcement shows you have seen it required, not just read about it.",
+		"commonMistakes": [
+			"Thinking the author field is verified — it is free text without signing.",
+			"Signing commits but never configuring verification on the server side.",
+			"Overlooking SSH signing as a simpler alternative to GPG."
+		],
+		"relatedQuestions": ["git-017", "git-016", "git-010"]
+	},
+	{
+		"id": "git-020",
+		"category": "git-github",
+		"topic": "collaboration",
+		"question": "What happens when you commit large binary files to Git, and how should you handle them instead?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Git stores a full copy of every version of every file, so large binaries bloat the repo permanently — clones slow down and history stays heavy even after you delete the file. Use Git LFS to store pointer files in the repo and the real binaries on a remote server, keeping clone size and history lean.",
+		"explanation": "Git snapshots each file per commit. A 100 MB binary changed ten times adds a gigabyte to history; deleting it later does not help — the old versions remain in the object database, so every clone still downloads them. Large File Storage (Git LFS) replaces tracked large files with tiny pointer files in the repo and uploads the real objects to an LFS server (GitHub LFS, GitLab, or self-hosted). Setup: `git lfs install` once per machine, then `git lfs track '*.psd' '*.zip'` to register patterns (this writes `.gitattributes`), commit the `.gitattributes` file, and work normally — checkout and push pull the real files transparently. LFS servers have storage and bandwidth quotas (GitHub: 1 GB free storage + 1 GB/month bandwidth on the free tier), so teams sometimes self-host or cap tracked file sizes. For binaries already in history, migrate with `git lfs migrate import --include='*.psd'` (rewrites history, so coordinate with the team) or prune with `git filter-repo` / BFG. Prevention: enforce file-size limits with a pre-commit or pre-receive hook and document which patterns belong in LFS in the README. Alternatives worth naming: Git Annex for fully distributed binary management, or simply keeping large assets out of version control entirely (CDN + versioned URLs) when history is not needed.",
+		"example": "# Install and configure LFS:\ngit lfs install\ngit lfs track '*.psd' '*.mp4' '*.zip'\ngit add .gitattributes\ngit commit -m 'chore: track binaries with LFS'\n\n# Work normally — LFS handles the rest:\ngit add design.psd\ngit push origin main\n\n# Migrate existing binaries into LFS (history rewrite):\ngit lfs migrate import --include='*.psd' --everything",
+		"exampleLanguage": "bash",
+		"interviewTip": "Lead with the permanent-bloat problem (deleting does not shrink history), then present LFS as the fix and mention quotas and the `.gitattributes` file. Naming the migration command shows you have dealt with the mess after the fact.",
+		"commonMistakes": [
+			"Deleting a large file and expecting the repo to shrink.",
+			"Forgetting to commit .gitattributes so LFS patterns are not shared.",
+			"Not accounting for LFS storage and bandwidth quotas on the chosen host."
+		],
+		"relatedQuestions": ["git-015", "git-019", "git-016"]
 	}
 ]
