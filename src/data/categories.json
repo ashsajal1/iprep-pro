@@ -120,7 +120,11 @@
 		"icon": "globe",
 		"accent": "fuchsia",
 		"description": "HTTP, browsers, security and performance across the whole stack.",
-		"soon": true,
-		"topics": []
+		"topics": [
+			{ "id": "http", "name": "HTTP Essentials", "file": "http", "blurb": "Methods, status codes, cookies and caching." },
+			{ "id": "browsers", "name": "Browsers & Rendering", "file": "browsers", "blurb": "Rendering pipeline, storage and service workers." },
+			{ "id": "security", "name": "Web Security", "file": "security", "blurb": "XSS, CSRF, CORS and HTTPS." },
+			{ "id": "performance", "name": "Web Performance", "file": "performance", "blurb": "Core Web Vitals, code splitting and optimization." }
+		]
 	}
 ]

@@ -1,0 +1,74 @@
+[
+	{
+		"id": "web-013",
+		"category": "web-dev",
+		"topic": "performance",
+		"question": "What are Core Web Vitals and what thresholds count as good?",
+		"difficulty": "beginner",
+		"shortAnswer": "Google's three user-experience metrics: LCP (loading — largest content paints) good under 2.5s, INP (responsiveness — worst typical interaction latency) good under 200ms, CLS (visual stability — unexpected layout shift) good under 0.1. They blend lab data with real-user field data and feed search rankings.",
+		"explanation": "Vitals compress performance into what users actually feel. Largest Contentful Paint (LCP) marks when the main content — hero image, headline block — finishes rendering; slow LCP usually means slow server responses, render-blocking resources, or unoptimized hero media. Fix with faster TTFB (caching, CDN, edge rendering), preload the LCP element, and compress/convert hero images. Interaction to Next Paint (INP, successor to FID) measures the worst common interaction latency — click to visual feedback — across the page lifetime; bad INP means long main-thread tasks blocking input. Fix by splitting JS work, yielding to the browser, and debouncing heavy handlers. Cumulative Layout Shift (CLS) sums unexpected visual jumps (late-loading ads, images without dimensions, injected banners); fix by reserving space (width/height or aspect-ratio), preloading fonts with font-display: swap plus size-adjust fallbacks, and never inserting content above existing content after load. Thresholds apply to the 75th percentile of real users (field data via CrUX/RUM), not your laptop — lab tools (Lighthouse) diagnose, field data judges. Scores gate real outcomes: search ranking weight and, more importantly, measured conversion impact per 100ms.",
+		"example": "# Good thresholds (75th percentile of real users)\n# LCP ≤ 2.5s   Largest Contentful Paint  (loading)\n# INP ≤ 200ms  Interaction to Next Paint (responsiveness)\n# CLS ≤ 0.1    Cumulative Layout Shift   (stability)\n\n<!-- Classic CLS fix: reserve the space before the image loads -->\n<img src=\"/hero.avif\" width=\"1200\" height=\"630\"\n     style=\"aspect-ratio: 1200 / 630; width: 100%; height: auto;\"\n     fetchpriority=\"high\" alt=\"\" />",
+		"exampleLanguage": "html",
+		"interviewTip": "Name all three with their thresholds and the user pain each captures (loads slow / feels laggy / jumps around). One fix per metric shows you optimize, not just recite.",
+		"commonMistakes": [
+			"Quoting lab scores while field data (what users feel) tells another story.",
+			"Fixing LCP with heavier hero media instead of preloading and compressing.",
+			"Ignoring CLS from ads and late-injected content."
+		],
+		"relatedQuestions": ["web-005", "web-008", "web-015"]
+	},
+	{
+		"id": "web-014",
+		"category": "web-dev",
+		"topic": "performance",
+		"question": "How do code splitting, lazy loading, and tree shaking reduce JS weight?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Code splitting breaks one giant bundle into route- or component-level chunks loaded on demand; lazy loading (dynamic import, React.lazy) defers non-critical chunks until needed; tree shaking statically drops unused exports at build time. Together they shrink the initial JS parsed, compiled, and executed before interactivity.",
+		"explanation": "JavaScript cost isn't just bytes — the browser must download, parse, compile, and execute every byte on the main thread, and mobile CPUs do this 5–10x slower than your laptop. A 2MB bundle can mean seconds of locked-up page on a mid-range phone. Code splitting attacks the shape: bundlers (Vite/Rollup/webpack) emit separate chunks per route or per dynamic import(), so the homepage ships 80KB while the admin dashboard's 500KB loads only when visited. Route-level splitting is the default win; component-level (modals, editors, charts below the fold) goes further. Lazy loading is the loading policy on top: React.lazy + Suspense, Vue's defineAsyncComponent, or raw import('./editor.js') on user intent (hover, click, IntersectionObserver) — prefetch on idle or hover to hide the latency. Tree shaking attacks dead code: ESM's static imports let Rollup prove an export is never used and drop it (works only with side-effect-free modules — mark \"sideEffects\": false and avoid barrel files that re-export everything). Complement with: analyzing (rollup-plugin-visualizer/bundle analyzer to find the whales — usually moment, lodash-full, or duplicate deps), replacing heavy libs (date-fns over moment), and serving modern syntax to modern browsers (fewer transpiled helpers). Measure the before/after on total blocking time, not just kilobytes.",
+		"example": "// Route-level splitting (React Router)\n// const Dashboard = lazy(() => import('./routes/Dashboard.jsx'));\n// <Suspense fallback={<Spinner />}><Dashboard /></Suspense>\n\n// Load a heavy editor only when the user asks\nasync function openEditor() {\n  const { createEditor } = await import('./editor.js'); // separate chunk\n  createEditor(document.getElementById('pad'));\n}\n\n// Prefetch on idle so it's instant when clicked\n// <link rel=\"prefetch\" href=\"/assets/editor.chunk.js\" as=\"script\" />\n\n// package.json — unlock full tree shaking\n// { \"sideEffects\": false }",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Quantify the enemy (parse/compile on weak phones, not just bytes), then stack the three techniques in build-order: shake dead code, split the rest, lazy-load by intent. Naming the bundle analyzer shows workflow maturity.",
+		"commonMistakes": [
+			"Splitting into hundreds of tiny chunks, trading parse cost for request waterfalls.",
+			"Lazy-loading above-the-fold content, delaying LCP.",
+			"Barrel files and side-effectful modules silently defeating tree shaking."
+		],
+		"relatedQuestions": ["web-005", "web-013", "web-016"]
+	},
+	{
+		"id": "web-015",
+		"category": "web-dev",
+		"topic": "performance",
+		"question": "How do you optimize images and fonts for fast pages?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Images: serve modern formats (AVIF/WebP), responsive sizes (srcset/sizes), lazy-load below the fold, and always declare dimensions to avoid layout shift. Fonts: subset to needed glyphs, preload the critical weights, use font-display: swap with metric-matched fallbacks. Media is usually the biggest byte contributor, so it pays first.",
+		"explanation": "Images routinely dominate page weight. Format first: AVIF cuts ~50% vs JPEG, WebP ~30% — serve AVIF with WebP/JPEG fallbacks via <picture>. Size second: a 4000px upload rendered at 400px wastes 100x pixels — generate responsive variants and let srcset/sizes pick per viewport and DPR. Loading third: eager + fetchpriority=\"high\" for the LCP hero (plus preload), loading=\"lazy\" with decoding=\"async\" for everything below the fold. Stability fourth: width/height attributes (or aspect-ratio CSS) reserve space so late images never shift layout (CLS). Compression is lossy-by-choice: quality 70–80 is visually identical for photos. Fonts block text two ways: the files are heavy, and invisible/swapping text hurts experience. Subset to latin (+ needed ranges) to shrink files 70%+, preload only the hero weight/style, display=swap to show fallback text immediately, and match fallback metrics (size-adjust, ascent-override) so the swap doesn't shift layout. Self-host instead of third-party font CDNs where possible — one fewer connection chain and full cache control. Verify in DevTools' Network panel (format, transferred size) and the CLS/LCP readouts, not by eyeballing.",
+		"example": "<!-- Responsive, lazy, shift-free image -->\n<picture>\n  <source srcset=\"/hero-800.avif 800w, /hero-1600.avif 1600w\" type=\"image/avif\" />\n  <source srcset=\"/hero-800.webp 800w, /hero-1600.webp 1600w\" type=\"image/webp\" />\n  <img src=\"/hero-800.jpg\" width=\"1600\" height=\"900\"\n       loading=\"lazy\" decoding=\"async\" alt=\"\" />\n</picture>\n\n/* Swap fast, shift nothing */\n@font-face {\n  font-family: 'Inter';\n  src: url('/inter-latin.woff2') format('woff2');\n  font-display: swap;\n}\n@font-face {\n  font-family: 'Inter-fallback';\n  src: local('Arial');\n  size-adjust: 107%; ascent-override: 90%;\n}",
+		"exampleLanguage": "html",
+		"interviewTip": "Lead with the ordering — format, size, loading, stability — because it shows method. The size-adjust fallback trick for fonts is the detail that marks real experience.",
+		"commonMistakes": [
+			"Shipping one giant JPEG for all viewports.",
+			"Lazy-loading the LCP hero image, delaying the main metric.",
+			"Blocking text on custom fonts with no swap or fallback."
+		],
+		"relatedQuestions": ["web-004", "web-005", "web-013"]
+	},
+	{
+		"id": "web-016",
+		"category": "web-dev",
+		"topic": "performance",
+		"question": "How do you systematically find and fix frontend performance problems?",
+		"difficulty": "advanced",
+		"shortAnswer": "Measure first (RUM field data for what users feel, Lighthouse/WebPageTest lab runs for diagnosis), profile the bottleneck (Performance panel, bundle analyzer, backend traces), fix the biggest offender, then lock gains with performance budgets in CI. Never optimize without a number before and after.",
+		"explanation": "Random optimization wastes effort on non-bottlenecks, so follow the loop. First, establish truth: field data (Real User Monitoring — CrUX, web-vitals library) shows the 75th-percentile LCP/INP/CLS across real devices and networks, segmented by route, device class, and geography — your laptop on office Wi-Fi is not your user base. Second, reproduce in the lab: Lighthouse CI and WebPageTest on throttled Moto-G4/4G profiles give repeatable numbers plus opportunity lists sorted by savings. Third, profile the specific bottleneck: DevTools Performance panel flame chart (long tasks blocking INP? forced reflows? main-thread parse of a giant bundle?), Coverage drawer (unused CSS/JS shipped), bundle analyzer (which dependency owns the kilobytes), backend traces for slow TTFB. Fourth, fix top-down: server/edge caching and CDN for TTFB, code splitting and deferral for JS weight, media optimization for LCP, transform-only animations and task yielding for INP, reserved space for CLS. Fifth, prevent regression: performance budgets (e.g., JS < 200KB, LCP < 2.5s on lab profile) enforced in CI via Lighthouse assertions or bundlesize checks, plus RUM alerting on releases. Report impact in business terms — conversion and bounce move with the vitals — because budgets survive only with stakeholder buy-in.",
+		"example": "// Ship RUM in one snippet, alert on regressions\n// import { onLCP, onINP, onCLS } from 'web-vitals';\n// onLCP((m) => report('/analytics', { metric: 'LCP', value: m.value, route }));\n\n// Lighthouse CI budget (lighthouserc.json)\n// {\n//   \"assert\": {\n//     \"assertions\": {\n//       \"largest-contentful-paint\": [\"error\", { \"maxNumericValue\": 2500 }],\n//       \"cumulative-layout-shift\": [\"error\", { \"maxNumericValue\": 0.1 }],\n//       \"resource-summary:script:size\": [\"error\", { \"maxNumericValue\": 200000 }]\n//     }\n//   }\n// }",
+		"exampleLanguage": "javascript",
+		"interviewTip": "Recite the loop — field data, lab reproduce, profile, fix biggest, budget in CI — and stress that field data judges while lab diagnoses. Framing impact in conversion terms shows senior ownership.",
+		"commonMistakes": [
+			"Optimizing from lab scores alone while field data disagrees.",
+			"Fixing small wins while a single giant bundle dominates.",
+			"Shipping gains with no CI budgets, watching them regress in a month."
+		],
+		"relatedQuestions": ["web-013", "web-014", "web-015"]
+	}
+]

@@ -6,20 +6,20 @@ test.describe('question listing', () => {
 	});
 
 	test('renders the full bank with live result count', async ({ page }) => {
-		await expect(page.locator('[data-question-card]')).toHaveCount(130);
-		await expect(page.locator('#results-count')).toContainText('130 of 130');
+		await expect(page.locator('[data-question-card]')).toHaveCount(161);
+		await expect(page.locator('#results-count')).toContainText('161 of 161');
 	});
 
 	test('search narrows results and empty state offers recovery', async ({ page }) => {
 		await page.fill('#filter-q', 'closure');
 		await expect(page.locator('[data-question-card]:visible')).toHaveCount(1);
-		await expect(page.locator('#results-count')).toContainText('1 of 130');
+		await expect(page.locator('#results-count')).toContainText('1 of 161');
 
 		await page.fill('#filter-q', 'zzqqxxplk');
 		await expect(page.locator('#empty-state')).toBeVisible();
 		await page.getByRole('button', { name: 'Clear filters' }).last().click();
 		await expect(page.locator('#empty-state')).toBeHidden();
-		await expect(page.locator('[data-question-card]:visible')).toHaveCount(130);
+		await expect(page.locator('[data-question-card]:visible')).toHaveCount(161);
 	});
 
 	test('category + difficulty filters combine and sync to the URL', async ({ page }) => {

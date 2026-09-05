@@ -27,6 +27,7 @@ const EXPECTED_COUNTS: Record<string, number> = {
 	behavioral: 10,
 	'system-design': 15,
 	database: 15,
+	'web-dev': 16,
 };
 
 describe('question bank integrity', () => {
@@ -58,6 +59,7 @@ describe('question bank integrity', () => {
 			beh: 'behavioral',
 			sd: 'system-design',
 			db: 'database',
+			web: 'web-dev',
 		};
 		for (const q of allQuestions) {
 			const prefix = q.id.split('-')[0];
@@ -145,8 +147,7 @@ describe('lookups', () => {
 	it('excludes coming-soon categories from live categories but keeps them in stats', () => {
 		expect(categories.some((c) => c.soon)).toBe(false);
 		const soon = getCategoriesWithStats().filter((c) => c.soon);
-		expect(soon.length).toBeGreaterThan(0);
-		for (const c of soon) expect(c.count).toBe(0);
+		expect(soon).toHaveLength(0);
 	});
 
 	it('counts questions per topic', () => {
@@ -154,8 +155,8 @@ describe('lookups', () => {
 		const sum = Object.values(jsCounts).reduce((a, b) => a + b, 0);
 		expect(sum).toBe(EXPECTED_COUNTS.javascript);
 
-		const emptySoon = countByTopic('web-dev');
-		expect(emptySoon).toEqual({});
+		const unknown = countByTopic('not-a-category');
+		expect(unknown).toEqual({});
 	});
 });
 
