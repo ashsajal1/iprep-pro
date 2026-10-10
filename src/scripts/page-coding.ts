@@ -338,6 +338,24 @@ if (workspace) {
 		if (shown >= hintsList.length) hintBtn.disabled = true;
 	});
 
+	const tabsRoot = workspace.querySelector('[data-solution-tabs]');
+	if (tabsRoot) {
+		const tabBtns = [...tabsRoot.querySelectorAll<HTMLButtonElement>('[data-solution-tab]')];
+		const panels = [...tabsRoot.querySelectorAll<HTMLElement>('[data-solution-panel]')];
+		const ACTIVE = ['bg-surface', 'font-semibold', 'text-ink', 'shadow-xs'];
+		const INACTIVE = ['font-medium', 'text-ink-muted'];
+		function selectSolutionTab(idx: number): void {
+			tabBtns.forEach((b, i) => {
+				const on = i === idx;
+				b.setAttribute('aria-selected', on ? 'true' : 'false');
+				b.classList.remove(...(on ? INACTIVE : ACTIVE));
+				b.classList.add(...(on ? ACTIVE : INACTIVE));
+			});
+			panels.forEach((p, i) => p.toggleAttribute('hidden', i !== idx));
+		}
+		tabBtns.forEach((b, i) => b.addEventListener('click', () => selectSolutionTab(i)));
+	}
+
 	resetBtn.addEventListener('click', () => {
 		setCode(starterCode);
 		resetOutputs();

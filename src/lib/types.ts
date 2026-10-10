@@ -79,6 +79,17 @@ export interface CodingTest {
 	expected: unknown;
 }
 
+/** One official solution variant, e.g. an imperative vs a declarative take. */
+export interface CodingSolution {
+	/** Tab label shown in the solution switcher, e.g. 'Imperative'. */
+	approach: string;
+	code: string;
+	/** Set on the single variant to prefer — rendered as a "Recommended" pill. */
+	recommended?: boolean;
+	/** One-line guidance on when to use this variant, shown above its code. */
+	note?: string;
+}
+
 export interface CodingChallenge {
 	id: string;
 	slug: string;
@@ -89,5 +100,11 @@ export interface CodingChallenge {
 	hints: string[];
 	starterCode: string;
 	solution: string;
+	/**
+	 * Optional alternate solution variants rendered as switchable tabs.
+	 * When present, the first entry is shown by default — keep `solution`
+	 * as the primary so single-solution rendering stays unchanged.
+	 */
+	solutions?: CodingSolution[];
 	tests: CodingTest[];
 }

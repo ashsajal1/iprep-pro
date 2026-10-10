@@ -13,6 +13,19 @@
 		],
 		"starterCode": "function reverseString(str) {\n  // your code here\n}",
 		"solution": "function reverseString(str) {\n  return [...str].reverse().join('');\n}",
+		"solutions": [
+			{
+				"approach": "Declarative",
+				"recommended": true,
+				"note": "Recommended — the idiomatic one-liner; write this in interviews.",
+				"code": "function reverseString(str) {\n  return [...str].reverse().join('');\n}"
+			},
+			{
+				"approach": "Imperative",
+				"note": "Use when the interviewer bans built-ins, or to show index manipulation.",
+				"code": "function reverseString(str) {\n  let out = '';\n  for (let i = str.length - 1; i >= 0; i--) {\n    out += str[i];\n  }\n  return out;\n}"
+			}
+		],
 		"tests": [
 			{ "fn": "reverseString", "args": ["hello"], "expected": "olleh" },
 			{ "fn": "reverseString", "args": ["JavaScript"], "expected": "tpircSavaJ" },
@@ -84,6 +97,19 @@
 		],
 		"starterCode": "function findMax(nums) {\n  // your code here\n}",
 		"solution": "function findMax(nums) {\n  if (nums.length === 0) return null;\n  let max = nums[0];\n  for (const n of nums) {\n    if (n > max) max = n;\n  }\n  return max;\n}",
+		"solutions": [
+			{
+				"approach": "Imperative",
+				"recommended": true,
+				"note": "Recommended — safe at any array size and shows the core pattern.",
+				"code": "function findMax(nums) {\n  if (nums.length === 0) return null;\n  let max = nums[0];\n  for (const n of nums) {\n    if (n > max) max = n;\n  }\n  return max;\n}"
+			},
+			{
+				"approach": "Declarative",
+				"note": "Handy one-liner, but spreading a huge array can overflow the call stack.",
+				"code": "function findMax(nums) {\n  if (nums.length === 0) return null;\n  return Math.max(...nums);\n}"
+			}
+		],
 		"tests": [
 			{ "fn": "findMax", "args": [[3, 7, 2, 9, 4]], "expected": 9 },
 			{ "fn": "findMax", "args": [[-8, -3, -15]], "expected": -3 },
@@ -104,6 +130,19 @@
 		],
 		"starterCode": "function sum(nums) {\n  // your code here\n}",
 		"solution": "function sum(nums) {\n  return nums.reduce((total, n) => total + n, 0);\n}",
+		"solutions": [
+			{
+				"approach": "Declarative",
+				"recommended": true,
+				"note": "Recommended — idiomatic reduce; keep the 0 initial value so empty arrays work.",
+				"code": "function sum(nums) {\n  return nums.reduce((total, n) => total + n, 0);\n}"
+			},
+			{
+				"approach": "Imperative",
+				"note": "Use when the team finds reduce hard to read, or when you need an early exit.",
+				"code": "function sum(nums) {\n  let total = 0;\n  for (const n of nums) {\n    total += n;\n  }\n  return total;\n}"
+			}
+		],
 		"tests": [
 			{ "fn": "sum", "args": [[1, 2, 3, 4]], "expected": 10 },
 			{ "fn": "sum", "args": [[-1, 1]], "expected": 0 },
@@ -124,6 +163,19 @@
 		],
 		"starterCode": "function factorial(n) {\n  // your code here\n}",
 		"solution": "function factorial(n) {\n  let result = 1;\n  for (let i = 2; i <= n; i++) {\n    result *= i;\n  }\n  return result;\n}",
+		"solutions": [
+			{
+				"approach": "Imperative",
+				"recommended": true,
+				"note": "Recommended — O(1) space with no stack-overflow risk.",
+				"code": "function factorial(n) {\n  let result = 1;\n  for (let i = 2; i <= n; i++) {\n    result *= i;\n  }\n  return result;\n}"
+			},
+			{
+				"approach": "Declarative",
+				"note": "Use to demonstrate recursion; avoid for large n (call-stack depth).",
+				"code": "function factorial(n) {\n  if (n <= 1) return 1;\n  return n * factorial(n - 1);\n}"
+			}
+		],
 		"tests": [
 			{ "fn": "factorial", "args": [0], "expected": 1 },
 			{ "fn": "factorial", "args": [1], "expected": 1 },
@@ -164,6 +216,19 @@
 		],
 		"starterCode": "function countVowels(str) {\n  // your code here\n}",
 		"solution": "function countVowels(str) {\n  let count = 0;\n  for (const ch of str.toLowerCase()) {\n    if ('aeiou'.includes(ch)) count++;\n  }\n  return count;\n}",
+		"solutions": [
+			{
+				"approach": "Imperative",
+				"recommended": true,
+				"note": "Recommended — explicit character handling with no edge cases.",
+				"code": "function countVowels(str) {\n  let count = 0;\n  for (const ch of str.toLowerCase()) {\n    if ('aeiou'.includes(ch)) count++;\n  }\n  return count;\n}"
+			},
+			{
+				"approach": "Declarative",
+				"note": "Concise, but remember match() returns null when nothing matches.",
+				"code": "function countVowels(str) {\n  const matches = str.match(/[aeiou]/gi);\n  return matches ? matches.length : 0;\n}"
+			}
+		],
 		"tests": [
 			{ "fn": "countVowels", "args": ["Hello World"], "expected": 3 },
 			{ "fn": "countVowels", "args": ["AEIOU"], "expected": 5 },
@@ -185,6 +250,19 @@
 		],
 		"starterCode": "function capitalizeWords(sentence) {\n  // your code here\n}",
 		"solution": "function capitalizeWords(sentence) {\n  return sentence\n    .trim()\n    .split(/\\s+/)\n    .map((w) => w[0].toUpperCase() + w.slice(1).toLowerCase())\n    .join(' ');\n}",
+		"solutions": [
+			{
+				"approach": "Declarative",
+				"recommended": true,
+				"note": "Recommended — the map/join pipeline reads best.",
+				"code": "function capitalizeWords(sentence) {\n  return sentence\n    .trim()\n    .split(/\\s+/)\n    .map((w) => w[0].toUpperCase() + w.slice(1).toLowerCase())\n    .join(' ');\n}"
+			},
+			{
+				"approach": "Imperative",
+				"note": "Same logic step by step; use when asked to avoid higher-order functions.",
+				"code": "function capitalizeWords(sentence) {\n  const words = sentence.trim().split(/\\s+/);\n  const out = [];\n  for (const w of words) {\n    if (w.length === 0) continue;\n    out.push(w[0].toUpperCase() + w.slice(1).toLowerCase());\n  }\n  return out.join(' ');\n}"
+			}
+		],
 		"tests": [
 			{ "fn": "capitalizeWords", "args": ["hello world"], "expected": "Hello World" },
 			{ "fn": "capitalizeWords", "args": ["javaScript IS fun"], "expected": "Javascript Is Fun" },
@@ -205,6 +283,19 @@
 		],
 		"starterCode": "function removeDuplicates(items) {\n  // your code here\n}",
 		"solution": "function removeDuplicates(items) {\n  return [...new Set(items)];\n}",
+		"solutions": [
+			{
+				"approach": "Declarative",
+				"recommended": true,
+				"note": "Recommended — the idiomatic Set one-liner.",
+				"code": "function removeDuplicates(items) {\n  return [...new Set(items)];\n}"
+			},
+			{
+				"approach": "Imperative",
+				"note": "Use when asked to avoid Set, or to show the underlying logic.",
+				"code": "function removeDuplicates(items) {\n  const out = [];\n  for (const x of items) {\n    if (!out.includes(x)) out.push(x);\n  }\n  return out;\n}"
+			}
+		],
 		"tests": [
 			{ "fn": "removeDuplicates", "args": [[1, 2, 2, 3, 1]], "expected": [1, 2, 3] },
 			{
@@ -296,7 +387,20 @@
 			"The built-in arr.flat() with no arguments flattens exactly one level — same behavior you're implementing."
 		],
 		"starterCode": "function flatten(arr) {\n  // your code here\n}",
-		"solution": "function flatten(arr) {\n  return arr.reduce((acc, item) => acc.concat(item), []);\n}",
+		"solution": "function flatten(arr) {\n  const out = [];\n  for (const item of arr) {\n    if (Array.isArray(item)) {\n      for (const x of item) out.push(x);\n    } else {\n      out.push(item);\n    }\n  }\n  return out;\n}",
+		"solutions": [
+			{
+				"approach": "Imperative",
+				"note": "Use when asked to implement from scratch without built-ins.",
+				"code": "function flatten(arr) {\n  const out = [];\n  for (const item of arr) {\n    if (Array.isArray(item)) {\n      for (const x of item) out.push(x);\n    } else {\n      out.push(item);\n    }\n  }\n  return out;\n}"
+			},
+			{
+				"approach": "Declarative",
+				"recommended": true,
+				"note": "Recommended — prefer the built-in in real code.",
+				"code": "function flatten(arr) {\n  return arr.flat();\n}"
+			}
+		],
 		"tests": [
 			{
 				"fn": "flatten",

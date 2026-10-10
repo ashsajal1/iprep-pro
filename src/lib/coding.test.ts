@@ -36,16 +36,19 @@ describe('coding challenge integrity', () => {
 	it('defines every tested function inside its official solution', () => {
 		for (const c of allChallenges) {
 			const fns = [...new Set(c.tests.map((t) => t.fn))];
+			const variants = [c.solution, ...(c.solutions ?? []).map((v) => v.code)];
 			for (const fn of fns) {
 				expect(IDENTIFIER.test(fn), `${c.id} fn=${fn}`).toBe(true);
 				expect(
 					c.starterCode.includes(fn),
 					`${c.id} starter should mention ${fn}`,
 				).toBe(true);
-				expect(
-					new RegExp(`(function\\s+${fn}\\b|${fn}\\s*=)`).test(c.solution),
-					`${c.id} solution defines ${fn}`,
-				).toBe(true);
+				for (const code of variants) {
+					expect(
+						new RegExp(`(function\\s+${fn}\\b|${fn}\\s*=)`).test(code),
+						`${c.id} solution defines ${fn}`,
+					).toBe(true);
+				}
 			}
 		}
 	});
@@ -64,5 +67,50 @@ describe('coding challenge integrity', () => {
 
 	it('includes at least one beginner-friendly entry point', () => {
 		expect(allChallenges.some((c) => c.difficulty === 'beginner')).toBe(true);
+	});
+
+	it('keeps solution variants well-formed with unique approach labels', () => {
+		for (const c of allChallenges) {
+			const variants = c.solutions ?? [];
+			const approaches = variants.map((v) => v.approach);
+			expect(new Set(approaches).size, `${c.id} approaches`).toBe(approaches.length);
+			for (const v of variants) {
+				expect(v.approach.trim(), `${c.id} approach`).toBeTruthy();
+				expect(v.code.trim(), `${c.id} [${v.approach}] code`).toBeTruthy();
+			}
+		}
+	});
+
+	it('marks exactly one recommended variant with usage notes per multi-solution challenge', () => {
+		for (const c of allChallenges) {
+			if (!c.solutions?.length) continue;
+			expect(
+				c.solutions.filter((v) => v.recommended),
+				`${c.id} recommended`,
+			).toHaveLength(1);
+			for (const v of c.solutions) {
+				expect(v.note?.trim(), `${c.id} [${v.approach}] note`).toBeTruthy();
+			}
+		}
+	});
+
+	it('passes every challenge test with each official solution variant', () => {
+		for (const c of allChallenges) {
+			const variants = [
+				{ approach: 'Solution', code: c.solution },
+				...(c.solutions ?? []),
+			];
+			for (const v of variants) {
+				for (const t of c.tests) {
+					const fn = new Function(`${v.code}; return ${t.fn};`)() as (
+						...args: unknown[]
+					) => unknown;
+					expect(
+						fn(...t.args),
+						`${c.slug} [${v.approach}] ${t.fn}(${JSON.stringify(t.args)})`,
+					).toEqual(t.expected);
+				}
+			}
+		}
 	});
 });
