@@ -17,6 +17,8 @@ const {
 
 const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://ipreppro.app');
 const fullTitle = title.includes('iPrep') ? title : `${title} · iPrep Pro`;
+// GA4 Measurement ID from `PUBLIC_GA_ID` — tags render only when it's set.
+const gaId = import.meta.env.PUBLIC_GA_ID as string | undefined;
 ---
 
 <!-- Prevent theme flash: runs before paint -->
@@ -56,3 +58,17 @@ const fullTitle = title.includes('iPrep') ? title : `${title} · iPrep Pro`;
 
 <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
 <link rel="sitemap" href="/sitemap-index.xml" />
+
+{gaId && (
+	<script is:inline async src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}></script>
+)}
+{gaId && (
+	<script is:inline define:vars={{ gaId }}>
+		window.dataLayer = window.dataLayer || [];
+		function gtag() {
+			window.dataLayer.push(arguments);
+		}
+		gtag('js', new Date());
+		gtag('config', gaId);
+	</script>
+)}
