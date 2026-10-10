@@ -202,7 +202,7 @@ if (workspace) {
 			<span class="mt-0.5 shrink-0 font-semibold ${passed ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}">
 				${passed == null ? '…' : passed ? '✓' : '✗'}
 			</span>
-			<span class="min-w-0 flex-1 font-mono text-xs leading-relaxed">
+			<span class="min-w-0 flex-1 break-words font-mono text-xs leading-relaxed">
 				<span class="block truncate">${escapeHtml(call)}</span>
 				${
 					passed === false
