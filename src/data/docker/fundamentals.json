@@ -1,0 +1,92 @@
+[
+	{
+		"id": "dkr-001",
+		"category": "docker",
+		"topic": "fundamentals",
+		"question": "What is Docker and what problem do containers solve?",
+		"difficulty": "beginner",
+		"shortAnswer": "Docker packages an app with everything it needs into a lightweight, isolated container so it runs identically on any machine. It removes “works on my machine” conflicts over language versions, OS packages, and pre-installed dependencies.",
+		"explanation": "Without containers, every developer, CI runner, and production host must independently install matching Node, Python, Postgres, and system libraries — versions drift and they fight with whatever is already on the machine. Docker makes the container the unit of distribution: each app component (React frontend, Python API, Postgres) ships self-contained with its binaries, libraries, and config, isolated from the host and from other containers. The payoff the docs emphasize: develop with containers, test that same container, then deploy that same container to a laptop, data center, VM, or cloud unchanged. That is why Docker streamlines CI/CD — developers share containers, push them to a test environment, fix bugs in the dev environment, and promote the updated image to production. Containers are also portable and dense: many share one kernel, so you run more workloads on the same hardware than with VMs.",
+		"example": "# Same container on your laptop and in production:\ndocker run -d -p 8080:80 docker/welcome-to-docker\n# Teammate, CI, and prod all get the identical filesystem + config",
+		"exampleLanguage": "bash",
+		"interviewTip": "Name the three adjectives from the docs — self-contained, isolated, portable — then give the concrete drift scenario (three devs, three Python versions). That grounds the definition.",
+		"commonMistakes": [
+			"Calling Docker a VM or saying containers virtualize hardware.",
+			"Describing images without explaining the consistency problem they solve."
+		],
+		"relatedQuestions": ["dkr-002", "dkr-003", "dkr-006"],
+		"source": { "label": "Docker docs: Docker overview", "url": "https://docs.docker.com/get-started/docker-overview/" }
+	},
+	{
+		"id": "dkr-002",
+		"category": "docker",
+		"topic": "fundamentals",
+		"question": "How is a container different from a virtual machine?",
+		"difficulty": "beginner",
+		"shortAnswer": "A VM virtualizes hardware and boots a full guest OS with its own kernel — heavy, slow to start, one app per VM is wasteful. A container is just an isolated process sharing the host kernel with its own files, so it starts in milliseconds and packs many apps per host. In practice they are combined: VMs provide hosts, containers pack apps onto them.",
+		"explanation": "A VM carries an entire operating system: virtual hardware, guest kernel, drivers, and userland. Isolating a single app that way costs gigabytes and minutes. A container uses Linux namespaces (and cgroups) to give one process its own isolated view — filesystem, networking, process IDs — while sharing the host kernel, so containers stay megabyte-sized and start near-instantly. Trade-off: containers are less strongly isolated than VMs, which is why clouds layer them — provisioned machines are typically VMs, and each VM runs a container runtime hosting many containers, raising utilization and cutting cost. Interview framing: VMs isolate at the hardware level, containers at the process level. Each container should do one thing well (frontend, API, database each in its own container) rather than stuffing a whole stack into one container like a mini-VM.",
+		"example": "VM:  hypervisor → guest OS (4 GB) → app      → ~minutes to boot\nContainer: host kernel → isolated process + image layers → ~milliseconds\n\n# Cloud reality: one VM host, many containers\n# VM (AWS EC2) → dockerd → frontend + api + db containers",
+		"exampleLanguage": "text",
+		"interviewTip": "Draw the kernel line explicitly — 'VMs duplicate the kernel, containers share it' — then volunteer the combined pattern (containers on VMs). That shows production awareness.",
+		"commonMistakes": [
+			"Saying containers are just lightweight VMs without mentioning the shared kernel.",
+			"Recommending one container for the whole stack instead of one concern per container."
+		],
+		"relatedQuestions": ["dkr-001", "dkr-004", "dkr-015"],
+		"source": { "label": "Docker docs: What is a container?", "url": "https://docs.docker.com/get-started/docker-concepts/the-basics/what-is-a-container/" }
+	},
+	{
+		"id": "dkr-003",
+		"category": "docker",
+		"topic": "fundamentals",
+		"question": "Explain the Docker architecture: daemon, client, Desktop, and registries.",
+		"difficulty": "intermediate",
+		"shortAnswer": "Docker is client-server: the docker CLI sends REST API calls (over a socket or network) to dockerd, which builds, runs, and distributes containers. Docker Desktop bundles daemon + client + Compose + Kubernetes for Mac/Windows/Linux; registries like Docker Hub store and distribute images via pull/push.",
+		"explanation": "The Docker daemon (dockerd) does the heavy lifting — it listens for API requests and manages images, containers, networks, and volumes, and can coordinate with other daemons for services. The Docker client (docker) is the primary interface: `docker run` does not run anything itself, it sends a command to dockerd, which carries it out. Client and daemon may live on the same machine or the client may drive a remote daemon, and one client can talk to many daemons. Docker Compose is a second client for multi-container apps. Docker Desktop is the easy-install bundle containing dockerd, the client, Compose, Content Trust, Kubernetes, and Credential Helper. Registries close the loop: `docker pull` fetches required images from the configured registry (Docker Hub by default), `docker push` publishes yours — you can also run a private registry or use ECR/ACR/GCR.",
+		"example": "# Client → daemon over the Docker API:\ndocker run -d -p 8080:80 nginx   # CLI sends request\ndockerd                          # pulls image, creates container +\n                                 # network + filesystem, starts process\n\ndocker pull nginx   # download from registry (Docker Hub by default)\ndocker push my-user/my-app:1.0  # publish to registry",
+		"exampleLanguage": "bash",
+		"interviewTip": "Stress that the CLI is a thin REST client — `docker run` is an API call, not local execution. Then place Desktop (bundle) and Hub (default registry) in one sentence each.",
+		"commonMistakes": [
+			"Saying the docker CLI builds or runs containers itself.",
+			"Not knowing Hub is just the default registry and pull/push target it."
+		],
+		"relatedQuestions": ["dkr-001", "dkr-008", "dkr-011"],
+		"source": { "label": "Docker docs: Docker overview", "url": "https://docs.docker.com/get-started/docker-overview/" }
+	},
+	{
+		"id": "dkr-004",
+		"category": "docker",
+		"topic": "fundamentals",
+		"question": "What exactly happens when you run `docker run -i -t ubuntu /bin/bash`?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Docker pulls the ubuntu image if missing, creates a container with its own read-write filesystem layer and network interface/IP, then starts it running /bin/bash attached to your terminal (-i keeps STDIN open, -t allocates a TTY). Exiting stops but does not remove the container — restart or rm it explicitly.",
+		"explanation": "The docs walk this canonical example through six steps: (1) pull — if ubuntu is not local, Docker fetches it as if you ran `docker pull ubuntu`; (2) create — equivalent to `docker container create`; (3) filesystem — Docker allocates a read-write layer on top of the image so the running container can create/modify files locally; (4) network — it creates an interface on the default network with an IP, bridged through the host for external access; (5) start + exec — it launches /bin/bash with your terminal attached because of -i (interactive STDIN) and -t (pseudo-TTY); (6) lifecycle — typing `exit` ends bash so the container stops, but it lingers (visible in `docker ps -a`) until you `docker start` it again or `docker rm` it. The same pattern scales to detached servers: `docker run -d -p 8080:80 docker/welcome-to-docker` returns the full container ID, publishes host 8080 → container 80, and keeps running until `docker stop <short-id>` — you only need enough ID characters to be unique (e.g. `docker stop a1f`).",
+		"example": "docker run -i -t ubuntu /bin/bash\n# 1. pull ubuntu (if missing) → 2. create container\n# 3. read-write layer → 4. network + IP → 5. exec /bin/bash\n# exit → container STOPS but is kept; then:\ndocker ps -a        # see stopped container\ndocker start <id>   # run it again\ndocker rm <id>      # delete it (state not in volumes is lost)",
+		"exampleLanguage": "bash",
+		"interviewTip": "Recite the six steps in order and land on the stop-vs-remove distinction — interviewers use it to check you have actually operated containers, not just memorized flags.",
+		"commonMistakes": [
+			"Thinking exiting a container deletes it.",
+			"Not knowing -i and -t are what attach the terminal, or that short IDs suffice."
+		],
+		"relatedQuestions": ["dkr-003", "dkr-011", "dkr-012"],
+		"source": { "label": "Docker docs: Docker overview", "url": "https://docs.docker.com/get-started/docker-overview/" }
+	},
+	{
+		"id": "dkr-005",
+		"category": "docker",
+		"topic": "fundamentals",
+		"question": "What Docker objects do you manage day to day, and what happens to container data?",
+		"difficulty": "beginner",
+		"shortAnswer": "Images (templates), containers (running instances), plus networks, volumes, and plugins. A container can freely create/modify/delete files in isolation, but anything not stored in a volume or bind mount disappears when the container is removed — containers are ephemeral by design.",
+		"explanation": "Images are read-only templates; containers are runnable instances you create, start, stop, move, and delete via CLI or API. You attach containers to one or more networks, attach storage, or even commit a container's state as a new image. Isolation is tunable — you control how separated a container's network, storage, and subsystems are from the host and peers — but the default is relatively well isolated. The critical lifecycle fact: a container is defined by its image plus the options passed at create/start time, and when it is removed, any state not in persistent storage vanishes. That is why databases mount volumes and config/code uses bind mounts: the writable layer is per-container and dies with it. `docker ps` shows only running containers; add `-a` to see stopped ones still holding their (doomed) writable state.",
+		"example": "docker ps       # running only\ndocker ps -a    # + stopped (writable layer still on disk, at risk)\ndocker stop db && docker rm db   # state outside volumes is gone\n# Persist it instead:\ndocker run -d -v postgres_data:/var/lib/postgresql postgres:18",
+		"exampleLanguage": "bash",
+		"interviewTip": "Say 'ephemeral by design' early, then split state into three buckets: image (shared template), writable layer (dies with container), volumes/mounts (survives). That model answers every follow-up.",
+		"commonMistakes": [
+			"Assuming files written inside a container survive `docker rm`.",
+			"Listing only images and containers and forgetting networks and volumes."
+		],
+		"relatedQuestions": ["dkr-006", "dkr-013", "dkr-014"],
+		"source": { "label": "Docker docs: Docker overview", "url": "https://docs.docker.com/get-started/docker-overview/" }
+	}
+]

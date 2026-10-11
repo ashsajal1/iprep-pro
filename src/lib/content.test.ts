@@ -28,6 +28,7 @@ const EXPECTED_COUNTS: Record<string, number> = {
 	'system-design': 15,
 	database: 15,
 	'web-dev': 16,
+	docker: 15,
 };
 
 describe('question bank integrity', () => {
@@ -60,6 +61,7 @@ describe('question bank integrity', () => {
 			sd: 'system-design',
 			db: 'database',
 			web: 'web-dev',
+			dkr: 'docker',
 		};
 		for (const q of allQuestions) {
 			const prefix = q.id.split('-')[0];

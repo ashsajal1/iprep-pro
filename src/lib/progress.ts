@@ -220,6 +220,7 @@ export const CATEGORY_PREFIXES: Record<string, string> = {
 	sd: 'system-design',
 	db: 'database',
 	web: 'web-dev',
+	dkr: 'docker',
 };
 
 export function categoryOf(id: string): string | undefined {

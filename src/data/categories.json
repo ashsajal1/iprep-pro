@@ -126,5 +126,17 @@
 			{ "id": "security", "name": "Web Security", "file": "security", "blurb": "XSS, CSRF, CORS and HTTPS." },
 			{ "id": "performance", "name": "Web Performance", "file": "performance", "blurb": "Core Web Vitals, code splitting and optimization." }
 		]
+	},
+	{
+		"id": "docker",
+		"name": "Docker",
+		"icon": "layers",
+		"accent": "indigo",
+		"description": "Containers, images, Dockerfiles, volumes and Compose — the Get Started fundamentals interviewers expect.",
+		"topics": [
+			{ "id": "fundamentals", "name": "Docker Fundamentals", "file": "fundamentals", "blurb": "Platform, architecture, containers vs VMs." },
+			{ "id": "images", "name": "Images & Dockerfiles", "file": "images", "blurb": "Layers, Dockerfile, build cache, multi-stage builds." },
+			{ "id": "running", "name": "Running & Orchestrating", "file": "running", "blurb": "Ports, volumes, bind mounts and Compose." }
+		]
 	}
 ]

@@ -85,6 +85,7 @@ async function main(): Promise<void> {
 					const prefixMap: Record<string, string> = {
 						js: 'javascript', rct: 'react', ts: 'typescript', nxt: 'nextjs',
 						nde: 'nodejs', hcs: 'html-css', git: 'git-github', beh: 'behavioral',
+						sd: 'system-design', db: 'database', web: 'web-dev', dkr: 'docker',
 					};
 					if (prefixMap[id.split('-')[0]] === catId) done++;
 				}

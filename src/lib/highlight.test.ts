@@ -10,7 +10,7 @@ describe('normalizeLang', () => {
 	});
 
 	it('passes through supported values', () => {
-		for (const lang of ['js', 'ts', 'jsx', 'tsx', 'html', 'css', 'json', 'sql']) {
+		for (const lang of ['js', 'ts', 'jsx', 'tsx', 'html', 'css', 'json', 'sql', 'dockerfile', 'yaml']) {
 			expect(normalizeLang(lang)).toBe(lang);
 		}
 	});

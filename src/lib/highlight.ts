@@ -30,7 +30,12 @@ export function normalizeLang(lang?: string): string {
 		bash: 'bash',
 		sh: 'bash',
 		shell: 'bash',
+		console: 'bash',
 		sql: 'sql',
+		dockerfile: 'dockerfile',
+		docker: 'dockerfile',
+		yaml: 'yaml',
+		yml: 'yaml',
 		text: 'txt',
 		plaintext: 'txt',
 	};

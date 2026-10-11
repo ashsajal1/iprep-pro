@@ -1,0 +1,92 @@
+[
+	{
+		"id": "dkr-011",
+		"category": "docker",
+		"topic": "running",
+		"question": "What is your everyday container lifecycle workflow (run, ps, exec, stop, rm)?",
+		"difficulty": "beginner",
+		"shortAnswer": "`docker run -d -p HOST:CONTAINER image` starts detached; `docker ps` (−a adds stopped) and `docker image ls` inspect; `docker exec -ti <c> sh` shells in; `docker stop` then `docker rm` (or `rm -f`) cleans up. Desktop's Containers view mirrors all of this in a GUI.",
+		"explanation": "The Get Started hands-on rhythm: `docker run -d -p 8080:80 docker/welcome-to-docker` prints the full container ID and serves http://localhost:8080 — the frontend of an nginx site. Verify with `docker ps` (ID, image, command, ports, name); remember plain `ps` hides stopped containers, `-a` shows them. Explore via Desktop's Containers → Files tab (browse the isolated filesystem) or CLI with `docker exec -ti db psql -U postgres` to run a process inside a live container. Stop cooperatively with `docker stop <id-or-name>` (short prefixes fine), remove with `docker rm` after stopping or `docker rm -f` to stop+remove. Housekeeping twins: `docker image ls` / `docker image history` for images, `docker volume ls` for data. Desktop equivalents exist for every step — Search → Pull → Run with container name + host port, Port(s) link to open the site, Actions → Stop/Delete.",
+		"example": "docker run -d -p 8080:80 docker/welcome-to-docker\ndocker ps            # running: ID, IMAGE, PORTS 0.0.0.0:8080->80/tcp\ndocker ps -a         # + stopped containers\ndocker exec -ti <id> sh   # shell inside a running container\ndocker stop <id>     # short prefix (e.g. a1f) is enough\ndocker rm <id>       # delete; state outside volumes is lost",
+		"exampleLanguage": "bash",
+		"interviewTip": "Walk one container cradle-to-grave aloud — run → ps → exec → stop → rm — and drop the `-a shows stopped` and short-ID facts mid-flow. That signals daily usage.",
+		"commonMistakes": [
+			"Using `docker ps` to find stopped containers (need `-a`).",
+			"Trying to `rm` a running container without stopping or `-f` first."
+		],
+		"relatedQuestions": ["dkr-004", "dkr-012", "dkr-013"],
+		"source": { "label": "Docker docs: What is a container?", "url": "https://docs.docker.com/get-started/docker-concepts/the-basics/what-is-a-container/" }
+	},
+	{
+		"id": "dkr-012",
+		"category": "docker",
+		"topic": "running",
+		"question": "How does publishing ports work (`-p` vs `-P` vs `EXPOSE`)?",
+		"difficulty": "intermediate",
+		"shortAnswer": "`-p HOST:CONTAINER` forwards host traffic into the container's listening port (e.g. `-p 8080:80`); it binds all interfaces by default, prefix `127.0.0.1:` to keep it local. `-p 80` picks an ephemeral host port, `-P` publishes every EXPOSEd port that way. EXPOSE in the image only documents intent — nothing is reachable until published.",
+		"explanation": "Containers are network-isolated: the app listens on its container port (welcome-to-docker on 80), unreachable until you punch a forwarding rule at create time. Syntax `docker run -d -p HOST_PORT:CONTAINER_PORT nginx` maps host 8080 → container 80, so http://localhost:8080 works; the Compose equivalent is `ports: [\"8080:80\"]`. Security default: published ports listen on 0.0.0.0/:: — anyone reaching your machine reaches the app — so bind databases/sensitive ports to loopback with `-p 127.0.0.1:8080:80` (full form HOST_IP:HOST_PORT:CONTAINER_PORT). Variants: omit the host port (`docker run -p 80 nginx`) and Docker chooses an ephemeral port shown in `docker ps` (e.g. 0.0.0.0:54772->80/tcp); use `-P/--publish-all` to auto-publish every EXPOSEd port to ephemeral ports (handy against dev port conflicts). EXPOSE is metadata set at build time — required for `-P` to have something to publish, but publishing is what actually opens access.",
+		"example": "docker run -d -p 8080:80 docker/welcome-to-docker  # host 8080 → container 80\ndocker run -d -p 127.0.0.1:8080:80 nginx        # loopback only (safer for local dev)\ndocker run -p 80 nginx                          # ephemeral host port → check `docker ps`\ndocker run -P nginx                             # publish ALL exposed ports\n\n# compose.yaml equivalent:\n# services:\n#   app:\n#     image: docker/welcome-to-docker\n#     ports: [\"127.0.0.1:8080:80\"]",
+		"exampleLanguage": "bash",
+		"interviewTip": "State the isolation premise first ('no published port, no access'), then the triple — explicit `-p`, ephemeral, `-P` — and finish with the loopback hardening tip.",
+		"commonMistakes": [
+			"Believing EXPOSE alone makes a port reachable.",
+			"Publishing databases on 0.0.0.0 in dev and exposing them to the network."
+		],
+		"relatedQuestions": ["dkr-004", "dkr-011", "dkr-015"],
+		"source": { "label": "Docker docs: Publishing and exposing ports", "url": "https://docs.docker.com/get-started/docker-concepts/running-containers/publishing-ports/" }
+	},
+	{
+		"id": "dkr-013",
+		"category": "docker",
+		"topic": "running",
+		"question": "How do you persist data beyond a container's life with volumes?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Mount a volume at the data directory (`-v name:/container/path`, e.g. `-v postgres_data:/var/lib/postgresql`); writes there live outside the container and survive stop/rm. Volumes persist until `docker volume rm`/`prune`, can be shared across containers, and are inspectable in Desktop's Volumes view.",
+		"explanation": "A container's writable layer dies with `docker rm` — restart a database container and you get an empty database. Volumes are the symlink-like escape hatch: `docker volume create log-data` then `docker run -d -v log-data:/logs …` stores everything written to /logs outside the container; Docker auto-creates the volume if missing. The docs' Postgres drill proves it: start `docker run --name=db -e POSTGRES_PASSWORD=secret -d -v postgres_data:/var/lib/postgresql postgres:18`, `docker exec -ti db psql -U postgres` to CREATE TABLE + INSERT two rows, `docker stop db && docker rm db`, then `docker run --name=new-db -d -v postgres_data:/var/lib/postgresql postgres:18` and SELECT shows both rows — note POSTGRES_PASSWORD is only needed at bootstrap. Manage growth with `docker volume ls`, `docker volume rm <name>` (only when detached), and `docker volume prune` for all unused; Desktop's Volumes view shows stored data, in-use containers/targets, and export/empty/clone actions. Same volume on multiple containers shares files (log aggregation, pipelines).",
+		"example": "docker run --name=db -e POSTGRES_PASSWORD=secret -d -v postgres_data:/var/lib/postgresql postgres:18\ndocker exec -ti db psql -U postgres -c \"CREATE TABLE tasks (id SERIAL PRIMARY KEY, description VARCHAR(100)); INSERT INTO tasks (description) VALUES ('Finish work'), ('Have fun');\"\ndocker stop db && docker rm db   # container gone, volume lives on\ndocker run --name=new-db -d -v postgres_data:/var/lib/postgresql postgres:18\ndocker exec -ti new-db psql -U postgres -c \"SELECT * FROM tasks\"  # rows still there",
+		"exampleLanguage": "bash",
+		"interviewTip": "Tell the stop/rm/reattach story with the Postgres table surviving — then add that volumes outlive containers and need explicit pruning. That lifecycle point is the interview signal.",
+		"commonMistakes": [
+			"Expecting data to survive `docker rm` without a volume.",
+			"Running `docker volume rm` on an attached volume or forgetting `prune` lets disk fill silently."
+		],
+		"relatedQuestions": ["dkr-005", "dkr-014", "dkr-015"],
+		"source": { "label": "Docker docs: Persisting container data", "url": "https://docs.docker.com/get-started/docker-concepts/running-containers/persisting-container-data/" }
+	},
+	{
+		"id": "dkr-014",
+		"category": "docker",
+		"topic": "running",
+		"question": "Volumes vs bind mounts — when do you use each, and `-v` vs `--mount`?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Volumes persist container data Docker manages; bind mounts share specific host files/dirs (config, live code) directly into the container. `-v /host:/container` is terse and auto-creates missing host dirs; `--mount type=bind,source=,target=` is explicit, errors if the source is missing, and is recommended for production. Append `:ro`/`:rw` for permission control.",
+		"explanation": "Choose by ownership: generated/modified data that must outlive containers → volume (see Postgres persistence); host-owned files the container must see live → bind mount (config with secrets you refuse to bake into images, or dev code for instant reload). Both attach with `-v` or `--mount`: `docker run -v /HOST/PATH:/CONTAINER/PATH -it nginx` versus `docker run --mount type=bind,source=/HOST/PATH,target=/CONTAINER/PATH,readonly nginx`. Behavior differs: `-v` silently mkdirs a missing host path (hiding typos), `--mount` fails loudly — prefer it for complex/production mounts. Permissions: `:ro` lets the container read but never modify host files (accident-proof), `:rw` propagates container writes to the host. The docs' httpd demo shows the power: `docker run -d --name my_site -p 8080:80 -v ./:/usr/local/apache2/htdocs/ httpd:2.4`, edit local index.html (whale page), and the site updates instantly; delete locally and Desktop's Files tab confirms it vanished inside too. At scale, Synchronized File Shares fix bind-mount slowness between host and VM with filesystem caches.",
+		"example": "# Same bind mount, two syntaxes (remove my_site between runs):\ndocker run -d --name my_site -p 8080:80 -v ./:/usr/local/apache2/htdocs/ httpd:2.4\ndocker run -d --name my_site -p 8080:80 --mount type=bind,source=./,target=/usr/local/apache2/htdocs/ httpd:2.4\n\n# Guardrails:\ndocker run -v ~/config:/etc/app:ro nginx   # read-only: container cannot alter host\ndocker run --mount type=bind,source=./,target=/app,readonly nginx",
+		"exampleLanguage": "bash",
+		"interviewTip": "Give the decision rule ('volumes for container-owned persistence, binds for host-owned sharing') then contrast `-v` auto-create vs `--mount` strictness — that nuance reads as production experience.",
+		"commonMistakes": [
+			"Baking secrets/config into images instead of bind-mounting or env-injecting them.",
+			"Using `-v` with a relative path typo and wondering where the empty dir came from (use absolute paths, esp. PowerShell)."
+		],
+		"relatedQuestions": ["dkr-005", "dkr-013", "dkr-015"],
+		"source": { "label": "Docker docs: Sharing local files with containers", "url": "https://docs.docker.com/get-started/docker-concepts/running-containers/sharing-local-files/" }
+	},
+	{
+		"id": "dkr-015",
+		"category": "docker",
+		"topic": "running",
+		"question": "What is Docker Compose and how does it run multi-container apps?",
+		"difficulty": "beginner",
+		"shortAnswer": "Compose is a declarative client: you describe every service, port, volume, and network in one compose.yaml, and `docker compose up -d --build` reconciles everything (pulls, networks, volumes, containers) while `docker compose down` tears it down. One container per concern — e.g. Node app + MySQL — wired automatically.",
+		"explanation": "Multiple `docker run` commands plus manual networks/flags/cleanup collapse under real stacks (frontend + API + db + queue). Compose fixes it: commit a compose.yaml defining services with image/ports/volumes/networks, and anyone clones and runs one command. The docs' todo-list app (Node + MySQL) shows the payoff: `docker compose up -d --build` pulls node and MySQL, creates network todo-list-app_default and volume todo-mysql-data, and starts both containers — open http://localhost:3000 after ~10-15s. Compose is reconciling, not scripting: edit the file and `up` again applies just the delta. Tear down with `docker compose down` (removes containers + network, keeps volumes so data survives a restart) or `down --volumes` to delete data too; Desktop's Delete on a stack removes containers only. Remember the separation: Dockerfile builds an image, Compose defines running containers (often referencing a Dockerfile to build a service).",
+		"example": "# compose.yaml — same welcome app as `docker run -d -p 8080:80 …`\nservices:\n  app:\n    image: docker/welcome-to-docker\n    ports:\n      - 8080:80\n\n# multi-service shape (todo app: Node + MySQL):\n# services:\n#   app: { build: ., ports: [\"3000:3000\"], depends_on: [mysql] }\n#   mysql: { image: mysql:8, volumes: [todo-mysql-data:/var/lib/mysql] }\n\ndocker compose up -d --build   # create network + volume + containers\ndocker compose down            # remove containers + network (keep volumes)\ndocker compose down --volumes  # also delete the data",
+		"exampleLanguage": "yaml",
+		"interviewTip": "Contrast Dockerfile (builds one image) vs Compose file (runs many containers) in one line, then note volumes survive `down` unless `--volumes` — the two facts interviewers probe most.",
+		"commonMistakes": [
+			"Stuffing database + backend + frontend into one container instead of one service each.",
+			"Assuming `compose down` deletes data (it keeps volumes by default)."
+		],
+		"relatedQuestions": ["dkr-002", "dkr-012", "dkr-013"],
+		"source": { "label": "Docker docs: What is Docker Compose?", "url": "https://docs.docker.com/get-started/docker-concepts/the-basics/what-is-docker-compose/" }
+	}
+]

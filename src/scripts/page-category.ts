@@ -52,6 +52,7 @@ function prefixOf(categoryId: string): string {
 		'html-css': 'hcs',
 		'git-github': 'git',
 		behavioral: 'beh',
+		docker: 'dkr',
 	};
 	return map[categoryId] ?? categoryId.slice(0, 3);
 }

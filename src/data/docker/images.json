@@ -1,0 +1,92 @@
+[
+	{
+		"id": "dkr-006",
+		"category": "docker",
+		"topic": "images",
+		"question": "What is a Docker image, and how do layers and immutability work?",
+		"difficulty": "beginner",
+		"shortAnswer": "An image is an immutable, read-only template packaging everything a container needs — binaries, libraries, config. It is a stack of layers, one per Dockerfile instruction; rebuilding reuses unchanged layers and only rebuilds what changed, which `docker image history` reveals.",
+		"explanation": "Build from another image and customize: a Python app starts FROM the Python image and adds layers for dependencies and code, so you focus on your app, not the runtime. Two principles govern everything: images cannot be modified after creation (you only create new images or add layers on top), and each layer is a set of filesystem changes (add/remove/modify). That layering is what makes images small and fast versus other virtualization — change the Dockerfile and only changed layers rebuild. Hands-on proof from the docs: `docker pull docker/welcome-to-docker` downloads ~8 layers line by line; `docker image ls` shows the 29.7 MB uncompressed size; `docker image history docker/welcome-to-docker` lists every layer with its size and creating command (COPY app build, CMD nginx, EXPOSE 80, ENV, base Alpine layers). Docker Hub reinforces reuse with Official Images (Redis, Memcached, Node) as trusted starting points.",
+		"example": "docker pull docker/welcome-to-docker\n# ... one line per layer downloaded\ndocker image ls\n# REPOSITORY                 TAG      SIZE\n# docker/welcome-to-docker   latest   29.7MB\ndocker image history docker/welcome-to-docker\n# IMAGE   CREATED   CREATED BY                    SIZE\n# 648f93… 4mo ago   COPY /app/build → nginx html  1.6MB\n# <miss…> 5mo ago   CMD [\"nginx\" \"-g\" ...]        0B",
+		"exampleLanguage": "bash",
+		"interviewTip": "Lead with 'immutable stack of filesystem diffs', then cite `image history` as how you inspect it — naming a real command beats reciting theory.",
+		"commonMistakes": [
+			"Saying you edit an image in place instead of adding layers.",
+			"Confusing image size (uncompressed) with download size."
+		],
+		"relatedQuestions": ["dkr-007", "dkr-008", "dkr-009"],
+		"source": { "label": "Docker docs: What is an image?", "url": "https://docs.docker.com/get-started/docker-concepts/the-basics/what-is-an-image/" }
+	},
+	{
+		"id": "dkr-007",
+		"category": "docker",
+		"topic": "images",
+		"question": "Walk through writing a Dockerfile from scratch.",
+		"difficulty": "intermediate",
+		"shortAnswer": "Pick a base with FROM, set WORKDIR, COPY dependency manifests first, RUN the install, COPY the rest of the source, then set EXPOSE/ENV/USER and a default CMD. Order matters: dependencies before source so code edits do not bust the install cache.",
+		"explanation": "A Dockerfile is a text document the builder executes top to bottom. The canonical Node example from the docs builds in five lines: `FROM node:22-alpine` (extend a small base), `WORKDIR /app` (where later COPY/RUN/CMD execute), `COPY . .` (bring in project files), `RUN yarn install --production` (bake dependencies into a layer), `CMD [\"node\", \"./src/index.js\"]` (default process). The eight instructions to know cold: FROM (base), WORKDIR (working dir), COPY host→image, RUN (execute and commit a layer), ENV (runtime variables), EXPOSE (documents the intended port — does not publish it), USER (drop from root for security), CMD in exec form (default command, only the last one counts). The exercise has you delete the sample app's Dockerfile and recreate it by hand — remember it has no file extension. The first version works but is deliberately not production-ready: it copies everything before installing (busting cache) and runs as root; cache ordering and non-root USER come next.",
+		"example": "FROM node:22-alpine\nWORKDIR /app\nCOPY . .\nRUN yarn install --production\nCMD [\"node\", \"./src/index.js\"]\n\n# Production-leaning shape (deps first, non-root):\n# COPY package.json yarn.lock ./\n# RUN yarn install --production\n# COPY . .\n# RUN useradd app\n# USER app",
+		"exampleLanguage": "dockerfile",
+		"interviewTip": "Narrate a Dockerfile as four phases — base → deps → source → runtime config — then name EXPOSE-does-not-publish and only-last-CMD-counts as the two gotchas.",
+		"commonMistakes": [
+			"Thinking EXPOSE publishes the port (it only documents it; -p publishes).",
+			"Using shell-form CMD without knowing exec form, or defining multiple CMDs."
+		],
+		"relatedQuestions": ["dkr-006", "dkr-009", "dkr-010"],
+		"source": { "label": "Docker docs: Writing a Dockerfile", "url": "https://docs.docker.com/get-started/docker-concepts/building-images/writing-a-dockerfile/" }
+	},
+	{
+		"id": "dkr-008",
+		"category": "docker",
+		"topic": "images",
+		"question": "How do building, tagging, and pushing images work — and registry vs repository vs tag?",
+		"difficulty": "intermediate",
+		"shortAnswer": "`docker build -t name .` builds from the Dockerfile in the build context; the tag names where it can go as [HOST/]PATH[:TAG] (default docker.io, latest). `docker push` uploads layers to a registry repository. A registry stores images; a repository is one project's image collection; a tag versions it.",
+		"explanation": "Building: `docker build .` sends the build context (the trailing `.` — Dockerfile plus referenced files) to the builder, which pulls the base and runs each instruction; without `-t` you get an ID like sha256:9924… that you can `docker run` but cannot remember — tagging fixes that. Naming structure `[HOST[:PORT]/]PATH[:TAG]`: HOST defaults to docker.io, PATH is [NAMESPACE/]REPOSITORY (namespace = user/org, `library` = Official Images), TAG defaults to latest. So `nginx` = docker.io/library/nginx:latest, `docker/welcome-to-docker` = docker.io/docker/welcome-to-docker:latest, and `ghcr.io/dockersamples/vote:pr-311` points at GitHub's registry. Registry (Hub, ECR, ACR, GCR, or self-hosted Harbor/Artifactory/GitLab) vs repository (one project's images, e.g. `docker-quickstart` holding `:1.0`, `:latest`) is the folder analogy. Push flow from the docs: create a Hub repo, `docker login`, `docker build -t <user>/docker-quickstart .`, test with `docker run -d -p 8080:8080 <user>/docker-quickstart`, version with `docker tag <user>/docker-quickstart <user>/docker-quickstart:1.0`, then `docker push <user>/docker-quickstart:1.0`. Retagging an existing image with `docker image tag` adds a name without rebuilding.",
+		"example": "# Build with a memorable, pushable name:\ndocker build -t my-user/concepts-build-image-demo .\ndocker image ls   # my-user/concepts-build-image-demo latest … 354MB\n\n# Version and publish:\ndocker tag my-user/concepts-build-image-demo my-user/concepts-build-image-demo:1.0\ndocker login\ndocker push my-user/concepts-build-image-demo:1.0",
+		"exampleLanguage": "bash",
+		"interviewTip": "Write the name formula on the board — [HOST/]PATH[:TAG] — and decode one real example per part. Then state registry-vs-repository as 'drive vs folder'.",
+		"commonMistakes": [
+			"Using registry and repository interchangeably.",
+			"Forgetting the trailing `.` build context or pushing before `docker login` and a matching namespace."
+		],
+		"relatedQuestions": ["dkr-006", "dkr-007", "dkr-011"],
+		"source": { "label": "Docker docs: Build, tag, and publish", "url": "https://docs.docker.com/get-started/docker-concepts/building-images/build-tag-and-publish-an-image/" }
+	},
+	{
+		"id": "dkr-009",
+		"category": "docker",
+		"topic": "images",
+		"question": "How does the Docker build cache work, and how do you write Dockerfiles that stay fast?",
+		"difficulty": "intermediate",
+		"shortAnswer": "Each Dockerfile instruction is a layer; Docker reuses cached layers when the instruction and its inputs are unchanged, and invalidates that layer plus everything after it on any change. Keep it fast: COPY dependency manifests first, RUN install, then COPY source — so code edits reuse the install layer. Exclude junk with .dockerignore.",
+		"explanation": "The docs demo makes this visceral: first `docker build .` takes ~20s (yarn install ~10s), an unchanged rebuild takes ~1s with every step CACHED. Three invalidation rules: a changed RUN command busts its layer; any changed file under COPY/ADD (content or permissions) busts that layer; once one layer busts, all following layers bust to stay consistent. The classic mistake is `COPY . .` before `RUN yarn install` — every source edit reinstalls identical dependencies. Fix: `COPY package.json yarn.lock ./` → `RUN yarn install --production` → `COPY . .`, plus a `.dockerignore` containing `node_modules` so local build artifacts never enter the context (context shrank from MBs to KBs in the demo). After the reorder, editing `src/static/index.html` rebuilds in ~1.2s with the install step CACHED. Faster builds also mean faster pushes/pulls since unchanged layers are shared.",
+		"example": "# ❌ slow: any source change reinstalls deps\nFROM node:22-alpine\nWORKDIR /app\nCOPY . .\nRUN yarn install --production\n\n# ✅ fast: dep layer survives source edits\nFROM node:22-alpine\nWORKDIR /app\nCOPY package.json yarn.lock ./\nRUN yarn install --production\nCOPY . .\nEXPOSE 3000\nCMD [\"node\", \"src/index.js\"]\n\n# .dockerignore\nnode_modules",
+		"exampleLanguage": "dockerfile",
+		"interviewTip": "Quote the 20s→1s numbers, state the cascade rule ('one bust poisons everything below'), then show the deps-first reorder — that sequence is the whole answer.",
+		"commonMistakes": [
+			"COPYing the entire context before installing dependencies.",
+			"Omitting .dockerignore so node_modules and git history bloat the context."
+		],
+		"relatedQuestions": ["dkr-007", "dkr-008", "dkr-010"],
+		"source": { "label": "Docker docs: Using the build cache", "url": "https://docs.docker.com/get-started/docker-concepts/building-images/using-the-build-cache/" }
+	},
+	{
+		"id": "dkr-010",
+		"category": "docker",
+		"topic": "images",
+		"question": "What are multi-stage builds and why do they shrink and secure images?",
+		"difficulty": "advanced",
+		"shortAnswer": "One Dockerfile, multiple FROM stages: a builder stage with compilers/toolchains produces artifacts, and a slim runtime stage COPY --from=builder only the artifacts. Final images drop build tools — the docs' Spring app halves from 880 MB (JDK+Maven) to 428 MB (JRE-only) with a smaller attack surface.",
+		"explanation": "Single-stage builds ship everything used to build: JDK, Maven, caches, source. Multi-stage splits concerns with `FROM … AS <name>` per stage and `COPY --from=<stage>` to ferry results forward; the default build target is the last stage (`--target builder` builds an earlier one for debugging). Pattern: `FROM eclipse-temurin:21-jdk AS builder` → COPY mvnw/pom → `RUN ./mvnw dependency:go-offline` (cached deps) → COPY src → `RUN ./mvnw clean install`; then `FROM eclipse-temurin:21-jre AS final` → `COPY --from=builder /opt/app/target/*.jar /opt/app/` → ENTRYPOINT java -jar. Interpreted stacks benefit too: build/minify JS in a Node stage, ship static files on nginx. Security follows size — no compiler, package manager, or source in production means fewer CVEs to exploit. For best results generate a minimal JRE with jlink rather than shipping a full JRE.",
+		"example": "# Stage 1: build with full toolchain\nFROM eclipse-temurin:21.0.8_9-jdk-jammy AS builder\nWORKDIR /opt/app\nCOPY .mvn/ .mvn\nCOPY mvnw pom.xml ./\nRUN ./mvnw dependency:go-offline\nCOPY ./src ./src\nRUN ./mvnw clean install\n\n# Stage 2: slim runtime, artifacts only\nFROM eclipse-temurin:21.0.8_9-jre-jammy AS final\nWORKDIR /opt/app\nEXPOSE 8080\nCOPY --from=builder /opt/app/target/*.jar /opt/app/app.jar\nENTRYPOINT [\"java\", \"-jar\", \"/opt/app/app.jar\"]",
+		"exampleLanguage": "dockerfile",
+		"interviewTip": "Contrast the two FROMs by job — 'build needs a toolchain, runtime needs a binary' — and cite the 880→428 MB halving as proof. Mention `--target` for debugging cred.",
+		"commonMistakes": [
+			"Shipping the SDK/toolchain in the final image.",
+			"Not naming stages and COPYing whole directories instead of just artifacts."
+		],
+		"relatedQuestions": ["dkr-007", "dkr-009", "dkr-015"],
+		"source": { "label": "Docker docs: Multi-stage builds", "url": "https://docs.docker.com/get-started/docker-concepts/building-images/multi-stage-builds/" }
+	}
+]
