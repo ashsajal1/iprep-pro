@@ -8,6 +8,7 @@ import QuestionList from '../../components/QuestionList.astro';
 import Icon from '../../components/Icon.astro';
 import { allQuestions, getQuestionById, getRelatedQuestions, getQuestionsByCategory, getCategory } from '../../lib/content';
 import { highlight } from '../../lib/highlight';
+import { renderInline } from '../../lib/format';
 
 export function getStaticPaths() {
 	return allQuestions.map((q) => ({ params: { id: q.id } }));
@@ -56,9 +57,7 @@ const exampleHtml = q.example ? await highlight(q.example, q.exampleLanguage ?? 
 						<FavoriteButton id={q.id} />
 					</div>
 
-					<h1 class="mt-4 text-xl leading-snug font-semibold tracking-tight text-balance sm:text-2xl">
-						{q.question}
-					</h1>
+					<h1 class="mt-4 text-xl leading-snug font-semibold tracking-tight text-balance sm:text-2xl" set:html={renderInline(q.question)} />
 
 					<!-- Think area -->
 					<div id="think-area" class="mt-6 rounded-2xl border-2 border-dashed border-line p-5 text-center sm:p-8">

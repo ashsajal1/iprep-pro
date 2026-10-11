@@ -1,4 +1,5 @@
 import { setAssessment, setLastCategory, displayStreak, loadProgress } from '../lib/progress';
+import { renderInline } from '../lib/format';
 
 /* ------------------------------------------------------------------ */
 /* Practice runner — Learn / Practice / Quick modes                    */
@@ -81,11 +82,11 @@ if (mountNode) {
 			<div class="mt-8 space-y-5 animate-fade-in" data-answer>
 				<section class="rounded-2xl border border-line bg-surface p-5">
 					<h3 class="text-xs font-semibold tracking-wide text-indigo-600 uppercase dark:text-indigo-400">Short answer</h3>
-					<p class="mt-2 text-[15px] leading-relaxed font-medium">${esc(q.shortAnswer)}</p>
+					<p class="mt-2 text-[15px] leading-relaxed font-medium">${renderInline(q.shortAnswer)}</p>
 				</section>
 			<section class="rounded-2xl border border-line bg-surface p-5">
 				<h3 class="text-xs font-semibold tracking-wide text-indigo-600 uppercase dark:text-indigo-400">Explanation</h3>
-				<p class="mt-2 text-[15px] leading-relaxed text-[color:var(--ink-secondary)]">${esc(q.explanation)}</p>
+				<p class="mt-2 text-[15px] leading-relaxed text-[color:var(--ink-secondary)]">${renderInline(q.explanation)}</p>
 				${q.source ? `
 				<p class="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-line pt-3 text-sm text-[color:var(--ink-secondary)]">
 					<span>Official docs:</span>
@@ -102,7 +103,7 @@ if (mountNode) {
 				${q.interviewTip ? `
 				<section class="rounded-2xl border border-indigo-200 bg-indigo-50/70 p-5 dark:border-indigo-900/60 dark:bg-indigo-950/30">
 					<h3 class="text-xs font-semibold tracking-wide text-indigo-700 uppercase dark:text-indigo-300">Interview tip</h3>
-					<p class="mt-2 text-[15px] leading-relaxed text-[color:var(--ink-secondary)] dark:text-zinc-300">${esc(q.interviewTip)}</p>
+					<p class="mt-2 text-[15px] leading-relaxed text-[color:var(--ink-secondary)] dark:text-zinc-300">${renderInline(q.interviewTip)}</p>
 				</section>` : ''}
 				${q.commonMistakes?.length ? `
 				<section class="rounded-2xl border border-line bg-surface p-5">
@@ -110,7 +111,7 @@ if (mountNode) {
 					<ul class="mt-2 space-y-2">
 						${q.commonMistakes.map((m) => `
 							<li class="flex items-start gap-2 text-sm leading-relaxed text-[color:var(--ink-secondary)]">
-								<span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400"></span>${esc(m)}
+								<span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-rose-400"></span>${renderInline(m)}
 							</li>`).join('')}
 					</ul>
 				</section>` : ''}
@@ -134,7 +135,7 @@ if (mountNode) {
 					<span class="hidden chip bg-surface-raised text-[color:var(--ink-muted)] sm:inline-flex">${esc(topicLabel(q))}</span>
 				</div>
 
-				<h1 class="mt-4 text-xl leading-snug font-semibold tracking-tight text-balance sm:text-2xl">${esc(q.question)}</h1>
+				<h1 class="mt-4 text-xl leading-snug font-semibold tracking-tight text-balance sm:text-2xl">${renderInline(q.question)}</h1>
 
 				${showAnswer
 					? answerHtml(q)
@@ -382,7 +383,7 @@ if (mountNode) {
 							<li>
 								<a href="/questions/${x.q.id}" class="block truncate rounded-lg px-3 py-2 text-sm hover:bg-surface-raised">
 									<span class="chip mr-2 bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400">Review</span>
-									${esc(x.q.question)}
+									${renderInline(x.q.question)}
 								</a>
 							</li>`).join('')}
 					</ul>

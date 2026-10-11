@@ -1,4 +1,5 @@
 import { loadProgress, onProgressChange } from '../lib/progress';
+import { renderInline } from '../lib/format';
 
 interface IndexEntry {
 	id: string;
@@ -67,7 +68,7 @@ async function main(): Promise<void> {
 						</button>
 					</div>
 					<a href="/questions/${e.id}" class="text-[15px] leading-snug font-medium after:absolute after:inset-0 group-hover:text-indigo-700 dark:group-hover:text-indigo-300">
-						${esc(e.q)}
+						${renderInline(e.q)}
 					</a>
 				</article>`,
 			)

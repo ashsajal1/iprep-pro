@@ -1,5 +1,6 @@
 ---
 import type { Question } from '../lib/types';
+import { renderInline } from '../lib/format';
 import Icon from './Icon.astro';
 
 interface Props {
@@ -18,7 +19,7 @@ const { question: q, exampleHtml } = Astro.props;
 			<Icon name="check" class="h-4 w-4" strokeWidth={2.4} />
 			Short answer
 		</h2>
-		<p class="mt-3 text-[15px] leading-relaxed font-medium">{q.shortAnswer}</p>
+		<p class="mt-3 text-[15px] leading-relaxed font-medium" set:html={renderInline(q.shortAnswer)} />
 	</section>
 
 	<!-- Explanation -->
@@ -27,7 +28,7 @@ const { question: q, exampleHtml } = Astro.props;
 			<Icon name="book-open" class="h-4 w-4" />
 			Detailed explanation
 		</h2>
-		<p class="mt-3 text-[15px] leading-relaxed text-[color:var(--ink-secondary)]">{q.explanation}</p>
+		<p class="mt-3 text-[15px] leading-relaxed text-[color:var(--ink-secondary)]" set:html={renderInline(q.explanation)} />
 		{
 			q.source && (
 				<p class="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 border-t border-line pt-4 text-sm">
@@ -67,7 +68,7 @@ const { question: q, exampleHtml } = Astro.props;
 					<Icon name="lightbulb" class="h-4 w-4" />
 					Interview tip
 				</h2>
-				<p class="mt-3 text-[15px] leading-relaxed text-[color:var(--ink-secondary)] dark:text-zinc-300">{q.interviewTip}</p>
+				<p class="mt-3 text-[15px] leading-relaxed text-[color:var(--ink-secondary)] dark:text-zinc-300" set:html={renderInline(q.interviewTip)} />
 			</section>
 		)
 	}
@@ -83,7 +84,7 @@ const { question: q, exampleHtml } = Astro.props;
 					{q.commonMistakes.map((m) => (
 						<li class="flex items-start gap-2.5 text-[15px] leading-relaxed text-[color:var(--ink-secondary)]">
 							<Icon name="x" class="mt-1 h-3.5 w-3.5 shrink-0 text-rose-500" strokeWidth={2.5} />
-							<span>{m}</span>
+							<span set:html={renderInline(m)} />
 						</li>
 					))}
 				</ul>

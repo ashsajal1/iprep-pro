@@ -1,5 +1,6 @@
 ---
 import type { Question } from '../lib/types';
+import { renderInline } from '../lib/format';
 import DifficultyBadge from './DifficultyBadge.astro';
 import FavoriteButton from './FavoriteButton.astro';
 import Icon from './Icon.astro';
@@ -35,9 +36,8 @@ const { question: q, class: className = '' } = Astro.props;
 	<a
 		href={`/questions/${q.id}`}
 		class="text-[15px] leading-snug font-medium after:absolute after:inset-0 group-hover:text-indigo-700 dark:group-hover:text-indigo-300"
-	>
-		{q.question}
-	</a>
+		set:html={renderInline(q.question)}
+	/>
 
 	<div class="mt-auto flex items-center gap-2 pt-3 text-xs text-[color:var(--ink-muted)]">
 		<span data-status-indicator class="inline-flex items-center gap-1.5 font-medium text-[color:var(--ink-muted)]">
