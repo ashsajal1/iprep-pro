@@ -2,7 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Icon from '../../components/Icon.astro';
 import ProgressBar from '../../components/ProgressBar.astro';
-import QuestionCard from '../../components/QuestionCard.astro';
+import PracticeQuestionCard from '../../components/PracticeQuestionCard.astro';
 import Roadmap from '../../components/Roadmap.astro';
 import TopicCard from '../../components/TopicCard.astro';
 import { countByTopic, getCategoriesWithStats, getCategory, getQuestionsByCategory } from '../../lib/content';
@@ -72,10 +72,10 @@ const totals = Object.fromEntries(allCats.map((c) => [c.id, c.count]));
 						<p class="text-lg font-semibold tabular-nums text-amber-600 dark:text-amber-400" data-cat-stat data-stat="review">0</p>
 						<p class="text-xs text-ink-muted">To review</p>
 					</div>
-					<a href="/favorites" class="group">
-						<p class="text-lg font-semibold tabular-nums group-hover:text-indigo-600" data-cat-stat data-stat="fav">0</p>
+					<div>
+						<p class="text-lg font-semibold tabular-nums text-rose-500" data-cat-stat data-stat="fav">0</p>
 						<p class="text-xs text-ink-muted">Favorites</p>
-					</a>
+					</div>
 				</div>
 			</div>
 		</header>
@@ -115,7 +115,7 @@ const totals = Object.fromEntries(allCats.map((c) => [c.id, c.count]));
 							</div>
 							<div class="grid gap-4 sm:grid-cols-2">
 								{questions.filter((q) => q.topic === topic.id).map((q) => (
-									<QuestionCard question={q} />
+									<PracticeQuestionCard question={q} />
 								))}
 							</div>
 						</section>

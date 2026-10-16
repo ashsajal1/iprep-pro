@@ -34,6 +34,14 @@ Types: `feat fix docs style refactor perf test build ci chore revert`.
   at build time by `src/lib/content.ts` (`categories.json` defines category
   order = roadmap order). Content integrity is covered by unit tests — a new
   JSON file must match the schema (see README "Adding questions").
+- There is NO per-question page. Question content is surfaced only through
+  `/practice/<category>` (learn/practice/quick runner, data from
+  `/api/questions/<category>.json`, which also covers `all`) and the question
+  cards on category overview pages, which link into practice.
+- Question-focused routes were removed deliberately: no `/questions/*`, no
+  `/favorites`, no `/search-index.json`, no navbar search modal. Roadmap status
+  boxes read per-topic question ids emitted by `Roadmap.astro` (`data-ids`)
+  plus local progress — do not re-add a global index fetch.
 - Client interactivity is plain TS in `src/scripts/` (bundled by Astro) and
   islands in `src/components/`. User progress persists in localStorage via
   `src/lib/progress.ts`; site theme is a `dark` class on `<html>`.

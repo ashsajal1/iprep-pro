@@ -16,10 +16,11 @@ const DIFF_DOT: Record<string, string> = {
 	advanced: 'bg-rose-500',
 };
 
-async function loadIndex(): Promise<IndexEntry[]> {
+function loadIndex(): IndexEntry[] {
+	const el = document.querySelector<HTMLScriptElement>('script[data-question-index]');
+	if (!el) return [];
 	try {
-		const res = await fetch('/search-index.json');
-		return (await res.json()) as IndexEntry[];
+		return JSON.parse(el.textContent ?? '[]') as IndexEntry[];
 	} catch {
 		return [];
 	}
@@ -36,7 +37,7 @@ function esc(s: string): string {
 function rowHtml(e: IndexEntry): string {
 	return `
 		<li>
-			<a href="/questions/${e.id}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-surface-raised">
+			<a href="/practice/${e.cat}?mode=learn" class="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-surface-raised">
 				<span class="h-2 w-2 shrink-0 rounded-full ${DIFF_DOT[e.d] ?? 'bg-zinc-400'}" title="${esc(e.d)}"></span>
 				<span class="min-w-0 flex-1 truncate text-sm">${renderInline(e.q)}</span>
 				<span class="hidden shrink-0 text-xs text-ink-muted sm:block">${e.catName}</span>
@@ -44,8 +45,8 @@ function rowHtml(e: IndexEntry): string {
 		</li>`;
 }
 
-async function main(): Promise<void> {
-	const entries = await loadIndex();
+function main(): void {
+	const entries = loadIndex();
 	const byId = new Map(entries.map((e) => [e.id, e]));
 
 	const totalsEl = document.querySelector('script[data-category-totals]');

@@ -1,8 +1,9 @@
 # iPrep Pro
 
 A fast, private interview-prep platform built with Astro. Browse real interview
-questions, follow guided learning roadmaps, practice in three modes, and track
-progress — all without an account. Everything is stored locally in the browser.
+questions, follow guided learning roadmaps, practice in three modes, code real
+React components live, and track progress — all without an account. Everything
+is stored locally in the browser.
 
 ![iPrep Pro](public/screenshots/home.png)
 
@@ -74,8 +75,8 @@ Good: `feat(coding): add timer to challenge runner` · Bad: `fixed some stuff.`
 
 `pnpm test` runs the full stack: 50+ Vitest unit tests (content integrity,
 progress store, language normalization) followed by Playwright integration
-tests that build the site, serve it and drive a real browser through search,
-practice modes, progress, theming and the coding workspace.
+tests that build the site, serve it and drive a real browser through practice
+modes, progress, theming and the coding workspace.
 
 ## Architecture
 
@@ -94,12 +95,11 @@ src/
   layouts/BaseLayout.astro
   pages/
     index.astro             # homepage
-    questions/[id].astro    # per-question page (static, SEO-indexable)
-    [category]/index.astro  # category overview + grouped questions
+    [category]/index.astro  # category overview + grouped questions (cards link to practice)
     practice/[category].astro  # practice runner (learn/practice/quick modes)
-    roadmap.astro  progress.astro  favorites.astro  404.astro
+    coding/react-live/[exercise].astro  # Sandpack-powered React live practice arena
+    roadmap.astro  progress.astro  404.astro
     api/questions/[category].json.ts   # full content for the runner
-    search-index.json.ts               # lightweight index for client search
   scripts/                  # client-side TS (bundled by Astro)
 ```
 
@@ -124,7 +124,7 @@ src/
 }
 ```
 
-3. Done. Routes, search index, API payloads and counts all regenerate on build.
+3. Done. Routes, API payloads and counts all regenerate on build.
    New topic? Add it to that category's `topics` array in `categories.json`.
    New category? Add a full entry to `categories.json`.
 

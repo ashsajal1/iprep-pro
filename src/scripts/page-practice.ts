@@ -115,9 +115,6 @@ if (mountNode) {
 							</li>`).join('')}
 					</ul>
 				</section>` : ''}
-				<a href="/questions/${q.id}" class="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400">
-					View full question page →
-				</a>
 			</div>`;
 	}
 
@@ -148,9 +145,7 @@ if (mountNode) {
 			</article>`;
 	}
 
-	let labelsCache: Record<string, { cat: string; topic: string }> = {};
 	function categoryLabel(q: RunnerQuestion): string {
-		if (!categoryId || categoryId === 'all') return labelsCache[q.id]?.cat ?? q.category;
 		return q.categoryName;
 	}
 	function topicLabel(q: RunnerQuestion): string {
@@ -381,7 +376,7 @@ if (mountNode) {
 					<ul class="mt-3 space-y-2">
 						${queue.filter((x) => x.result === 'review').map((x) => `
 							<li>
-								<a href="/questions/${x.q.id}" class="block truncate rounded-lg px-3 py-2 text-sm hover:bg-surface-raised">
+								<a href="/practice/${x.q.category}?mode=practice" class="block truncate rounded-lg px-3 py-2 text-sm hover:bg-surface-raised">
 									<span class="chip mr-2 bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400">Review</span>
 									${renderInline(x.q.question)}
 								</a>
@@ -407,7 +402,6 @@ if (mountNode) {
 
 	document.addEventListener('keydown', (e) => {
 		if (!started || finished) return;
-		if (document.getElementById('search-modal')?.classList.contains('hidden') === false) return;
 		if ((e.target as HTMLElement).closest('input, textarea')) return;
 
 		const item = queue[index];
@@ -433,16 +427,6 @@ if (mountNode) {
 			const res = await fetch(`/api/questions/${categoryId}.json`);
 			const data = (await res.json()) as { questions: RunnerQuestion[] };
 			allQuestions = data.questions;
-
-			if (categoryId === 'all') {
-				try {
-					const idxRes = await fetch('/search-index.json');
-					const entries = (await idxRes.json()) as { id: string; topicName: string; catName: string }[];
-					labelsCache = Object.fromEntries(
-						entries.map((en) => [en.id, { cat: en.catName, topic: en.topicName }]),
-					);
-				} catch {}
-			}
 
 			if (data.questions.length === 0) {
 				mount.innerHTML = '<div class="card p-12 text-center text-sm text-ink-muted">No questions available yet for this track.</div>';

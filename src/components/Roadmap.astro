@@ -1,5 +1,6 @@
 ---
 import type { CategoryMeta } from '../lib/types';
+import { getQuestionsByCategory } from '../lib/content';
 import Icon from './Icon.astro';
 
 interface Props {
@@ -9,12 +10,24 @@ interface Props {
 }
 
 const { category: cat, counts } = Astro.props;
+
+/** question ids per topic, emitted on each li so the status script needs no network fetch */
+const idsByTopic: Record<string, string[]> = {};
+for (const q of getQuestionsByCategory(cat.id)) {
+	(idsByTopic[q.topic] ??= []).push(q.id);
+}
 ---
 
 <ol class="space-y-2" data-roadmap={cat.id}>
 	{
 		cat.topics.map((topic, i) => (
-			<li class="roadmap-line relative flex gap-4 pb-4" data-topic={topic.id} data-total={counts[topic.id] ?? 0} data-done="0">
+			<li
+				class="roadmap-line relative flex gap-4 pb-4"
+				data-topic={topic.id}
+				data-total={counts[topic.id] ?? 0}
+				data-ids={JSON.stringify(idsByTopic[topic.id] ?? [])}
+				data-done="0"
+			>
 				<span class="relative z-10 grid h-9 w-9 shrink-0 place-items-center rounded-full border-2 border-line bg-surface text-[color:var(--ink-muted)]" data-node>
 					<Icon name="lock" class="hidden h-4 w-4" data-icon-lock />
 					<Icon name="play" class="hidden h-3.5 w-3.5 fill-current" data-icon-play />

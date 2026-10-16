@@ -9,7 +9,6 @@ const { variant = 'default' } = Astro.props;
 const path = Astro.url.pathname;
 
 const links = [
-	{ href: '/questions', label: 'Questions', match: '/questions' },
 	{ href: '/roadmap', label: 'Roadmap', match: '/roadmap' },
 	{ href: '/practice', label: 'Practice', match: '/practice' },
 		{ href: '/coding', label: 'Coding', match: '/coding' },
@@ -74,17 +73,6 @@ const isActive = (match: string) =>
 
 			<button
 				type="button"
-				data-search-open
-				class="group flex items-center gap-2 rounded-xl border border-line bg-surface px-2.5 py-2 text-sm text-ink-muted transition-colors hover:border-zinc-300 hover:text-ink-secondary dark:hover:border-zinc-600"
-				aria-label="Search questions"
-			>
-				<Icon name="search" class="h-4 w-4" />
-				<span class="hidden sm:inline">Search…</span>
-				<kbd class="kbd hidden sm:inline-flex" aria-hidden="true">/</kbd>
-			</button>
-
-			<button
-				type="button"
 				data-theme-toggle
 				class="btn btn-ghost h-9 w-9 !p-0"
 				aria-label="Toggle theme"
@@ -125,9 +113,6 @@ const isActive = (match: string) =>
 					</a>
 				))
 			}
-			<a href="/favorites" class="block rounded-lg px-3 py-2.5 text-sm font-medium text-ink-secondary hover:bg-surface-raised hover:text-ink">
-				Favorites
-			</a>
 			<a
 				href="/progress"
 				data-streak-menu-link

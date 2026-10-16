@@ -31,11 +31,11 @@ test.describe('progress dashboard & roadmap', () => {
 		await expect(page.locator('#category-bars')).toContainText('JavaScript');
 	});
 
-	test('recent list links to practiced questions', async ({ page }) => {
+	test('recent list links into practice', async ({ page }) => {
 		await page.goto('/progress');
 		const recent = page.locator('#recent-list a');
 		await expect(recent).toHaveCount(2);
-		await expect(recent.first()).toHaveAttribute('href', /js-003/);
+		await expect(recent.first()).toHaveAttribute('href', /\/practice\/javascript/);
 	});
 
 	test('homepage shows a continue-learning card from lastCategory', async ({ page }) => {

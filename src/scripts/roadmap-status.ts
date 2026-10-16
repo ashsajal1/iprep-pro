@@ -1,46 +1,25 @@
 import { loadProgress } from '../lib/progress';
 
-interface IndexEntry {
-	id: string;
-	q: string;
-	cat: string;
-	catName: string;
-	topic: string;
-	topicName: string;
-	d: string;
-	order: number;
-}
-
-let indexPromise: Promise<IndexEntry[]> | null = null;
-
-function loadIndex(): Promise<IndexEntry[]> {
-	if (!indexPromise) {
-		indexPromise = fetch('/search-index.json')
-			.then((r) => r.json())
-			.catch(() => []);
-	}
-	return indexPromise;
-}
-
 /**
  * Computes completed / current / upcoming statuses for every [data-roadmap]
- * list on the page using the lightweight question index + local progress.
+ * list on the page. Each li[data-topic] carries its build-time question ids
+ * (data-ids JSON) — combined with local progress no network index is needed.
  */
-export async function paintRoadmaps(): Promise<void> {
-	const [entries, p] = await Promise.all([loadIndex(), Promise.resolve(loadProgress())]);
+export function paintRoadmaps(): Promise<void> {
+	const p = loadProgress();
 
 	document.querySelectorAll<HTMLElement>('[data-roadmap]').forEach((list) => {
 		const items = Array.from(list.querySelectorAll<HTMLElement>('li[data-topic]'));
 		let currentAssigned = false;
 
 		items.forEach((li, i) => {
-			const topicId = li.dataset.topic!;
 			const total = Number(li.dataset.total);
 
-			let done = 0;
-			for (const e of entries) {
-				if (e.topic === topicId && p.completed[e.id]) done++;
-			}
+			let ids: string[] = [];
+			try {
+				ids = JSON.parse(li.dataset.ids ?? '[]') as string[];
+			} catch {}
+			const done = ids.filter((id) => p.completed[id]).length;
 			li.dataset.done = String(done);
 
 			const isComplete = total > 0 && done >= total;
@@ -77,4 +56,6 @@ export async function paintRoadmaps(): Promise<void> {
 			if (countLabel) countLabel.textContent = `${done} / ${total}`;
 		});
 	});
+
+	return Promise.resolve();
 }
