@@ -17,18 +17,25 @@
     "prepare": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {
+    "@astrojs/react": "^7.1.0",
     "@astrojs/sitemap": "^3.7.3",
+    "@codesandbox/sandpack-react": "^2.20.0",
     "@tailwindcss/vite": "^4.3.3",
     "astro": "^7.2.6",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
     "shiki": "^4.4.3",
     "tailwindcss": "^4.3.3"
   },
   "allowScripts": {
-    "esbuild": true
+    "esbuild": true,
+    "es5-ext": true
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
     "@playwright/test": "^1.62.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
     "happy-dom": "^20.11.6",
     "typescript": "^5.9.3",
     "vitest": "^4.1.11"

@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import DifficultyBadge from '../../components/DifficultyBadge.astro';
 import EmptyState from '../../components/EmptyState.astro';
+import Icon from '../../components/Icon.astro';
 import { allChallenges } from '../../lib/content';
 
 const challenges = allChallenges;
@@ -20,6 +21,23 @@ const challenges = allChallenges;
 				runs against tests inside a sandboxed web worker.
 			</p>
 		</header>
+
+		<a
+			href="/coding/react-live"
+			class="card group mb-6 flex flex-wrap items-center gap-4 border-dashed p-5 transition-all duration-150 hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-md dark:hover:border-indigo-800"
+		>
+			<span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-gradient-to-br from-sky-500 to-indigo-600 text-white text-lg font-semibold" aria-hidden="true">⚛</span>
+			<div class="min-w-0 flex-1">
+				<h2 class="font-semibold group-hover:text-indigo-700 dark:group-hover:text-indigo-300">
+					React live practice <span class="text-xs font-medium text-ink-muted">— new</span>
+				</h2>
+				<p class="mt-0.5 text-sm leading-relaxed text-[color:var(--ink-secondary)]">
+					Fetch-driven UI in a live Sandpack editor: infinite scroll, debounced search,
+					accessible tabs… each with a scaffold and tests that rerun as you type.
+				</p>
+			</div>
+			<Icon name="arrow-right" class="h-4 w-4 shrink-0 text-indigo-500" />
+		</a>
 
 		{
 			challenges.length === 0 ? (

@@ -1,0 +1,50 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import ReactLiveArena from '../../components/react-live/ReactLiveArena';
+---
+
+<BaseLayout
+	title="React Live Practice — Solve Challenges Against Real Tests"
+	description="Practice React in a live Sandpack editor: infinite scroll, debounced search, accessible tabs and more — every challenge ships with a scaffold, hidden specs that rerun as you type, hints and solutions."
+>
+	<section class="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+		<header class="mb-6 max-w-2xl">
+			<span class="chip bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
+				⚛ Sandpack-powered
+			</span>
+			<h1 class="mt-3 text-2xl font-semibold tracking-tight sm:text-3xl">React live practice</h1>
+			<p class="mt-2 text-sm leading-relaxed text-ink-secondary">
+				Write real React in a browser editor. Every challenge starts from a scaffold with
+				<code class="font-mono text-xs">TODO</code>
+				blocks, and hidden Jest specs rerun live against your code — the preview shows your
+				component and the panel below it tells you exactly what still fails.
+			</p>
+		</header>
+
+		<div
+			class="mb-6 flex flex-wrap items-center gap-x-4 gap-y-1 rounded-2xl border border-dashed border-line px-4 py-3 text-xs leading-relaxed text-ink-muted"
+		>
+			<span>Editor + preview + tests run on the CodeSandbox bundler CDN</span>
+			<span class="hidden sm:inline">·</span>
+			<span>first load takes a few seconds</span>
+			<span class="hidden sm:inline">·</span>
+			<span>your code & solved badges persist in this browser</span>
+		</div>
+
+		<ReactLiveArena client:only="react">
+			<div
+				class="card grid min-h-56 place-items-center p-10 text-sm text-ink-muted"
+			>
+				Loading the arena…
+			</div>
+		</ReactLiveArena>
+
+		<p class="mt-8 text-xs leading-relaxed text-ink-muted">
+			Like the drills? They pair well with the
+			<a class="text-indigo-600 underline underline-offset-2 dark:text-indigo-400" href="/coding">
+				JavaScript coding challenges
+			</a>
+			— algorithms there, UI patterns here.
+		</p>
+	</section>
+</BaseLayout>
