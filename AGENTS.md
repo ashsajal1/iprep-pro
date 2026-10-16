@@ -41,12 +41,14 @@ Types: `feat fix docs style refactor perf test build ci chore revert`.
   (`public/coding-worker.js`) with console capture and a 4s infinite-loop
   timeout; spec JSON lives in `src/data/coding/*.json`.
 
-## React live practice (`/coding/react-live`)
+## React live practice (`/coding/react-live/<exercise-id>`)
 
-- Island `src/components/react-live/ReactLiveArena.tsx` mounts
-  `client:only="react"`; exercises are plain-JS-string sandbox files in
-  `src/data/react-live/` — no backticks or `${}` inside those template
-  literals.
+- Static routes generated per exercise via `getStaticPaths` in
+  `src/pages/coding/react-live/[exercise].astro`; `/coding/react-live`
+  redirects (config `redirects`) to the first one. Island
+  `src/components/react-live/ReactLiveArena.tsx` mounts
+  `client:only="react"` and takes an `exerciseId` prop; the picker select
+  navigates routes via `window.location.assign`.
 - Sandpack gotchas (hard-earned):
   - Stabilize `SandpackProvider` prop identities: `customSetup`, `options`,
     callbacks, and `files` must not be inline literals/churn per render, or the

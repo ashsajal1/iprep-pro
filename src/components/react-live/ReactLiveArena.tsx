@@ -167,6 +167,24 @@ const CheckIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
+const ExpandIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...iconProps} {...props}>
+    <path d="M15 3h6v6" />
+    <path d="M9 21H3v-6" />
+    <path d="m21 3-7 7" />
+    <path d="m3 21 7-7" />
+  </svg>
+);
+
+const ShrinkIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg {...iconProps} {...props}>
+    <path d="M4 14h6v6" />
+    <path d="M20 10h-6V4" />
+    <path d="m14 10 7-7" />
+    <path d="m3 21 7-7" />
+  </svg>
+);
+
 /* ------------------------------------------------------------------ */
 /* Arena root                                                           */
 /* ------------------------------------------------------------------ */
@@ -177,14 +195,15 @@ const DIFFICULTY_STYLES: Record<string, string> = {
   Hard: "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400",
 };
 
-export default function Arena() {
+export default function Arena({ exerciseId }: { exerciseId?: string }) {
+  const activeId =
+    EXERCISES.find((ex) => ex.id === exerciseId)?.id ?? EXERCISES[0].id;
   const [storage, setStorage] = useState<ArenaStorage>(() => loadStorage());
-  const [exerciseId, setExerciseId] = useState(EXERCISES[0].id);
   const dark = useSiteDarkMode();
 
   const exercise = useMemo(
-    () => EXERCISES.find((ex) => ex.id === exerciseId) ?? EXERCISES[0],
-    [exerciseId],
+    () => EXERCISES.find((ex) => ex.id === activeId) ?? EXERCISES[0],
+    [activeId],
   );
 
   const finishedCount = Object.values(storage.solved).length;
@@ -192,21 +211,21 @@ export default function Arena() {
   const recordRun = useCallback(
     (run: ExerciseRun) => {
       setStorage((prev) => {
-        if (prev.runs[exerciseId]?.at === run.at) return prev;
+        if (prev.runs[activeId]?.at === run.at) return prev;
         const solved = { ...prev.solved };
-        if (run.total > 0 && run.fail === 0 && !solved[exerciseId]) {
-          solved[exerciseId] = run.at;
+        if (run.total > 0 && run.fail === 0 && !solved[activeId]) {
+          solved[activeId] = run.at;
         }
         const next: ArenaStorage = {
           ...prev,
-          runs: { ...prev.runs, [exerciseId]: run },
+          runs: { ...prev.runs, [activeId]: run },
           solved,
         };
         commitStorage(next);
         return next;
       });
     },
-    [exerciseId],
+    [activeId],
   );
 
   // Read the latest storage at call time so `persistEdits` keeps a stable
@@ -226,7 +245,7 @@ export default function Arena() {
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Exercise picker — simple select */}
+      {/* Exercise picker — simple select, navigates the per-exercise routes */}
       <div className="card flex flex-wrap items-center gap-3 px-4 py-3">
         <label
           htmlFor="exercise-select"
@@ -236,8 +255,10 @@ export default function Arena() {
         </label>
         <select
           id="exercise-select"
-          value={exerciseId}
-          onChange={(e) => setExerciseId(e.target.value)}
+          defaultValue={activeId}
+          onChange={(e) =>
+            window.location.assign(`/coding/react-live/${e.target.value}`)
+          }
           className="input min-w-0 max-w-md flex-1"
         >
           {EXERCISES.map((ex) => {
@@ -326,6 +347,29 @@ function Workspace({
   const allGreen =
     lastRun !== null && lastRun.total > 0 && lastRun.fail === 0;
 
+  // Expanded mode turns the sandbox grid into a full-viewport overlay so the
+  // editor, preview and tests get every pixel of space. Provider props stay
+  // stable (memoized above), so toggling only re-renders children — it never
+  // reinitializes the bundler.
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    if (!expanded) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setExpanded(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [expanded]);
+
+  const gridCls = expanded
+    ? // Mobile: three stacked rows · lg: editor spans both rows of 2fr/3fr.
+      "grid min-h-0 flex-1 gap-3 grid-rows-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)] lg:grid-cols-2 lg:grid-rows-[minmax(0,2fr)_minmax(0,3fr)]"
+    : "grid gap-3 grid-rows-[420px_240px_280px] lg:h-[640px] lg:grid-cols-2 lg:grid-rows-[300px_minmax(0,1fr)]";
+
+  const paneCls =
+    "overflow-hidden rounded-2xl border border-line bg-zinc-50 dark:bg-zinc-900";
+
   return (
     <SandpackProvider
       theme={dark ? "dark" : "light"}
@@ -339,9 +383,6 @@ function Workspace({
         scaffold={scaffold}
         onEdits={onEdits}
       />
-
-
-
       {/* Title + requirements (compact) */}
       <div className="card mb-3 p-4">
         <div className="flex flex-wrap items-center gap-3">
@@ -392,29 +433,39 @@ function Workspace({
         </ul>
       </div>
 
-      <ActionToolbar exercise={exercise} />
+      {/* Toolbar + sandbox grid — together they become the expanded overlay */}
+      <div
+        className={
+          expanded
+            ? "fixed inset-2 z-50 flex flex-col overflow-hidden rounded-3xl border border-line bg-surface p-3 shadow-2xl md:inset-4 lg:inset-6"
+            : ""
+        }
+      >
+        <ActionToolbar
+          exercise={exercise}
+          expanded={expanded}
+          onToggleExpand={() => setExpanded((v) => !v)}
+        />
 
-      {/* Sandbox grid: code left · preview right-top · tests right-bottom */}
-      <div className="grid gap-3 lg:grid-cols-2">
-        <div className="h-[420px] overflow-hidden rounded-2xl border border-line bg-zinc-50 dark:bg-zinc-900 lg:h-[640px]">
-          <SandpackCodeEditor
-            showTabs
-            showLineNumbers
-            showInlineErrors
-            showReadOnly={false}
-            closableTabs={false}
-            style={{ height: "100%" }}
-          />
-        </div>
+        <div className={gridCls}>
+          <div className={paneCls + " lg:row-span-2"}>
+            <SandpackCodeEditor
+              showTabs
+              showLineNumbers
+              showInlineErrors
+              showReadOnly={false}
+              closableTabs={false}
+              style={{ height: "100%" }}
+            />
+          </div>
 
-        <div className="grid gap-3 lg:h-[640px] lg:grid-rows-[300px_minmax(0,1fr)]">
-          <div className="h-[240px] overflow-hidden rounded-2xl border border-line bg-zinc-50 dark:bg-zinc-900 lg:h-auto">
+          <div className={paneCls}>
             <SandpackPreview
               showOpenInCodeSandbox={false}
               style={{ height: "100%" }}
             />
           </div>
-          <div className="h-[280px] overflow-hidden rounded-2xl border border-line bg-zinc-50 dark:bg-zinc-900 lg:h-auto">
+          <div className={paneCls}>
             <SandpackTests
               style={{ height: "100%" }}
               onComplete={handleRun}
@@ -473,7 +524,15 @@ function EditPersistence({
 /* Toolbar                                                              */
 /* ------------------------------------------------------------------ */
 
-function ActionToolbar({ exercise }: { exercise: ReactExercise }) {
+function ActionToolbar({
+  exercise,
+  expanded,
+  onToggleExpand,
+}: {
+  exercise: ReactExercise;
+  expanded: boolean;
+  onToggleExpand: () => void;
+}) {
   const { sandpack } = useSandpack();
   const { refresh } = useSandpackNavigation();
   const [note, setNote] = useState("");
@@ -506,14 +565,15 @@ function ActionToolbar({ exercise }: { exercise: ReactExercise }) {
   }, [note]);
 
   return (
-    <div className="mb-3 flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <button
         type="button"
         onClick={() => refresh()}
-        className="btn btn-primary"
+        className="btn btn-primary px-5 text-[13px] font-semibold shadow-md shadow-indigo-500/30"
+        title="Recompile and run the tests against your latest code"
       >
         <RefreshIcon className="h-4 w-4" />
-        Re-run preview &amp; tests
+        Submit
       </button>
       <button type="button" onClick={reset} className="btn btn-secondary">
         Reset scaffold
@@ -521,6 +581,19 @@ function ActionToolbar({ exercise }: { exercise: ReactExercise }) {
       <button type="button" onClick={revealSolution} className="btn btn-danger-soft">
         <KeyIcon className="h-4 w-4" />
         Reveal solution
+      </button>
+      <button
+        type="button"
+        onClick={onToggleExpand}
+        className="btn btn-secondary"
+        title="Give the editor, preview and tests the full screen (Esc to exit)"
+      >
+        {expanded ? (
+          <ShrinkIcon className="h-4 w-4" />
+        ) : (
+          <ExpandIcon className="h-4 w-4" />
+        )}
+        {expanded ? "Collapse" : "Expand"}
       </button>
       <UnstyledOpenInCodeSandboxButton className="btn btn-secondary ml-auto">
         <ExternalIcon className="h-4 w-4" />
@@ -530,7 +603,8 @@ function ActionToolbar({ exercise }: { exercise: ReactExercise }) {
       <span
         aria-live="polite"
         className={
-          "order-last w-full text-xs text-emerald-600 dark:text-emerald-400 " +
+          (expanded ? "order-last w-full pb-1 " : "order-last w-full ") +
+          "text-xs text-emerald-600 dark:text-emerald-400 " +
           (note ? "" : "invisible")
         }
       >

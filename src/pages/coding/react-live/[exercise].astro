@@ -1,0 +1,33 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import ReactLiveArena from '../../../components/react-live/ReactLiveArena';
+import { EXERCISES } from '../../../data/react-live';
+
+export function getStaticPaths() {
+	return EXERCISES.map((ex) => ({ params: { exercise: ex.id } }));
+}
+
+const { exercise } = Astro.params;
+const ex = EXERCISES.find((e) => e.id === exercise) ?? EXERCISES[0];
+---
+
+<BaseLayout
+	title={`${ex.title} — React Live Practice · iPrep Pro`}
+	description={`${ex.tagline}. Solve this ${ex.difficulty.toLowerCase()} React challenge in a live Sandpack editor — hidden Jest specs rerun against your code as you type, with hints, a preview and your progress saved locally.`}
+>
+	<section class="mx-auto max-w-6xl px-4 py-6 sm:px-6">
+		<ReactLiveArena client:only="react" exerciseId={ex.id}>
+			<div class="card grid min-h-56 place-items-center p-10 text-sm text-ink-muted">
+				Loading the arena…
+			</div>
+		</ReactLiveArena>
+
+		<p class="mt-6 text-xs leading-relaxed text-ink-muted">
+			Like the drills? They pair well with the
+			<a class="text-indigo-600 underline underline-offset-2 dark:text-indigo-400" href="/coding">
+				JavaScript coding challenges
+			</a>
+			— algorithms there, UI patterns here.
+		</p>
+	</section>
+</BaseLayout>

@@ -8,6 +8,9 @@ import react from '@astrojs/react';
 export default defineConfig({
 	site: 'https://ipreppro.app',
 	integrations: [sitemap(), react()],
+	redirects: {
+		'/coding/react-live': '/coding/react-live/counter',
+	},
 	vite: {
 		plugins: [tailwindcss()],
 	},
