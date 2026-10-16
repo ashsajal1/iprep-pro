@@ -167,12 +167,6 @@ const CheckIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const XIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg {...iconProps} {...props}>
-    <path d="M18 6 6 18M6 6l12 12" />
-  </svg>
-);
-
 /* ------------------------------------------------------------------ */
 /* Arena root                                                           */
 /* ------------------------------------------------------------------ */
@@ -231,100 +225,47 @@ export default function Arena() {
   );
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)]">
-      {/* Exercise picker */}
-      <aside className="min-w-0 lg:sticky lg:top-24 lg:max-h-[calc(100dvh-7rem)] lg:self-start lg:overflow-y-auto scroll-thin lg:pr-1">
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Challenges</h2>
-          <span className="text-xs tabular-nums text-ink-muted">
-            {finishedCount}/{EXERCISES.length} solved
-          </span>
-        </div>
-
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1">
+    <div className="flex flex-col gap-4">
+      {/* Exercise picker — simple select */}
+      <div className="card flex flex-wrap items-center gap-3 px-4 py-3">
+        <label
+          htmlFor="exercise-select"
+          className="shrink-0 text-xs font-semibold text-ink-secondary"
+        >
+          Challenge
+        </label>
+        <select
+          id="exercise-select"
+          value={exerciseId}
+          onChange={(e) => setExerciseId(e.target.value)}
+          className="input min-w-0 max-w-md flex-1"
+        >
           {EXERCISES.map((ex) => {
             const run = storage.runs[ex.id];
-            const green = run && run.total > 0 && run.fail === 0;
-            const solvedAt = storage.solved[ex.id];
-            const isActive = ex.id === exercise.id;
-
+            const score =
+              run && run.total > 0 ? ` · ${run.pass}/${run.total} tests` : "";
             return (
-              <button
-                key={ex.id}
-                type="button"
-                onClick={() => setExerciseId(ex.id)}
-                aria-current={isActive ? "true" : undefined}
-                className={
-                  "group flex w-full flex-col items-start gap-1.5 rounded-2xl border p-3.5 text-left transition-colors " +
-                  (isActive
-                    ? "border-indigo-300 bg-indigo-50/50 dark:border-indigo-800 dark:bg-indigo-950/40"
-                    : "border-line bg-surface hover:border-indigo-300 dark:hover:border-indigo-800")
-                }
-              >
-                <span className="flex w-full items-center gap-2">
-                  <span
-                    className={
-                      "grid h-6 w-6 shrink-0 place-items-center rounded-lg font-mono text-[11px] font-semibold " +
-                      (solvedAt
-                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/60 dark:text-emerald-300"
-                        : "bg-surface-raised text-ink-secondary")
-                    }
-                  >
-                    {solvedAt ? <CheckIcon className="h-3.5 w-3.5" /> : ex.num}
-                  </span>
-                  <span className="truncate text-sm font-semibold">{ex.title}</span>
-                  <span
-                    className={
-                      "ml-auto shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold " +
-                      DIFFICULTY_STYLES[ex.difficulty]
-                    }
-                  >
-                    {ex.difficulty}
-                  </span>
-                </span>
-                <span className="line-clamp-1 text-xs text-ink-secondary">
-                  {ex.tagline}
-                </span>
-                {run && run.total > 0 && (
-                  <span
-                    className={
-                      "inline-flex items-center gap-1 text-[11px] font-medium tabular-nums " +
-                      (green
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-zinc-500 dark:text-zinc-400")
-                    }
-                  >
-                    {green ? (
-                      <CheckIcon className="h-3 w-3" />
-                    ) : (
-                      <XIcon className="h-3 w-3" />
-                    )}
-                    {run.pass}/{run.total} tests
-                  </span>
-                )}
-              </button>
+              <option key={ex.id} value={ex.id}>
+                {String(ex.num).padStart(2, "0")} · {ex.title} ({ex.difficulty}
+                ){score}
+              </option>
             );
           })}
-        </div>
-
-        <p className="mt-4 rounded-2xl border border-dashed border-line p-3 text-[11px] leading-relaxed text-ink-muted">
-          Your code and solved badges are stored locally in this browser. First
-          load takes a few seconds — the Sandpack bundler is fetched from the
-          CodeSandbox CDN.
-        </p>
-      </aside>
+        </select>
+        <span className="shrink-0 text-xs tabular-nums text-ink-muted">
+          {finishedCount}/{EXERCISES.length} solved
+        </span>
+      </div>
 
       {/* Workspace */}
-      <section className="min-w-0">
-        <Workspace
-          key={exercise.id}
-          exercise={exercise}
-          dark={dark}
-          initialEdits={storage.edits[exercise.id] ?? EMPTY_EDITS}
-          onRun={recordRun}
-          onEdits={persistEdits}
-        />
-      </section>
+      <Workspace
+        key={exercise.id}
+        exercise={exercise}
+        dark={dark}
+        initialEdits={storage.edits[exercise.id] ?? EMPTY_EDITS}
+        onRun={recordRun}
+        onEdits={persistEdits}
+      />
     </div>
   );
 }
@@ -401,28 +342,20 @@ function Workspace({
 
 
 
-      {/* Brief */}
-      <div className="card mb-4 p-5">
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="chip bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300">
-            Challenge {String(exercise.num).padStart(2, "0")}
-          </span>
+      {/* Title + requirements (compact) */}
+      <div className="card mb-3 p-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <h2 className="text-base font-semibold tracking-tight">
+            <span className="mr-2 font-mono text-xs font-medium text-ink-muted">
+              {String(exercise.num).padStart(2, "0")}
+            </span>
+            {exercise.title}
+          </h2>
           <span
-            className={
-              "chip font-semibold " + DIFFICULTY_STYLES[exercise.difficulty]
-            }
+            className={"chip font-semibold " + DIFFICULTY_STYLES[exercise.difficulty]}
           >
             {exercise.difficulty}
           </span>
-          {exercise.concepts.map((concept) => (
-            <span
-              key={concept}
-              className="hidden bg-surface-raised text-ink-secondary sm:inline-flex"
-              style={{ fontSize: "11px" }}
-            >
-              {concept}
-            </span>
-          ))}
           <span
             className={
               "ml-auto inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold " +
@@ -446,21 +379,11 @@ function Workspace({
           </span>
         </div>
 
-        <h2 className="mt-3 text-lg font-semibold tracking-tight">
-          {exercise.title}
-        </h2>
-        <p
-          className="mt-1.5 text-[15px] leading-relaxed text-ink-secondary"
-          style={{ whiteSpace: "pre-line" }}
-        >
-          {exercise.brief}
-        </p>
-
-        <ul className="mt-3 space-y-1.5">
+        <ul className="mt-2.5 space-y-1">
           {exercise.requirements.map((req) => (
             <li
               key={req}
-              className="flex gap-2 rounded-lg bg-surface-raised px-3 py-2 text-[13px] leading-relaxed text-[color:var(--ink-secondary)]"
+              className="flex gap-2 rounded-lg bg-surface-raised px-2.5 py-1.5 text-[13px] leading-relaxed text-[color:var(--ink-secondary)]"
             >
               <CheckMark />
               <span className="min-w-0 font-mono text-xs">{req}</span>
@@ -471,9 +394,9 @@ function Workspace({
 
       <ActionToolbar exercise={exercise} />
 
-      {/* Sandbox grid */}
-      <div className="grid gap-3 xl:grid-cols-2">
-        <div className="overflow-hidden rounded-2xl border border-line bg-zinc-50 dark:bg-zinc-900 h-[440px]">
+      {/* Sandbox grid: code left · preview right-top · tests right-bottom */}
+      <div className="grid gap-3 lg:grid-cols-2">
+        <div className="h-[420px] overflow-hidden rounded-2xl border border-line bg-zinc-50 dark:bg-zinc-900 lg:h-[640px]">
           <SandpackCodeEditor
             showTabs
             showLineNumbers
@@ -484,14 +407,14 @@ function Workspace({
           />
         </div>
 
-        <div className="grid gap-3">
-          <div className="overflow-hidden rounded-2xl border border-line bg-zinc-50 dark:bg-zinc-900 h-[250px]">
+        <div className="grid gap-3 lg:h-[640px] lg:grid-rows-[300px_minmax(0,1fr)]">
+          <div className="h-[240px] overflow-hidden rounded-2xl border border-line bg-zinc-50 dark:bg-zinc-900 lg:h-auto">
             <SandpackPreview
               showOpenInCodeSandbox={false}
               style={{ height: "100%" }}
             />
           </div>
-          <div className="overflow-hidden rounded-2xl border border-line bg-zinc-50 dark:bg-zinc-900 h-[266px]">
+          <div className="h-[280px] overflow-hidden rounded-2xl border border-line bg-zinc-50 dark:bg-zinc-900 lg:h-auto">
             <SandpackTests
               style={{ height: "100%" }}
               onComplete={handleRun}
