@@ -49,21 +49,41 @@ Types: `feat fix docs style refactor perf test build ci chore revert`.
   (`public/coding-worker.js`) with console capture and a 4s infinite-loop
   timeout; spec JSON lives in `src/data/coding/*.json`.
 
-## React live practice (`/coding/react-live/<exercise-id>`)
+## Live practice tracks (Sandpack)
+
+Two tracks share the track-aware arena `src/components/react-live/ReactLiveArena.tsx`
+(a `track` prop selects from a `TRACKS` config: label, routeBase, storageKey,
+exercise registry):
+
+- **React** `/coding/react-live/<id>` — registry `src/data/react-live/index.ts`,
+  storage key `iprep.react-live.v1`, redirect → `counter`.
+- **Next.js** `/coding/nextjs-live/<id>` — registry `src/data/nextjs-live/index.ts`,
+  storage key `iprep.nextjs-live.v1`, redirect → `app-nav`. Next.js App Router
+  APIs can't run in-browser, so each exercise ships visible read-only stub
+  modules (`/next/*.js`, `/actions.js`) emulating Link/usePathname/
+  useActionState/useOptimistic server-action contracts.
+
+Shared plumbing lives in `src/data/live/` (`shared.ts` testbed/index/styles,
+`types.ts`, `index.ts` for `editablePaths` + `toSandpackFiles`) — both
+registries import from there. A new exercise = one TS file under
+`src/data/<track>/exercises/` exporting a `ReactExercise`, plus registry
+entry; routes/pages regenerate from `getStaticPaths`.
 
 - Static routes generated per exercise via `getStaticPaths` in
-  `src/pages/coding/react-live/[exercise].astro`; `/coding/react-live`
-  redirects (config `redirects`) to the first one. Island
+  `src/pages/coding/<track>/[exercise].astro`; the bare track URL redirects
+  (config `redirects`) to its first exercise. Island
   `src/components/react-live/ReactLiveArena.tsx` mounts
-  `client:only="react"` and takes an `exerciseId` prop; the picker select
-  navigates routes via `window.location.assign`.
+  `client:only="react"`; the picker select navigates via
+  `window.location.assign`.
 - Sandpack gotchas (hard-earned):
   - Stabilize `SandpackProvider` prop identities: `customSetup`, `options`,
     callbacks, and `files` must not be inline literals/churn per render, or the
     bundler re-derives state and recompiles/tests in an endless loop.
-  - Hidden specs run Jest in-browser via `SandpackTests`; the shared `/_testbed`
-    in `src/data/react-live/shared.ts` `flushSync`-mounts because React 19's
-    deferred `root.render()` does not commit before immediate DOM queries.
+  - Hidden specs run Jest in-browser via `SandpackTests` (its own hidden
+    bundler iframe alongside the preview iframe; `page.frames()` shows both).
+    The shared `/_testbed` in `src/data/live/shared.ts` `flushSync`-mounts
+    because React 19's deferred `root.render()` does not commit before
+    immediate DOM queries.
   - Exercise/code string literals are template literals NEVER containing
     backticks or `${` — even inside comments (JSX text like a "$" total must be
     written as `{"$" + (x / 100).toFixed(2)}`).
@@ -73,9 +93,28 @@ Types: `feat fix docs style refactor perf test build ci chore revert`.
     and a plain `el.value =` assignment is swallowed by React's value tracker
     (onChange never fires). Both realms bugs are covered by the red→green QA
     recipe below.
-  - New exercise QA recipe: dump exercise objects with esbuild, seed
-    `localStorage iprep.react-live.v1 = {edits: {id: solution}}`, expect red
-    on scaffold and 0-fail on solution; "Reveal solution" must be green.
+  - Jest-realm realities (verified, don't rediscover): app `useEffect`s, plain
+    timers, async transitions, `addOptimistic`, `setState` mid-transition and
+    stub `await`s all work; spec-mandated `.click()` + React `onClick` work;
+    spec-issued synthetic `submit` events / `requestSubmit()` do NOT reach
+    React's form action. `new FormData(formElement)` **throws** in the jest
+    realm — build payloads with `new FormData()` + `.append(input.value)`.
+    `useActionState`'s dispatch defers out-of-transition renders (e.g. a queued
+    `setBusy(true)`) until the action settles, so disable buttons via
+    `flushSync(() => setBusy(true))` before dispatching; `isPending` from
+    `useActionState` is unreliable on manual dispatches. Serialize roundtrips
+    per exercise (busy flag) — a new `startTransition` fired while one is
+    still pending drops the optimistic paint.
+  - New exercise QA recipe: dump exercise objects with esbuild (splitting, an
+    outdir like `/tmp/opencode/<track>-dump`), seed
+    `localStorage <storageKey> = {edits: {id: solution}}` via a
+    self-contained init script (the browser-automation harness serializes
+    evaluate/initScript sources — closure variables DON'T exist in the page,
+    pass data as string args), expect red on scaffold and 0-fail on solution;
+    "Reveal solution" must be green. Surface spec-realm values through a
+    `expect(payload).toBe("###" + payload)` fail-text dump. Restart
+    `astro preview` after every rebuild — its static server loads `dist`
+    into memory at startup and keeps serving a stale snapshot otherwise.
 
 ## Documentation
 

@@ -1,5 +1,5 @@
-import { INDEX_FILE, TESTBED_FILE, stylesFile } from "../shared";
-import type { ReactExercise } from "../types";
+import { INDEX_FILE, TESTBED_FILE, stylesFile } from "../../live/shared";
+import type { ReactExercise } from "../../live/types";
 
 const FORM_CSS = `form .field { margin-bottom: 12px; }
 label { display: block; font-size: 12px; font-weight: 600; margin-bottom: 4px; color: #52525b; }

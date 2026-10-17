@@ -1,5 +1,5 @@
-import { INDEX_FILE, TESTBED_FILE, stylesFile } from "../shared";
-import type { ReactExercise } from "../types";
+import { INDEX_FILE, TESTBED_FILE, stylesFile } from "../../live/shared";
+import type { ReactExercise } from "../../live/types";
 
 const CART_CSS = `.products {
   margin-bottom: 14px;

@@ -10,6 +10,7 @@ export default defineConfig({
 	integrations: [sitemap(), react()],
 	redirects: {
 		'/coding/react-live': '/coding/react-live/counter',
+		'/coding/nextjs-live': '/coding/nextjs-live/app-nav',
 	},
 	vite: {
 		plugins: [tailwindcss()],

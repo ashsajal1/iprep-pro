@@ -15,11 +15,42 @@ import {
   useSandpackNavigation,
 } from "@codesandbox/sandpack-react";
 import {
-  EXERCISES,
   editablePaths,
   toSandpackFiles,
   type ReactExercise,
-} from "../../data/react-live";
+} from "../../data/live";
+import { EXERCISES as REACT_EXERCISES } from "../../data/react-live";
+import { EXERCISES as NEXTJS_EXERCISES } from "../../data/nextjs-live";
+
+/* ------------------------------------------------------------------ */
+/* Tracks                                                               */
+/* ------------------------------------------------------------------ */
+
+export type ArenaTrack = "react" | "nextjs";
+
+export interface TrackConfig {
+  label: string;
+  /** Route base, e.g. "/coding/react-live". */
+  routeBase: string;
+  /* localStorage key — per track, so each track's progress stands alone. */
+  storageKey: string;
+  exercises: ReactExercise[];
+}
+
+const TRACKS: Record<ArenaTrack, TrackConfig> = {
+  react: {
+    label: "React live practice",
+    routeBase: "/coding/react-live",
+    storageKey: "iprep.react-live.v1",
+    exercises: REACT_EXERCISES,
+  },
+  nextjs: {
+    label: "Next.js live practice",
+    routeBase: "/coding/nextjs-live",
+    storageKey: "iprep.nextjs-live.v1",
+    exercises: NEXTJS_EXERCISES,
+  },
+};
 
 /* ------------------------------------------------------------------ */
 /* Types & persistence                                                  */
@@ -41,14 +72,12 @@ interface ArenaStorage {
   solved: Record<string, number>;
 }
 
-const STORAGE_KEY = "iprep.react-live.v1";
-
 /** Stable empty-object identity so SandpackProvider props never churn. */
 const EMPTY_EDITS: Record<string, string> = {};
 
-function loadStorage(): ArenaStorage {
+function loadStorage(key: string): ArenaStorage {
   try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
+    const raw = window.localStorage.getItem(key);
     if (!raw) return { edits: {}, runs: {}, solved: {} };
     const parsed = JSON.parse(raw) as Partial<ArenaStorage>;
     return {
@@ -61,9 +90,9 @@ function loadStorage(): ArenaStorage {
   }
 }
 
-function commitStorage(next: ArenaStorage): void {
+function commitStorage(key: string, next: ArenaStorage): void {
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    window.localStorage.setItem(key, JSON.stringify(next));
   } catch {
     /* private mode — arena still works, just without persistence */
   }
@@ -195,17 +224,27 @@ const DIFFICULTY_STYLES: Record<string, string> = {
   Hard: "bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400",
 };
 
-export default function Arena({ exerciseId }: { exerciseId?: string }) {
+export default function Arena({
+  track = "react",
+  exerciseId,
+}: {
+  /** Which track's registry/routes/storage this instance serves. */
+  track?: ArenaTrack;
+  exerciseId?: string;
+}) {
+  const trackConfig = TRACKS[track];
+  const { exercises: EXERCISES, routeBase, storageKey } = trackConfig;
   const activeId =
     EXERCISES.find((ex) => ex.id === exerciseId)?.id ?? EXERCISES[0].id;
-  const [storage, setStorage] = useState<ArenaStorage>(() => loadStorage());
+  const [storage, setStorage] = useState<ArenaStorage>(() =>
+    loadStorage(storageKey),
+  );
   const dark = useSiteDarkMode();
 
   const exercise = useMemo(
     () => EXERCISES.find((ex) => ex.id === activeId) ?? EXERCISES[0],
-    [activeId],
+    [activeId, EXERCISES],
   );
-
   const finishedCount = Object.values(storage.solved).length;
 
   const recordRun = useCallback(
@@ -221,11 +260,11 @@ export default function Arena({ exerciseId }: { exerciseId?: string }) {
           runs: { ...prev.runs, [activeId]: run },
           solved,
         };
-        commitStorage(next);
+        commitStorage(storageKey, next);
         return next;
       });
     },
-    [activeId],
+    [activeId, storageKey],
   );
 
   // Read the latest storage at call time so `persistEdits` keeps a stable
@@ -235,12 +274,12 @@ export default function Arena({ exerciseId }: { exerciseId?: string }) {
 
   const persistEdits = useCallback(
     (id: string, edits: Record<string, string>) => {
-      commitStorage({
+      commitStorage(storageKey, {
         ...storageRef.current,
         edits: { ...storageRef.current.edits, [id]: edits },
       });
     },
-    [],
+    [storageKey],
   );
 
   return (
@@ -257,7 +296,7 @@ export default function Arena({ exerciseId }: { exerciseId?: string }) {
           id="exercise-select"
           defaultValue={activeId}
           onChange={(e) =>
-            window.location.assign(`/coding/react-live/${e.target.value}`)
+            window.location.assign(`${routeBase}/${e.target.value}`)
           }
           className="input min-w-0 max-w-md flex-1"
         >
@@ -274,7 +313,7 @@ export default function Arena({ exerciseId }: { exerciseId?: string }) {
           })}
         </select>
         <span className="shrink-0 text-xs tabular-nums text-ink-muted">
-          {finishedCount}/{EXERCISES.length} solved
+          {trackConfig.label} · {finishedCount}/{EXERCISES.length} solved
         </span>
       </div>
 
