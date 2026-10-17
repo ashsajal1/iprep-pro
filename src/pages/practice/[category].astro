@@ -5,32 +5,23 @@ import ProgressBar from '../../components/ProgressBar.astro';
 import { categories } from '../../lib/content';
 
 export function getStaticPaths() {
-	return [
-		...categories.map((c) => ({ params: { category: c.id } })),
-		{ params: { category: 'all' } },
-	];
+	return categories.map((c) => ({ params: { category: c.id } }));
 }
 
 const { category } = Astro.params;
-const isAll = category === 'all';
 const cat = categories.find((c) => c.id === category);
 
-// Mode comes from the query string at runtime (?mode=learn|practice|quick).
-const title = isAll
-	? 'Mixed Practice — All Categories'
-	: `${cat!.name} Practice — Learn, Drill & Quick Rounds`;
-const description = isAll
-	? 'Run practice sessions across every interview track with instant feedback and local progress tracking.'
-	: `Practice ${cat!.name} interview questions in three modes: guided learning, answer-first drilling, and quick 10-question rounds.`;
+// Mode comes from the query string at runtime (?mode=learn|practice).
+const title = `${cat!.name} Practice — Learn & Practice`;
+const description = `Practice ${cat!.name} interview questions in two modes: guided learning and answer-first practice.`;
 
 const modes = [
 	{ id: 'learn', icon: 'book-open', label: 'Learn' },
 	{ id: 'practice', icon: 'target', label: 'Practice' },
-	{ id: 'quick', icon: 'zap', label: 'Quick 10' },
 ];
 
-const backHref = isAll ? '/practice' : `/${category}`;
-const backLabel = isAll ? 'All tracks' : `${cat!.name} overview`;
+const backHref = `/${category}`;
+const backLabel = `${cat!.name} overview`;
 ---
 
 <BaseLayout title={title} description={description}>

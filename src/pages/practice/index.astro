@@ -19,18 +19,12 @@ const modes = [
 		title: 'Practice Mode',
 		text: 'Question only until you reveal. Self-assess honestly to test real recall.',
 	},
-	{
-		id: 'quick',
-		icon: 'zap',
-		title: 'Quick Practice',
-		text: '10 random questions from your track, then a score summary at the end.',
-	},
 ];
 ---
 
 <BaseLayout
-	title="Practice Interview Questions — Three Modes"
-	description="Practice interview questions your way: guided Learn mode, recall-testing Practice mode, or a quick 10-question round across every track."
+	title="Practice Interview Questions — Learn & Practice"
+	description="Practice interview questions your way: guided Learn mode for reading everything first, and Practice mode to test real recall."
 >
 	<section class="mx-auto max-w-6xl px-4 py-10 sm:px-6">
 		<header class="mb-8">
@@ -42,7 +36,7 @@ const modes = [
 		</header>
 
 		<!-- Modes -->
-		<div class="mb-12 grid gap-4 md:grid-cols-3">
+		<div class="mb-12 grid gap-4 md:grid-cols-2">
 			{
 				modes.map((m) => (
 					<div class="card p-5">
@@ -77,39 +71,17 @@ const modes = [
 
 						<ProgressBar progressFor={`category:${cat.id}`} value={0} class="mt-4 mb-4" />
 
-						<div class="mt-auto grid grid-cols-3 gap-2">
+						<div class="mt-auto grid grid-cols-2 gap-2">
 							<a href={`/practice/${cat.id}?mode=learn`} class="btn btn-secondary !px-0 text-xs">
 								Learn
 							</a>
 							<a href={`/practice/${cat.id}?mode=practice`} class="btn btn-primary !px-0 text-xs">
 								Practice
 							</a>
-							<a href={`/practice/${cat.id}?mode=quick`} class="btn btn-secondary !px-0 text-xs">
-								Quick 10
-							</a>
 						</div>
 					</article>
 				))
 			}
-
-			<!-- Mixed quick round -->
-			<article class="card flex flex-col border-dashed p-5">
-				<div class="flex items-center gap-3">
-					<span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-surface-raised text-ink-secondary">
-						<Icon name="shuffle" class="h-5 w-5" />
-					</span>
-					<div>
-						<h3 class="font-semibold">Mixed Round</h3>
-						<p class="text-xs text-ink-muted">All categories shuffled</p>
-					</div>
-				</div>
-				<p class="mt-4 mb-4 text-sm leading-relaxed text-ink-secondary">
-					Can't decide? A random warm-up drawn from every track.
-				</p>
-				<a href="/practice/all?mode=quick" class="btn btn-soft mt-auto w-full">
-					Quick 10 · Mixed
-				</a>
-			</article>
 		</div>
 	</section>
 

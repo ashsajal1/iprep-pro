@@ -35,8 +35,8 @@ Types: `feat fix docs style refactor perf test build ci chore revert`.
   order = roadmap order). Content integrity is covered by unit tests — a new
   JSON file must match the schema (see README "Adding questions").
 - There is NO per-question page. Question content is surfaced only through
-  `/practice/<category>` (learn/practice/quick runner, data from
-  `/api/questions/<category>.json`, which also covers `all`) and the question
+  `/practice/<category>` (learn/practice runner, data from
+  `/api/questions/<category>.json`) and the question
   cards on category overview pages, which link into practice.
 - Question-focused routes were removed deliberately: no `/questions/*`, no
   `/favorites`, no `/search-index.json`, no navbar search modal. Roadmap status

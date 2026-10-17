@@ -36,34 +36,26 @@ test.describe('practice runner', () => {
 		await expect(page.locator('[data-count-known]')).toHaveText('1');
 	});
 
-	test('quick mode runs 10 mixed questions to a scored summary', async ({ page }) => {
-		await page.goto('/practice/all?mode=quick');
-		await expect(page.locator('#runner-meta')).toContainText('Question 1 of 10');
-
-		// Answer everything: alternate know / review
-		for (let i = 0; i < 10; i++) {
-			const reveal = page.locator('[data-action="reveal"]');
-			if ((await reveal.count()) > 0) await reveal.click();
-			const verdict = i % 2 === 0 ? 'know' : 'review';
-			await page.locator(`[data-action="${verdict}"]`).click();
-			await page.waitForTimeout(80);
-		}
-
-		await expect(page.getByRole('heading', { name: 'Session complete!' })).toBeVisible();
-		await expect(page.getByText(/Completion:/)).toContainText('50%');
-		await expect(page.getByText('Known answers')).toBeVisible();
-		await expect(page.getByText('To review later')).toBeVisible();
-		await expect(page.locator('#retry-btn')).toBeVisible();
-	});
-
 	test('mode tabs deep-link correctly', async ({ page }) => {
 		await page.goto('/practice/react?mode=learn');
 		await expect(page.locator('[data-mode-tab="learn"]')).toHaveAttribute(
 			'aria-current',
 			'page',
 		);
-		await page.locator('[data-mode-tab="quick"]').click();
-		await expect(page).toHaveURL(/mode=quick$/);
-		await expect(page.locator('#runner-meta')).toContainText('Question 1 of 10');
+		await page.locator('[data-mode-tab="practice"]').click();
+		await expect(page).toHaveURL(/mode=practice$/);
+		await expect(page.getByText('How confident are you feeling?')).toBeVisible();
+	});
+
+	test('finishing a learn session lands on the summary', async ({ page }) => {
+		await page.goto('/practice/javascript?mode=learn');
+		for (let i = 0; i < 20; i++) {
+			await page.locator('[data-action="know"]').click();
+			await page.waitForTimeout(60);
+		}
+
+		await expect(page.getByRole('heading', { name: 'Session complete!' })).toBeVisible();
+		await expect(page.getByText(/Completion:/)).toContainText('100%');
+		await expect(page.locator('#retry-btn')).toBeVisible();
 	});
 });

@@ -1,7 +1,7 @@
 # iPrep Pro
 
 A fast, private interview-prep platform built with Astro. Browse real interview
-questions, follow guided learning roadmaps, practice in three modes, code real
+questions, follow guided learning roadmaps, practice in two modes, code real
 React components live, and track progress — all without an account. Everything
 is stored locally in the browser.
 
@@ -96,7 +96,7 @@ src/
   pages/
     index.astro             # homepage
     [category]/index.astro  # category overview + grouped questions (cards link to practice)
-    practice/[category].astro  # practice runner (learn/practice/quick modes)
+    practice/[category].astro  # practice runner (learn/practice modes)
     coding/react-live/[exercise].astro  # Sandpack-powered React live practice arena
     roadmap.astro  progress.astro  404.astro
     api/questions/[category].json.ts   # full content for the runner

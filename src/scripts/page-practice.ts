@@ -2,7 +2,7 @@ import { setAssessment, setLastCategory, displayStreak, loadProgress } from '../
 import { renderInline } from '../lib/format';
 
 /* ------------------------------------------------------------------ */
-/* Practice runner — Learn / Practice / Quick modes                    */
+/* Practice runner — Learn / Practice modes                            */
 /* ------------------------------------------------------------------ */
 
 interface RunnerQuestion {
@@ -30,10 +30,10 @@ if (mountNode) {
 	const categoryId = mount.dataset.category ?? 'all';
 
 	// Mode is read from the URL at runtime (pages are statically generated).
-	const VALID_MODES = ['learn', 'practice', 'quick'];
+	const VALID_MODES = ['learn', 'practice'];
 	const urlMode = new URLSearchParams(window.location.search).get('mode');
-	const mode: 'learn' | 'practice' | 'quick' = VALID_MODES.includes(urlMode ?? '')
-		? (urlMode as 'learn' | 'practice' | 'quick')
+	const mode: 'learn' | 'practice' = VALID_MODES.includes(urlMode ?? '')
+		? (urlMode as 'learn' | 'practice')
 		: 'learn';
 
 	// Highlight the active mode tab.
@@ -282,10 +282,6 @@ if (mountNode) {
 		if (difficulty && difficulty !== 'all') {
 			pool = pool.filter((q) => q.difficulty === difficulty);
 		}
-		if (mode === 'quick') {
-			shuffle(pool);
-			pool = pool.slice(0, Math.min(10, pool.length));
-		}
 		queue = pool.map((q) => ({ q, revealed: false }));
 	}
 
@@ -325,13 +321,6 @@ if (mountNode) {
 		});
 	}
 
-	function shuffle<T>(arr: T[]): void {
-		for (let i = arr.length - 1; i > 0; i--) {
-			const j = Math.floor(Math.random() * (i + 1));
-			[arr[i], arr[j]] = [arr[j], arr[i]];
-		}
-	}
-
 	function renderSummary(): void {
 		const known = knownCount();
 		const review = reviewCount();
@@ -364,7 +353,7 @@ if (mountNode) {
 
 				<div class="mt-8 flex flex-wrap items-center justify-center gap-3">
 					<button type="button" id="retry-btn" class="btn btn-primary px-6 py-3">
-						${mode === 'quick' ? 'New random round' : 'Practice again'}
+						Practice again
 					</button>
 					<a href="/progress" class="btn btn-secondary px-6 py-3">View progress</a>
 					<a href="/practice" class="btn btn-ghost px-6 py-3">Change track</a>
