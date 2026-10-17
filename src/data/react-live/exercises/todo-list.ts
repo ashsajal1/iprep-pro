@@ -352,8 +352,10 @@ describe("Todo board", () => {
   });
 });
 
-function qRemaining(container) {
-  return clickable("remaining", container);
+/* Accepts either the mount app ({ container }) or a plain container node —
+ * some call sites pass the app object, so unwrap defensively. */
+function qRemaining(from) {
+  return clickable("remaining", from.container || from);
 }
 `;
 

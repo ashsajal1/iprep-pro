@@ -91,12 +91,28 @@ export function clickable(testId, container) {
   return el;
 }
 
-/* Set the value of a controlled input/textarea the way React expects. */
+/* Set the value of a controlled input/textarea the way React expects.
+ *
+ * Two traps, both hit for real inside Sandpack's jest sandbox:
+ *  1. Referencing the GLOBAL HTMLInputElement.prototype can throw
+ *     "Illegal invocation" — the spec realm and the sandbox DOM realm can
+ *     differ, so the setter must come from the ELEMENT's realm.
+ *     Object.getPrototypeOf(el) is always realm-consistent.
+ *  2. A plain assignment (el.value = x) goes through React's own value-tracker
+ *     accessor on the node, which quietly records the new value — the
+ *     later input event looks like "nothing changed" and onChange never
+ *     fires. The raw prototype setter bypasses the tracker instead. */
 export function typeText(el, value) {
   if (!el) throw new Error("typeText: element not found");
-  var proto = el.tagName === "TEXTAREA" ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype;
-  var setter = Object.getOwnPropertyDescriptor(proto, "value").set;
-  setter.call(el, value);
+  var descriptor = Object.getOwnPropertyDescriptor(
+    Object.getPrototypeOf(el),
+    "value",
+  );
+  if (descriptor && descriptor.set) {
+    descriptor.set.call(el, value);
+  } else {
+    el.value = value;
+  }
   el.dispatchEvent(new Event("input", { bubbles: true }));
   return el;
 }

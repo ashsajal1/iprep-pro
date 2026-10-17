@@ -64,6 +64,18 @@ Types: `feat fix docs style refactor perf test build ci chore revert`.
   - Hidden specs run Jest in-browser via `SandpackTests`; the shared `/_testbed`
     in `src/data/react-live/shared.ts` `flushSync`-mounts because React 19's
     deferred `root.render()` does not commit before immediate DOM queries.
+  - Exercise/code string literals are template literals NEVER containing
+    backticks or `${` — even inside comments (JSX text like a "$" total must be
+    written as `{"$" + (x / 100).toFixed(2)}`).
+  - `typeText` must take the value setter from `Object.getPrototypeOf(el)`
+    (element's realm), NOT from the global `HTMLInputElement.prototype` — the
+    spec realm differs from the sandbox DOM realm (throws "Illegal invocation"),
+    and a plain `el.value =` assignment is swallowed by React's value tracker
+    (onChange never fires). Both realms bugs are covered by the red→green QA
+    recipe below.
+  - New exercise QA recipe: dump exercise objects with esbuild, seed
+    `localStorage iprep.react-live.v1 = {edits: {id: solution}}`, expect red
+    on scaffold and 0-fail on solution; "Reveal solution" must be green.
 
 ## Documentation
 
