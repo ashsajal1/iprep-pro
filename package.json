@@ -2,6 +2,7 @@
   "name": "iprep_pro",
   "type": "module",
   "version": "1.0.0",
+  "packageManager": "pnpm@12.16.1",
   "engines": {
     "node": ">=22.12.0"
   },
@@ -14,6 +15,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "release": "pnpm build && pnpm test",
+    "preview:cf": "wrangler dev",
+    "deploy:cf": "pnpm build && wrangler deploy",
     "prepare": "git config core.hooksPath .githooks || true"
   },
   "dependencies": {
@@ -38,6 +41,7 @@
     "@types/react-dom": "^19.3.0",
     "happy-dom": "^20.11.6",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.11"
+    "vitest": "^4.1.11",
+    "wrangler": "^4.160.1"
   }
 }

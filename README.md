@@ -78,6 +78,31 @@ progress store, language normalization) followed by Playwright integration
 tests that build the site, serve it and drive a real browser through practice
 modes, progress, theming and the coding workspace.
 
+## Deploying to Cloudflare
+
+The build is fully static, so it ships to Cloudflare Workers static assets — no
+Astro adapter, no SSR worker.
+
+```sh
+pnpm build       # produces ./dist (including the generated sw.js)
+pnpm preview:cf  # serve ./dist through wrangler dev on 127.0.0.1:8787
+pnpm deploy:cf   # build + wrangler deploy
+```
+
+- `wrangler.jsonc` — worker `iprep-pro`, assets from `./dist`, `404.html` as the
+  not-found page, automatic trailing-slash handling.
+- `public/_headers` — immutable caching for `/_astro/*`, revalidate for `sw.js`
+  and `offline.html`, correct manifest MIME type.
+- Deploys run from Cloudflare's Git integration (Workers Builds): connect the
+  repo, set build command `pnpm build` and deploy command
+  `pnpm exec wrangler deploy`. Every push to the production branch deploys;
+  non-production branches get preview URLs.
+- First manual deploy: `pnpm exec wrangler login` then `pnpm deploy:cf`.
+- Custom domain: attach `ipreppro.app` to the worker in the dashboard, or add a
+  `routes` entry to `wrangler.jsonc`.
+- Worker limits: 20,000 asset files, 25 MiB per file — the full build is well
+  under both.
+
 ## Architecture
 
 ```

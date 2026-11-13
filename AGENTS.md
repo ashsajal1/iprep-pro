@@ -11,6 +11,8 @@ npx tsc --noEmit -p tsconfig.json  # typecheck (no package script exists)
 pnpm vitest run src/lib/content.test.ts   # single unit test file
 pnpm test:e2e                      # Playwright only
 pnpm release                       # build + full test suite (pre-ship check)
+pnpm deploy:cf                     # build + wrangler deploy (Cloudflare Worker)
+pnpm preview:cf                    # serve dist via wrangler dev :8787
 ```
 
 - `pnpm build` = `astro build && node scripts/generate-sw.js` — the service
